@@ -11,10 +11,9 @@ struct AddExpenseView: View {
     @State private var memoText: String = ""
 
     private let pockets: [ExpensePocket] = [
-        .init(id: 0, name: "トータル", color: .blue),
-        .init(id: 1, name: "生活費", color: .green),
-        .init(id: 2, name: "旅行", color: .orange),
-        .init(id: 3, name: "家賃", color: .purple),
+        .init(id: 0, name: "生活費", color: .green),
+        .init(id: 1, name: "旅行", color: .orange),
+        .init(id: 2, name: "家賃", color: .purple),
     ]
 
     private let categories: [String] = ["食費", "生活", "交通", "娯楽", "その他"]
