@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct PairPocketApp: App {
+    @State private var expenseStore = ExpenseStore()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(expenseStore)
         }
     }
 }

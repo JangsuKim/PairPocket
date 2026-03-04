@@ -1,26 +1,33 @@
 import SwiftUI
 
 struct PocketListView: View {
+    @Environment(ExpenseStore.self) private var expenseStore
+
     private let isProUser = false
 
-    private let pockets: [Pocket] = [
-        .init(id: 1, name: "生活費", amountYen: 84_360, count: 7, color: .green),
-        .init(id: 2, name: "旅行", amountYen: 26_800, count: 2, color: .orange),
-    ]
+    @State private var selectedPocketID: UUID = PocketCatalog.pockets[0].id
 
-    @State private var selectedPocketID: Int = 1
+    private var pockets: [PocketItem] {
+        PocketCatalog.pockets
+    }
 
-    private var selectedPocket: Pocket {
+    private var selectedPocket: PocketItem {
         pockets.first(where: { $0.id == selectedPocketID }) ?? pockets[0]
     }
 
-    private var remainingPockets: [Pocket] {
+    private var remainingPockets: [PocketItem] {
         pockets.filter { $0.id != selectedPocket.id }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                if expenseStore.expenses.isEmpty {
+                    Text("No expenses yet")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
                 NavigationLink {
                     PocketDetailView(pocket: selectedPocket)
                 } label: {
@@ -66,8 +73,11 @@ struct PocketListView: View {
         .padding(.bottom, 10)
     }
 
-    private func selectedPocketCard(pocket: Pocket) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private func selectedPocketCard(pocket: PocketItem) -> some View {
+        let pocketExpenses = expenses(for: pocket.id)
+        let total = pocketExpenses.reduce(0) { $0 + $1.amount }
+
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(pocket.name)
                     .font(.title3.weight(.semibold))
@@ -81,14 +91,14 @@ struct PocketListView: View {
                 Text("This month")
                     .font(.caption)
                     .opacity(0.85)
-                Text(formatYen(pocket.amountYen))
+                Text(formatYen(total))
                     .font(.system(size: 32, weight: .bold, design: .rounded))
             }
 
             HStack {
-                Text("\(pocket.count) tx")
+                Text("\(pocketExpenses.count) tx")
                 Spacer()
-                Text("A → B \(formatYen(3_000))")
+                Text(" ")
             }
             .font(.subheadline)
             .opacity(0.9)
@@ -100,12 +110,14 @@ struct PocketListView: View {
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
 
-    private func smallPocketCard(pocket: Pocket) -> some View {
-        HStack {
+    private func smallPocketCard(pocket: PocketItem) -> some View {
+        let total = expenses(for: pocket.id).reduce(0) { $0 + $1.amount }
+
+        return HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(pocket.name)
                     .font(.headline)
-                Text(formatYen(pocket.amountYen))
+                Text(formatYen(total))
                     .font(.subheadline)
                     .opacity(0.9)
             }
@@ -144,6 +156,10 @@ struct PocketListView: View {
         .opacity(isProUser ? 0 : 1)
     }
 
+    private func expenses(for pocketId: UUID) -> [Expense] {
+        expenseStore.expenses.filter { $0.pocketId == pocketId }
+    }
+
     private func formatYen(_ amount: Int) -> String {
         let formatter = NumberFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
@@ -153,8 +169,23 @@ struct PocketListView: View {
     }
 }
 
+struct PocketItem: Identifiable, Hashable {
+    let id: UUID
+    let name: String
+    let color: Color
+}
+
+private enum PocketCatalog {
+    static let pockets: [PocketItem] = [
+        .init(id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!, name: "生活費", color: .green),
+        .init(id: UUID(uuidString: "0B51A05D-934F-4F02-BFE5-6CBA8AFBA761")!, name: "旅行", color: .orange),
+        .init(id: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!, name: "家賃", color: .purple),
+    ]
+}
+
 #Preview {
     NavigationStack {
         PocketListView()
+            .environment(ExpenseStore())
     }
 }
