@@ -3,10 +3,12 @@ import Foundation
 public struct SettlementSummary: Codable, Hashable {
     public var periodStart: Date
     public var periodEnd: Date
-    public var totalAmount: Int
+    public var totalSpent: Int
+    public var totalDeposited: Int
+    public var currentBalance: Int
     public var expenseCount: Int
-    public var totalPaidA: Int
-    public var totalPaidB: Int
+    public var totalPersonalPaidMe: Int
+    public var totalPersonalPaidPartner: Int
     public var totalShouldPayA: Int
     public var totalShouldPayB: Int
     public var settlementPayer: MemberRole?
@@ -16,10 +18,12 @@ public struct SettlementSummary: Codable, Hashable {
     public init(
         periodStart: Date,
         periodEnd: Date,
-        totalAmount: Int,
+        totalSpent: Int,
+        totalDeposited: Int,
+        currentBalance: Int,
         expenseCount: Int,
-        totalPaidA: Int,
-        totalPaidB: Int,
+        totalPersonalPaidMe: Int,
+        totalPersonalPaidPartner: Int,
         totalShouldPayA: Int,
         totalShouldPayB: Int,
         settlementPayer: MemberRole?,
@@ -28,10 +32,12 @@ public struct SettlementSummary: Codable, Hashable {
     ) {
         self.periodStart = periodStart
         self.periodEnd = periodEnd
-        self.totalAmount = totalAmount
+        self.totalSpent = totalSpent
+        self.totalDeposited = totalDeposited
+        self.currentBalance = currentBalance
         self.expenseCount = expenseCount
-        self.totalPaidA = totalPaidA
-        self.totalPaidB = totalPaidB
+        self.totalPersonalPaidMe = totalPersonalPaidMe
+        self.totalPersonalPaidPartner = totalPersonalPaidPartner
         self.totalShouldPayA = totalShouldPayA
         self.totalShouldPayB = totalShouldPayB
         self.settlementPayer = settlementPayer
@@ -41,72 +47,92 @@ public struct SettlementSummary: Codable, Hashable {
 }
 
 public enum SettlementCalculator {
-    public static func calculate(expenses: [Expense]) -> SettlementSummary {
-        let unsettledExpenses = expenses.filter { !$0.isSettled }
+    public static func calculate(entries: [PocketEntry]) -> SettlementSummary {
+        let unsettledEntries = entries.filter { !$0.isSettled }
+        let unsettledExpenses = unsettledEntries.filter { $0.type == .expense }
+        let unsettledDeposits = unsettledEntries.filter { $0.type == .deposit }
 
-        var totalAmount = 0
-        var totalPaidA = 0
-        var totalPaidB = 0
+        var totalSpent = 0
+        var totalDeposited = 0
+        var currentBalance = 0
+        var totalPaidMe = 0
+        var totalPaidPartner = 0
         var totalShouldPayA = 0
         var totalShouldPayB = 0
 
+        for deposit in unsettledDeposits where deposit.paymentSource == .pocket {
+            totalDeposited += deposit.amount
+            currentBalance += deposit.amount
+        }
+
         for expense in unsettledExpenses {
-            totalAmount += expense.amount
+            totalSpent += expense.amount
 
             // Rounding rule (JPY Int):
             // shouldPayA = amount * ratioA / 100 (integer division, floor)
             // shouldPayB = amount - shouldPayA
             // This guarantees shouldPayA + shouldPayB == amount.
-            let shouldPayA = expense.amount * expense.ratioA / 100
-            let shouldPayB = expense.amount - shouldPayA
+            if expense.paymentSource == .memberA || expense.paymentSource == .memberB {
+                let shouldPayA = expense.amount * expense.ratioA / 100
+                let shouldPayB = expense.amount - shouldPayA
 
-            totalShouldPayA += shouldPayA
-            totalShouldPayB += shouldPayB
+                totalShouldPayA += shouldPayA
+                totalShouldPayB += shouldPayB
+            }
 
-            if expense.payerRole == .a {
-                totalPaidA += expense.amount
-            } else {
-                totalPaidB += expense.amount
+            switch expense.paymentSource {
+            case .memberA:
+                totalPaidMe += expense.amount
+            case .memberB:
+                totalPaidPartner += expense.amount
+            case .pocket:
+                currentBalance -= expense.amount
             }
         }
 
-        let netA = totalPaidA - totalShouldPayA
-        let netB = totalPaidB - totalShouldPayB
+        let netMe = totalPaidMe - totalShouldPayA
+        let netPartner = totalPaidPartner - totalShouldPayB
 
         let settlementPayer: MemberRole?
         let settlementReceiver: MemberRole?
         let settlementAmount: Int
 
-        if netA > 0 {
-            settlementPayer = .b
-            settlementReceiver = .a
-            settlementAmount = netA
-        } else if netB > 0 {
-            settlementPayer = .a
-            settlementReceiver = .b
-            settlementAmount = netB
+        if netMe > 0 {
+            settlementPayer = .memberB
+            settlementReceiver = .memberA
+            settlementAmount = netMe
+        } else if netPartner > 0 {
+            settlementPayer = .memberA
+            settlementReceiver = .memberB
+            settlementAmount = netPartner
         } else {
             settlementPayer = nil
             settlementReceiver = nil
             settlementAmount = 0
         }
 
-        let periodStart = unsettledExpenses.map(\.date).min() ?? Date.distantPast
-        let periodEnd = unsettledExpenses.map(\.date).max() ?? Date.distantPast
+        let periodStart = unsettledEntries.map(\.date).min() ?? Date.distantPast
+        let periodEnd = unsettledEntries.map(\.date).max() ?? Date.distantPast
 
         return SettlementSummary(
             periodStart: periodStart,
             periodEnd: periodEnd,
-            totalAmount: totalAmount,
+            totalSpent: totalSpent,
+            totalDeposited: totalDeposited,
+            currentBalance: currentBalance,
             expenseCount: unsettledExpenses.count,
-            totalPaidA: totalPaidA,
-            totalPaidB: totalPaidB,
+            totalPersonalPaidMe: totalPaidMe,
+            totalPersonalPaidPartner: totalPaidPartner,
             totalShouldPayA: totalShouldPayA,
             totalShouldPayB: totalShouldPayB,
             settlementPayer: settlementPayer,
             settlementReceiver: settlementReceiver,
             settlementAmount: settlementAmount
         )
+    }
+
+    public static func calculate(expenses: [Expense]) -> SettlementSummary {
+        calculate(entries: expenses)
     }
 
     public static func markExpensesSettled(

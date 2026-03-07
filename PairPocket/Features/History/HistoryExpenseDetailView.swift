@@ -11,7 +11,7 @@ struct HistoryExpenseDetailView: View {
                 detailRow(title: "Date", value: HistoryDetailFormatters.date.string(from: expense.date))
                 detailRow(title: "Pocket", value: pocketName)
                 detailRow(title: "Category", value: categoryName)
-                detailRow(title: "Payer", value: expense.payerRole == .a ? "A" : "B")
+                detailRow(title: "Paid By", value: paymentSourceLabel(expense.paymentSource))
                 detailRow(title: "Amount", value: HistoryDetailFormatters.yen(expense.amount))
             }
 
@@ -39,6 +39,17 @@ struct HistoryExpenseDetailView: View {
                 .multilineTextAlignment(.trailing)
         }
         .font(.subheadline)
+    }
+
+    private func paymentSourceLabel(_ source: PaymentSource) -> String {
+        switch source {
+        case .memberA:
+            return "A"
+        case .memberB:
+            return "B"
+        case .pocket:
+            return "Pocket"
+        }
     }
 }
 

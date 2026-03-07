@@ -8,7 +8,7 @@ struct AddExpenseView: View {
     @State private var selectedPocketID: Int = 0
     @State private var selectedDate = Date()
     @State private var selectedCategoryID: UUID = AddExpenseView.defaultCategoryID
-    @State private var selectedPayer: MemberRole = .a
+    @State private var selectedPaymentSource: PaymentSource = .memberA
     @State private var amountText: String = ""
     @State private var memoText: String = ""
 
@@ -21,7 +21,9 @@ struct AddExpenseView: View {
             name: "生活費",
             color: .green,
             ratioA: 55,
-            ratioB: 45
+            ratioB: 45,
+            sharedBalanceEnabled: false,
+            personalPaymentEnabled: true
         ),
         .init(
             id: 1,
@@ -29,15 +31,19 @@ struct AddExpenseView: View {
             name: "旅行",
             color: .orange,
             ratioA: 50,
-            ratioB: 50
+            ratioB: 50,
+            sharedBalanceEnabled: true,
+            personalPaymentEnabled: true
         ),
         .init(
             id: 2,
             domainId: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!,
-            name: "家賃",
+            name: "住居",
             color: .purple,
             ratioA: 50,
-            ratioB: 50
+            ratioB: 50,
+            sharedBalanceEnabled: true,
+            personalPaymentEnabled: false
         ),
     ]
 
@@ -65,6 +71,21 @@ struct AddExpenseView: View {
         categories.first(where: { $0.id == selectedCategoryID }) ?? categories[0]
     }
 
+    private var availablePaymentSources: [PaymentSource] {
+        var sources: [PaymentSource] = []
+
+        if selectedPocket.personalPaymentEnabled {
+            sources.append(.memberA)
+            sources.append(.memberB)
+        }
+
+        if selectedPocket.sharedBalanceEnabled {
+            sources.append(.pocket)
+        }
+
+        return sources
+    }
+
     private var burdenA: Int {
         amountValue * selectedPocket.ratioA / 100
     }
@@ -90,9 +111,10 @@ struct AddExpenseView: View {
                     .pickerStyle(.menu)
                     .tint(selectedPocket.color)
 
-                    Picker("Payer", selection: $selectedPayer) {
-                        Text("A").tag(MemberRole.a)
-                        Text("B").tag(MemberRole.b)
+                    Picker("Paid By", selection: $selectedPaymentSource) {
+                        ForEach(availablePaymentSources, id: \.self) { source in
+                            Text(paymentSourceLabel(source)).tag(source)
+                        }
                     }
                     .pickerStyle(.segmented)
                     .tint(selectedPocket.color)
@@ -138,7 +160,7 @@ struct AddExpenseView: View {
                         amount: amountValue,
                         date: selectedDate,
                         memo: memoText,
-                        payerRole: selectedPayer,
+                        paymentSource: selectedPaymentSource,
                         ratioA: selectedPocket.ratioA,
                         ratioB: selectedPocket.ratioB,
                         isSettled: false,
@@ -164,6 +186,12 @@ struct AddExpenseView: View {
             }
             .padding()
             .navigationTitle("支出入力")
+            .onAppear {
+                syncSelectedPaymentSource()
+            }
+            .onChange(of: selectedPocketID) { _, _ in
+                syncSelectedPaymentSource()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("閉じる") {
@@ -217,6 +245,23 @@ struct AddExpenseView: View {
         let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
         return "¥\(formatted)"
     }
+
+    private func paymentSourceLabel(_ source: PaymentSource) -> String {
+        switch source {
+        case .memberA:
+            return "A"
+        case .memberB:
+            return "B"
+        case .pocket:
+            return "Pocket"
+        }
+    }
+
+    private func syncSelectedPaymentSource() {
+        if availablePaymentSources.contains(selectedPaymentSource) == false {
+            selectedPaymentSource = availablePaymentSources.first ?? .memberA
+        }
+    }
 }
 
 private struct ExpensePocket: Identifiable {
@@ -226,6 +271,8 @@ private struct ExpensePocket: Identifiable {
     let color: Color
     let ratioA: Int
     let ratioB: Int
+    let sharedBalanceEnabled: Bool
+    let personalPaymentEnabled: Bool
 }
 
 private struct ExpenseCategory: Identifiable {

@@ -98,7 +98,7 @@ struct PocketListView: View {
             HStack {
                 Text("\(pocketExpenses.count) tx")
                 Spacer()
-                Text(" ")
+                Text(pocketModeLabel(for: pocket))
             }
             .font(.subheadline)
             .opacity(0.9)
@@ -167,19 +167,52 @@ struct PocketListView: View {
         let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
         return "¥\(formatted)"
     }
+
+    private func pocketModeLabel(for pocket: PocketItem) -> String {
+        switch (pocket.sharedBalanceEnabled, pocket.personalPaymentEnabled) {
+        case (false, true):
+            return "post-settlement"
+        case (true, true):
+            return "hybrid"
+        case (true, false):
+            return "shared-balance"
+        case (false, false):
+            return "restricted"
+        }
+    }
 }
 
 struct PocketItem: Identifiable, Hashable {
     let id: UUID
     let name: String
     let color: Color
+    let sharedBalanceEnabled: Bool
+    let personalPaymentEnabled: Bool
 }
 
 private enum PocketCatalog {
     static let pockets: [PocketItem] = [
-        .init(id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!, name: "生活費", color: .green),
-        .init(id: UUID(uuidString: "0B51A05D-934F-4F02-BFE5-6CBA8AFBA761")!, name: "旅行", color: .orange),
-        .init(id: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!, name: "家賃", color: .purple),
+        .init(
+            id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
+            name: "生活費",
+            color: .green,
+            sharedBalanceEnabled: false,
+            personalPaymentEnabled: true
+        ),
+        .init(
+            id: UUID(uuidString: "0B51A05D-934F-4F02-BFE5-6CBA8AFBA761")!,
+            name: "旅行",
+            color: .orange,
+            sharedBalanceEnabled: true,
+            personalPaymentEnabled: true
+        ),
+        .init(
+            id: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!,
+            name: "住居",
+            color: .purple,
+            sharedBalanceEnabled: true,
+            personalPaymentEnabled: false
+        ),
     ]
 }
 

@@ -232,8 +232,8 @@ struct HistoryView: View {
             Text("Memo")
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("Payer")
-                .frame(width: 42, alignment: .center)
+            Text("Paid By")
+                .frame(width: 64, alignment: .center)
 
             Text("Amount")
                 .frame(width: 84, alignment: .trailing)
@@ -256,8 +256,8 @@ struct HistoryView: View {
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(payerLabel(expense.payerRole))
-                .frame(width: 42, alignment: .center)
+            Text(paymentSourceLabel(expense.paymentSource))
+                .frame(width: 64, alignment: .center)
 
             Text(HistoryFormatters.yen(expense.amount))
                 .fontDesign(.monospaced)
@@ -267,11 +267,22 @@ struct HistoryView: View {
         .padding(.vertical, 4)
     }
 
-    private func payerLabel(_ role: MemberRole) -> String {
-        role == .a ? "A" : "B"
+    private func paymentSourceLabel(_ source: PaymentSource) -> String {
+        switch source {
+        case .memberA:
+            return "A"
+        case .memberB:
+            return "B"
+        case .pocket:
+            return "Pocket"
+        }
     }
 
-    private func categoryLabel(for categoryId: UUID) -> String {
+    private func categoryLabel(for categoryId: UUID?) -> String {
+        guard let categoryId else {
+            return "입금"
+        }
+
         let category = CategoryCatalog.all.first(where: { $0.id == categoryId })
         return category?.displayName ?? "📦未分類"
     }

@@ -1,10 +1,33 @@
 import Foundation
 
-public struct Expense: Identifiable, Codable, Hashable {
+public enum PaymentSource: String, Codable, Hashable {
+    case memberA
+    case memberB
+    case pocket
+
+    public var memberRole: MemberRole? {
+        switch self {
+        case .memberA:
+            return .memberA
+        case .memberB:
+            return .memberB
+        case .pocket:
+            return nil
+        }
+    }
+}
+
+public enum PocketEntryType: String, Codable, Hashable {
+    case expense
+    case deposit
+}
+
+public struct PocketEntry: Identifiable, Codable, Hashable {
     public var id: UUID
     public var pocketId: UUID
-    public var categoryId: UUID
-    public var payerRole: MemberRole
+    public var type: PocketEntryType
+    public var categoryId: UUID?
+    public var paymentSource: PaymentSource
     public var amount: Int
     public var ratioA: Int
     public var ratioB: Int
@@ -19,11 +42,12 @@ public struct Expense: Identifiable, Codable, Hashable {
     public init(
         id: UUID = UUID(),
         pocketId: UUID,
-        categoryId: UUID,
-        payerRole: MemberRole = .a,
+        type: PocketEntryType = .expense,
+        categoryId: UUID? = nil,
+        paymentSource: PaymentSource,
         amount: Int,
-        ratioA: Int,
-        ratioB: Int,
+        ratioA: Int = 0,
+        ratioB: Int = 0,
         memo: String? = nil,
         date: Date,
         createdAt: Date = Date(),
@@ -33,8 +57,9 @@ public struct Expense: Identifiable, Codable, Hashable {
     ) {
         self.id = id
         self.pocketId = pocketId
+        self.type = type
         self.categoryId = categoryId
-        self.payerRole = payerRole
+        self.paymentSource = paymentSource
         self.amount = amount
         self.ratioA = ratioA
         self.ratioB = ratioB
@@ -46,3 +71,5 @@ public struct Expense: Identifiable, Codable, Hashable {
         self.settledAt = settledAt
     }
 }
+
+public typealias Expense = PocketEntry

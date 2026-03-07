@@ -11,7 +11,7 @@ public struct Settlement: Identifiable, Codable, Hashable {
     public var pocketId: UUID?
     public var periodStart: Date
     public var periodEnd: Date
-    public var payerRole: MemberRole
+    public var payer: MemberRole
     public var amount: Int
     public var expenseCount: Int
     public var createdAt: Date
@@ -24,7 +24,7 @@ public struct Settlement: Identifiable, Codable, Hashable {
         pocketId: UUID? = nil,
         periodStart: Date,
         periodEnd: Date,
-        payerRole: MemberRole,
+        payer: MemberRole,
         amount: Int,
         expenseCount: Int,
         createdAt: Date = Date()
@@ -34,7 +34,7 @@ public struct Settlement: Identifiable, Codable, Hashable {
         self.pocketId = pocketId
         self.periodStart = periodStart
         self.periodEnd = periodEnd
-        self.payerRole = payerRole
+        self.payer = payer
         self.amount = amount
         self.expenseCount = expenseCount
         self.createdAt = createdAt

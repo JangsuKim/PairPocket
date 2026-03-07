@@ -17,13 +17,13 @@ struct PocketDetailView: View {
 
     private var paidByA: Int {
         pocketExpenses
-            .filter { $0.payerRole == .a }
+            .filter { $0.payerRole == .memberA }
             .reduce(0) { $0 + $1.amount }
     }
 
     private var paidByB: Int {
         pocketExpenses
-            .filter { $0.payerRole == .b }
+            .filter { $0.payerRole == .memberB }
             .reduce(0) { $0 + $1.amount }
     }
 
@@ -118,7 +118,15 @@ struct PocketDetailView: View {
 
 #Preview {
     NavigationStack {
-        PocketDetailView(pocket: .init(id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!, name: "生活費", color: .green))
+        PocketDetailView(
+            pocket: .init(
+                id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
+                name: "生活費",
+                color: .green,
+                sharedBalanceEnabled: false,
+                personalPaymentEnabled: true
+            )
+        )
             .environment(ExpenseStore())
     }
 }
