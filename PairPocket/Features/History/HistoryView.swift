@@ -14,11 +14,11 @@ struct HistoryView: View {
             pocketFilterTabs
             modeSwitcher
 
-            if filteredExpenses.isEmpty {
-                emptyState
+            if selectedMode == .calendar {
+                calendarModeContent
             } else {
-                if selectedMode == .calendar {
-                    calendarModeContent
+                if filteredExpenses.isEmpty {
+                    emptyState
                 } else {
                     expenseTable(expenses: filteredExpenses)
                 }
@@ -116,6 +116,7 @@ struct HistoryView: View {
                 expenseTable(expenses: selectedDateExpenses)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var monthHeader: some View {
@@ -203,7 +204,16 @@ struct HistoryView: View {
                 tableHeader
 
                 ForEach(expenses, id: \.id) { expense in
-                    expenseRow(expense)
+                    NavigationLink {
+                        HistoryExpenseDetailView(
+                            expense: expense,
+                            pocketName: pocketLabel(for: expense.pocketId),
+                            categoryName: categoryLabel(for: expense.categoryId)
+                        )
+                    } label: {
+                        expenseRow(expense)
+                    }
+                    .buttonStyle(.plain)
                     Divider()
                 }
             }
@@ -264,6 +274,11 @@ struct HistoryView: View {
     private func categoryLabel(for categoryId: UUID) -> String {
         let category = CategoryCatalog.all.first(where: { $0.id == categoryId })
         return category?.displayName ?? "📦未分類"
+    }
+
+    private func pocketLabel(for pocketId: UUID) -> String {
+        let pocket = PocketCatalog.all.first(where: { $0.id == pocketId })
+        return pocket?.name ?? "未分類"
     }
 }
 
