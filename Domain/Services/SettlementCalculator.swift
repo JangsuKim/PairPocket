@@ -3,12 +3,14 @@ import Foundation
 public struct SettlementSummary: Codable, Hashable {
     public var periodStart: Date
     public var periodEnd: Date
-    public var totalAmount: Int
+    public var totalSpent: Int
+    public var totalDeposited: Int
+    public var currentBalance: Int
     public var expenseCount: Int
-    public var totalPaidA: Int
-    public var totalPaidB: Int
-    public var totalShouldPayA: Int
-    public var totalShouldPayB: Int
+    public var totalPaidByMemberA: Int
+    public var totalPaidByMemberB: Int
+    public var totalShareOfMemberA: Int
+    public var totalShareOfMemberB: Int
     public var settlementPayer: MemberRole?
     public var settlementReceiver: MemberRole?
     public var settlementAmount: Int
@@ -16,24 +18,28 @@ public struct SettlementSummary: Codable, Hashable {
     public init(
         periodStart: Date,
         periodEnd: Date,
-        totalAmount: Int,
+        totalSpent: Int,
+        totalDeposited: Int,
+        currentBalance: Int,
         expenseCount: Int,
-        totalPaidA: Int,
-        totalPaidB: Int,
-        totalShouldPayA: Int,
-        totalShouldPayB: Int,
+        totalPaidByMemberA: Int,
+        totalPaidByMemberB: Int,
+        totalShareOfMemberA: Int,
+        totalShareOfMemberB: Int,
         settlementPayer: MemberRole?,
         settlementReceiver: MemberRole?,
         settlementAmount: Int
     ) {
         self.periodStart = periodStart
         self.periodEnd = periodEnd
-        self.totalAmount = totalAmount
+        self.totalSpent = totalSpent
+        self.totalDeposited = totalDeposited
+        self.currentBalance = currentBalance
         self.expenseCount = expenseCount
-        self.totalPaidA = totalPaidA
-        self.totalPaidB = totalPaidB
-        self.totalShouldPayA = totalShouldPayA
-        self.totalShouldPayB = totalShouldPayB
+        self.totalPaidByMemberA = totalPaidByMemberA
+        self.totalPaidByMemberB = totalPaidByMemberB
+        self.totalShareOfMemberA = totalShareOfMemberA
+        self.totalShareOfMemberB = totalShareOfMemberB
         self.settlementPayer = settlementPayer
         self.settlementReceiver = settlementReceiver
         self.settlementAmount = settlementAmount
@@ -41,72 +47,92 @@ public struct SettlementSummary: Codable, Hashable {
 }
 
 public enum SettlementCalculator {
-    public static func calculate(expenses: [Expense]) -> SettlementSummary {
-        let unsettledExpenses = expenses.filter { !$0.isSettled }
+    public static func calculate(entries: [PocketEntry]) -> SettlementSummary {
+        let unsettledEntries = entries.filter { !$0.isSettled }
+        let unsettledExpenses = unsettledEntries.filter { $0.type == .expense }
+        let unsettledDeposits = unsettledEntries.filter { $0.type == .deposit }
 
-        var totalAmount = 0
-        var totalPaidA = 0
-        var totalPaidB = 0
-        var totalShouldPayA = 0
-        var totalShouldPayB = 0
+        var totalSpent = 0
+        var totalDeposited = 0
+        var currentBalance = 0
+        var totalPaidByMemberA = 0
+        var totalPaidByMemberB = 0
+        var totalShareOfMemberA = 0
+        var totalShareOfMemberB = 0
+
+        for deposit in unsettledDeposits {
+            totalDeposited += deposit.amount
+            currentBalance += deposit.amount
+        }
 
         for expense in unsettledExpenses {
-            totalAmount += expense.amount
+            totalSpent += expense.amount
 
             // Rounding rule (JPY Int):
             // shouldPayA = amount * ratioA / 100 (integer division, floor)
             // shouldPayB = amount - shouldPayA
             // This guarantees shouldPayA + shouldPayB == amount.
-            let shouldPayA = expense.amount * expense.ratioA / 100
-            let shouldPayB = expense.amount - shouldPayA
+            if expense.paymentSource == .memberA || expense.paymentSource == .memberB {
+                let shareOfMemberA = expense.amount * expense.ratioA / 100
+                let shareOfMemberB = expense.amount - shareOfMemberA
 
-            totalShouldPayA += shouldPayA
-            totalShouldPayB += shouldPayB
+                totalShareOfMemberA += shareOfMemberA
+                totalShareOfMemberB += shareOfMemberB
+            }
 
-            if expense.payerRole == .a {
-                totalPaidA += expense.amount
-            } else {
-                totalPaidB += expense.amount
+            switch expense.paymentSource {
+            case .memberA:
+                totalPaidByMemberA += expense.amount
+            case .memberB:
+                totalPaidByMemberB += expense.amount
+            case .pocket:
+                currentBalance -= expense.amount
             }
         }
 
-        let netA = totalPaidA - totalShouldPayA
-        let netB = totalPaidB - totalShouldPayB
+        let netBalanceOfMemberA = totalPaidByMemberA - totalShareOfMemberA
+        let netBalanceOfMemberB = totalPaidByMemberB - totalShareOfMemberB
 
         let settlementPayer: MemberRole?
         let settlementReceiver: MemberRole?
         let settlementAmount: Int
 
-        if netA > 0 {
-            settlementPayer = .b
-            settlementReceiver = .a
-            settlementAmount = netA
-        } else if netB > 0 {
-            settlementPayer = .a
-            settlementReceiver = .b
-            settlementAmount = netB
+        if netBalanceOfMemberA > 0 {
+            settlementPayer = .memberB
+            settlementReceiver = .memberA
+            settlementAmount = netBalanceOfMemberA
+        } else if netBalanceOfMemberB > 0 {
+            settlementPayer = .memberA
+            settlementReceiver = .memberB
+            settlementAmount = netBalanceOfMemberB
         } else {
             settlementPayer = nil
             settlementReceiver = nil
             settlementAmount = 0
         }
 
-        let periodStart = unsettledExpenses.map(\.date).min() ?? Date.distantPast
-        let periodEnd = unsettledExpenses.map(\.date).max() ?? Date.distantPast
+        let periodStart = unsettledEntries.map(\.date).min() ?? Date.distantPast
+        let periodEnd = unsettledEntries.map(\.date).max() ?? Date.distantPast
 
         return SettlementSummary(
             periodStart: periodStart,
             periodEnd: periodEnd,
-            totalAmount: totalAmount,
+            totalSpent: totalSpent,
+            totalDeposited: totalDeposited,
+            currentBalance: currentBalance,
             expenseCount: unsettledExpenses.count,
-            totalPaidA: totalPaidA,
-            totalPaidB: totalPaidB,
-            totalShouldPayA: totalShouldPayA,
-            totalShouldPayB: totalShouldPayB,
+            totalPaidByMemberA: totalPaidByMemberA,
+            totalPaidByMemberB: totalPaidByMemberB,
+            totalShareOfMemberA: totalShareOfMemberA,
+            totalShareOfMemberB: totalShareOfMemberB,
             settlementPayer: settlementPayer,
             settlementReceiver: settlementReceiver,
             settlementAmount: settlementAmount
         )
+    }
+
+    public static func calculate(expenses: [Expense]) -> SettlementSummary {
+        calculate(entries: expenses)
     }
 
     public static func markExpensesSettled(
