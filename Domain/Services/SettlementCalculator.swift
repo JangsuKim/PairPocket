@@ -7,10 +7,10 @@ public struct SettlementSummary: Codable, Hashable {
     public var totalDeposited: Int
     public var currentBalance: Int
     public var expenseCount: Int
-    public var totalPersonalPaidMe: Int
-    public var totalPersonalPaidPartner: Int
-    public var totalShouldPayA: Int
-    public var totalShouldPayB: Int
+    public var totalPaidByMemberA: Int
+    public var totalPaidByMemberB: Int
+    public var totalShareOfMemberA: Int
+    public var totalShareOfMemberB: Int
     public var settlementPayer: MemberRole?
     public var settlementReceiver: MemberRole?
     public var settlementAmount: Int
@@ -22,10 +22,10 @@ public struct SettlementSummary: Codable, Hashable {
         totalDeposited: Int,
         currentBalance: Int,
         expenseCount: Int,
-        totalPersonalPaidMe: Int,
-        totalPersonalPaidPartner: Int,
-        totalShouldPayA: Int,
-        totalShouldPayB: Int,
+        totalPaidByMemberA: Int,
+        totalPaidByMemberB: Int,
+        totalShareOfMemberA: Int,
+        totalShareOfMemberB: Int,
         settlementPayer: MemberRole?,
         settlementReceiver: MemberRole?,
         settlementAmount: Int
@@ -36,10 +36,10 @@ public struct SettlementSummary: Codable, Hashable {
         self.totalDeposited = totalDeposited
         self.currentBalance = currentBalance
         self.expenseCount = expenseCount
-        self.totalPersonalPaidMe = totalPersonalPaidMe
-        self.totalPersonalPaidPartner = totalPersonalPaidPartner
-        self.totalShouldPayA = totalShouldPayA
-        self.totalShouldPayB = totalShouldPayB
+        self.totalPaidByMemberA = totalPaidByMemberA
+        self.totalPaidByMemberB = totalPaidByMemberB
+        self.totalShareOfMemberA = totalShareOfMemberA
+        self.totalShareOfMemberB = totalShareOfMemberB
         self.settlementPayer = settlementPayer
         self.settlementReceiver = settlementReceiver
         self.settlementAmount = settlementAmount
@@ -55,12 +55,12 @@ public enum SettlementCalculator {
         var totalSpent = 0
         var totalDeposited = 0
         var currentBalance = 0
-        var totalPaidMe = 0
-        var totalPaidPartner = 0
-        var totalShouldPayA = 0
-        var totalShouldPayB = 0
+        var totalPaidByMemberA = 0
+        var totalPaidByMemberB = 0
+        var totalShareOfMemberA = 0
+        var totalShareOfMemberB = 0
 
-        for deposit in unsettledDeposits where deposit.paymentSource == .pocket {
+        for deposit in unsettledDeposits {
             totalDeposited += deposit.amount
             currentBalance += deposit.amount
         }
@@ -73,38 +73,38 @@ public enum SettlementCalculator {
             // shouldPayB = amount - shouldPayA
             // This guarantees shouldPayA + shouldPayB == amount.
             if expense.paymentSource == .memberA || expense.paymentSource == .memberB {
-                let shouldPayA = expense.amount * expense.ratioA / 100
-                let shouldPayB = expense.amount - shouldPayA
+                let shareOfMemberA = expense.amount * expense.ratioA / 100
+                let shareOfMemberB = expense.amount - shareOfMemberA
 
-                totalShouldPayA += shouldPayA
-                totalShouldPayB += shouldPayB
+                totalShareOfMemberA += shareOfMemberA
+                totalShareOfMemberB += shareOfMemberB
             }
 
             switch expense.paymentSource {
             case .memberA:
-                totalPaidMe += expense.amount
+                totalPaidByMemberA += expense.amount
             case .memberB:
-                totalPaidPartner += expense.amount
+                totalPaidByMemberB += expense.amount
             case .pocket:
                 currentBalance -= expense.amount
             }
         }
 
-        let netMe = totalPaidMe - totalShouldPayA
-        let netPartner = totalPaidPartner - totalShouldPayB
+        let netBalanceOfMemberA = totalPaidByMemberA - totalShareOfMemberA
+        let netBalanceOfMemberB = totalPaidByMemberB - totalShareOfMemberB
 
         let settlementPayer: MemberRole?
         let settlementReceiver: MemberRole?
         let settlementAmount: Int
 
-        if netMe > 0 {
+        if netBalanceOfMemberA > 0 {
             settlementPayer = .memberB
             settlementReceiver = .memberA
-            settlementAmount = netMe
-        } else if netPartner > 0 {
+            settlementAmount = netBalanceOfMemberA
+        } else if netBalanceOfMemberB > 0 {
             settlementPayer = .memberA
             settlementReceiver = .memberB
-            settlementAmount = netPartner
+            settlementAmount = netBalanceOfMemberB
         } else {
             settlementPayer = nil
             settlementReceiver = nil
@@ -121,10 +121,10 @@ public enum SettlementCalculator {
             totalDeposited: totalDeposited,
             currentBalance: currentBalance,
             expenseCount: unsettledExpenses.count,
-            totalPersonalPaidMe: totalPaidMe,
-            totalPersonalPaidPartner: totalPaidPartner,
-            totalShouldPayA: totalShouldPayA,
-            totalShouldPayB: totalShouldPayB,
+            totalPaidByMemberA: totalPaidByMemberA,
+            totalPaidByMemberB: totalPaidByMemberB,
+            totalShareOfMemberA: totalShareOfMemberA,
+            totalShareOfMemberB: totalShareOfMemberB,
             settlementPayer: settlementPayer,
             settlementReceiver: settlementReceiver,
             settlementAmount: settlementAmount

@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7A0D00012F60000100AA0001 /* Member.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599F06942F58144D00CC930E /* Member.swift */; };
+		7A0D00022F60000100AA0001 /* Pocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599F06952F58144D00CC930E /* Pocket.swift */; };
+		7A0D00032F60000100AA0001 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599F06962F58144D00CC930E /* Category.swift */; };
+		7A0D00042F60000100AA0001 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599F06972F58144D00CC930E /* Expense.swift */; };
+		7A0D00052F60000100AA0001 /* Settlement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599F06992F581AC300CC930E /* Settlement.swift */; };
+		7A0D00062F60000100AA0001 /* SettlementCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599F069A2F581AC300CC930E /* SettlementCalculator.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		596D660B2F55887F00A15A0F /* PairPocket.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PairPocket.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		599F06942F58144D00CC930E /* Member.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Member.swift; sourceTree = "<group>"; };
@@ -155,6 +164,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7A0D00032F60000100AA0001 /* Category.swift in Sources */,
+				7A0D00042F60000100AA0001 /* Expense.swift in Sources */,
+				7A0D00012F60000100AA0001 /* Member.swift in Sources */,
+				7A0D00022F60000100AA0001 /* Pocket.swift in Sources */,
+				7A0D00052F60000100AA0001 /* Settlement.swift in Sources */,
+				7A0D00062F60000100AA0001 /* SettlementCalculator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

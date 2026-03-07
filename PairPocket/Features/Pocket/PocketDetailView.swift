@@ -17,13 +17,13 @@ struct PocketDetailView: View {
 
     private var paidByA: Int {
         pocketExpenses
-            .filter { $0.payerRole == .memberA }
+            .filter { $0.paymentSource == .memberA }
             .reduce(0) { $0 + $1.amount }
     }
 
     private var paidByB: Int {
         pocketExpenses
-            .filter { $0.payerRole == .memberB }
+            .filter { $0.paymentSource == .memberB }
             .reduce(0) { $0 + $1.amount }
     }
 

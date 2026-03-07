@@ -19,7 +19,11 @@ final class ExpenseRecord {
 
     var entryType: PocketEntryType {
         get {
-            PocketEntryType(rawValue: entryTypeRaw) ?? .expense
+            guard let entryType = PocketEntryType(rawValue: entryTypeRaw) else {
+                preconditionFailure("Unsupported entryTypeRaw: \(entryTypeRaw)")
+            }
+
+            return entryType
         }
         set {
             entryTypeRaw = newValue.rawValue
@@ -28,19 +32,14 @@ final class ExpenseRecord {
 
     var paymentSource: PaymentSource {
         get {
-            PaymentSource(storageValue: paymentSourceRaw)
+            guard let paymentSource = PaymentSource(rawValue: paymentSourceRaw) else {
+                preconditionFailure("Unsupported paymentSourceRaw: \(paymentSourceRaw)")
+            }
+
+            return paymentSource
         }
         set {
             paymentSourceRaw = newValue.rawValue
-        }
-    }
-
-    var payerRole: MemberRole {
-        get {
-            paymentSource.payerRole ?? .memberA
-        }
-        set {
-            paymentSource = newValue == .memberA ? .memberA : .memberB
         }
     }
 
@@ -106,31 +105,40 @@ final class ExpenseRecord {
         )
     }
 
-    convenience init(
-        id: UUID = UUID(),
-        pocketId: UUID,
-        categoryId: UUID,
-        amount: Int,
-        date: Date,
-        memo: String = "",
-        payerRole: MemberRole,
-        ratioA: Int,
-        ratioB: Int,
-        isSettled: Bool = false,
-        settlementId: UUID? = nil,
-        settledAt: Date? = nil
-    ) {
+}
+
+extension ExpenseRecord {
+    convenience init(entry: PocketEntry) {
         self.init(
+            id: entry.id,
+            pocketId: entry.pocketId,
+            entryType: entry.type,
+            categoryId: entry.categoryId,
+            amount: entry.amount,
+            date: entry.date,
+            memo: entry.memo ?? "",
+            paymentSource: entry.paymentSource,
+            ratioA: entry.ratioA,
+            ratioB: entry.ratioB,
+            isSettled: entry.isSettled,
+            settlementId: entry.settlementId,
+            settledAt: entry.settledAt
+        )
+    }
+
+    var pocketEntry: PocketEntry {
+        PocketEntry(
             id: id,
             pocketId: pocketId,
-            entryType: .expense,
+            type: entryType,
             categoryId: categoryId,
+            paymentSource: paymentSource,
             amount: amount,
-            date: date,
-            memo: memo,
-            paymentSource: payerRole == .memberA ? .memberA : .memberB,
             ratioA: ratioA,
             ratioB: ratioB,
+            memo: memo.isEmpty ? nil : memo,
+            date: date,
+            createdAt: date,
             isSettled: isSettled,
             settlementId: settlementId,
             settledAt: settledAt
