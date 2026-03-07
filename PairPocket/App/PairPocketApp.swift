@@ -11,11 +11,13 @@ import SwiftData
 @main
 struct PairPocketApp: App {
     @State private var expenseStore = ExpenseStore()
+    @State private var pocketStore = PocketStore()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(expenseStore)
+                .environment(pocketStore)
         }
         // SwiftData schema changed. 개발 중에는 시뮬레이터에서 앱 삭제 후 재설치해 저장소를 재생성하세요.
         .modelContainer(for: [ExpenseRecord.self])

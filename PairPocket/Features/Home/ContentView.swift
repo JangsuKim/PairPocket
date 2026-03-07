@@ -8,22 +8,22 @@ struct ContentView: View {
             NavigationStack {
                 HomeView()
             }
-            .tabItem { Label("Home", systemImage: "house") }
+            .tabItem { Label("ホーム", systemImage: "house") }
 
             NavigationStack {
                 PocketListView()
             }
-            .tabItem { Label("Pocket", systemImage: "wallet.pass") }
+            .tabItem { Label("ポケット", systemImage: "wallet.pass") }
 
             NavigationStack {
                 HistoryView()
             }
-            .tabItem { Label("History", systemImage: "clock") }
+            .tabItem { Label("履歴", systemImage: "clock") }
 
             NavigationStack {
                 SettingsView()
             }
-            .tabItem { Label("Settings", systemImage: "gearshape") }
+            .tabItem { Label("設定", systemImage: "gearshape") }
         }
         .overlay(alignment: .bottomTrailing) {
             Button {
@@ -39,7 +39,7 @@ struct ContentView: View {
             }
             .padding(.trailing, 20)
             .padding(.bottom, 72)
-            .accessibilityLabel("Add")
+            .accessibilityLabel("追加")
         }
         .sheet(isPresented: $showAddExpense) {
             AddExpenseView()

@@ -11,6 +11,7 @@ struct AddExpenseView: View {
     @State private var selectedPaymentSource: PaymentSource = .memberA
     @State private var amountText: String = ""
     @State private var memoText: String = ""
+    @State private var saveErrorMessage: String?
 
     private static let defaultCategoryID = UUID(uuidString: "A1F1EAF5-0F59-4A33-B5B6-3A1F8F8B3B01")!
 
@@ -100,10 +101,10 @@ struct AddExpenseView: View {
                 pocketTabs
 
                 VStack(alignment: .leading, spacing: 14) {
-                    DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
+                    DatePicker("日付", selection: $selectedDate, displayedComponents: .date)
                         .datePickerStyle(.compact)
 
-                    Picker("Category", selection: $selectedCategoryID) {
+                    Picker("カテゴリ", selection: $selectedCategoryID) {
                         ForEach(categories) { category in
                             Text(category.name).tag(category.id)
                         }
@@ -111,7 +112,7 @@ struct AddExpenseView: View {
                     .pickerStyle(.menu)
                     .tint(selectedPocket.color)
 
-                    Picker("Paid By", selection: $selectedPaymentSource) {
+                    Picker("支払元", selection: $selectedPaymentSource) {
                         ForEach(availablePaymentSources, id: \.self) { source in
                             Text(paymentSourceLabel(source)).tag(source)
                         }
@@ -120,7 +121,7 @@ struct AddExpenseView: View {
                     .tint(selectedPocket.color)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Amount")
+                        Text("金額")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
@@ -147,7 +148,7 @@ struct AddExpenseView: View {
                         .foregroundStyle(.secondary)
                     }
 
-                    TextField("Memo", text: $memoText)
+                    TextField("メモ", text: $memoText)
                         .textFieldStyle(.roundedBorder)
                 }
 
@@ -169,10 +170,16 @@ struct AddExpenseView: View {
                     )
 
                     modelContext.insert(record)
-                    try? modelContext.save()
-                    dismiss()
+
+                    do {
+                        try modelContext.save()
+                        dismiss()
+                    } catch {
+                        modelContext.delete(record)
+                        saveErrorMessage = error.localizedDescription
+                    }
                 } label: {
-                    Text("Add")
+                    Text("追加")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -191,6 +198,13 @@ struct AddExpenseView: View {
             }
             .onChange(of: selectedPocketID) { _, _ in
                 syncSelectedPaymentSource()
+            }
+            .alert("保存に失敗しました", isPresented: saveErrorMessageAlertBinding) {
+                Button("確認", role: .cancel) {
+                    saveErrorMessage = nil
+                }
+            } message: {
+                Text(saveErrorMessage ?? "不明なエラーが発生しました。")
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -253,7 +267,7 @@ struct AddExpenseView: View {
         case .memberB:
             return "B"
         case .pocket:
-            return "Pocket"
+            return "ポケット"
         }
     }
 
@@ -261,6 +275,17 @@ struct AddExpenseView: View {
         if availablePaymentSources.contains(selectedPaymentSource) == false {
             selectedPaymentSource = availablePaymentSources.first ?? .memberA
         }
+    }
+
+    private var saveErrorMessageAlertBinding: Binding<Bool> {
+        Binding(
+            get: { saveErrorMessage != nil },
+            set: { isPresented in
+                if isPresented == false {
+                    saveErrorMessage = nil
+                }
+            }
+        )
     }
 }
 

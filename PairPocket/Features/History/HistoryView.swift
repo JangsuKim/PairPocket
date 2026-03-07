@@ -55,7 +55,7 @@ struct HistoryView: View {
     private var pocketFilterTabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                filterChip(title: "Total", isSelected: selectedFilter == .total) {
+                filterChip(title: "全体", isSelected: selectedFilter == .total) {
                     selectedFilter = .total
                 }
 
@@ -83,9 +83,9 @@ struct HistoryView: View {
     }
 
     private var modeSwitcher: some View {
-        Picker("Mode", selection: $selectedMode) {
-            Text("Calendar").tag(ViewMode.calendar)
-            Text("List").tag(ViewMode.list)
+        Picker("表示", selection: $selectedMode) {
+            Text("カレンダー").tag(ViewMode.calendar)
+            Text("リスト").tag(ViewMode.list)
         }
         .pickerStyle(.segmented)
     }
@@ -93,7 +93,7 @@ struct HistoryView: View {
     private var emptyState: some View {
         VStack {
             Spacer(minLength: 36)
-            Text("No expenses yet")
+            Text("まだ支出がありません")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer()
@@ -223,19 +223,19 @@ struct HistoryView: View {
 
     private var tableHeader: some View {
         HStack(spacing: 0) {
-            Text("Date")
+            Text("日付")
                 .frame(width: 74, alignment: .leading)
 
-            Text("Category")
+            Text("カテゴリ")
                 .frame(width: 96, alignment: .leading)
 
-            Text("Memo")
+            Text("メモ")
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("Paid By")
+            Text("支払元")
                 .frame(width: 64, alignment: .center)
 
-            Text("Amount")
+            Text("金額")
                 .frame(width: 84, alignment: .trailing)
         }
         .font(.caption2.weight(.semibold))
@@ -274,13 +274,13 @@ struct HistoryView: View {
         case .memberB:
             return "B"
         case .pocket:
-            return "Pocket"
+            return "ポケット"
         }
     }
 
     private func categoryLabel(for categoryId: UUID?) -> String {
         guard let categoryId else {
-            return "입금"
+            return "入金"
         }
 
         let category = CategoryCatalog.all.first(where: { $0.id == categoryId })
