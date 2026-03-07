@@ -1,61 +1,125 @@
 import SwiftUI
+import SwiftData
+
+private struct PocketCardStackLayout: Layout {
+    let cardPeekOffset: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        guard subviews.isEmpty == false else {
+            return .zero
+        }
+
+        let measuredSizes = measuredSizes(for: subviews, proposal: proposal)
+        let maxWidth = measuredSizes.map(\.width).max() ?? 0
+        let totalHeight = measuredSizes.enumerated().reduce(CGFloat.zero) { currentMax, element in
+            let (index, size) = element
+            let originY = CGFloat(index) * cardPeekOffset
+            return max(currentMax, originY + size.height)
+        }
+
+        return CGSize(width: maxWidth, height: totalHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        let childProposal = ProposedViewSize(width: bounds.width, height: nil)
+
+        for (index, subview) in subviews.enumerated() {
+            subview.place(
+                at: CGPoint(x: bounds.minX, y: bounds.minY + CGFloat(index) * cardPeekOffset),
+                anchor: .topLeading,
+                proposal: childProposal
+            )
+        }
+    }
+
+    private func measuredSizes(for subviews: Subviews, proposal: ProposedViewSize) -> [CGSize] {
+        let childProposal = ProposedViewSize(width: proposal.width, height: nil)
+        return subviews.map { $0.sizeThatFits(childProposal) }
+    }
+}
 
 struct PocketListView: View {
+    @Query(sort: \PocketRecord.createdAt, order: .forward) private var pocketRecords: [PocketRecord]
+    @Query private var deletedPocketRecords: [DeletedPocketRecord]
     @Environment(ExpenseStore.self) private var expenseStore
     @Environment(PocketStore.self) private var pocketStore
+    @Environment(\.modelContext) private var modelContext
 
     @State private var isPresentingAddPocket = false
     @State private var editingPocket: Pocket?
+    @State private var selectedPocketID: UUID?
 
-    private var mainPocket: Pocket? {
-        pocketStore.mainPocket
+    private let cardHeight: CGFloat = 190
+    private let cardPeekOffset: CGFloat = 60
+
+    private var deletedPocketIDs: Set<UUID> {
+        Set(deletedPocketRecords.map(\.pocketId))
     }
 
-    private var otherPockets: [Pocket] {
-        pocketStore.otherPockets
+    private var activePockets: [Pocket] {
+        pocketRecords
+            .filter { deletedPocketIDs.contains($0.id) == false }
+            .map(\.pocket)
+    }
+
+    private var mainPocket: Pocket? {
+        activePockets.first(where: \.isMain)
+    }
+
+    private var displayedPocket: Pocket? {
+        guard let selectedPocketID else {
+            return mainPocket ?? activePockets.first
+        }
+
+        return activePockets.first(where: { $0.id == selectedPocketID }) ?? mainPocket ?? activePockets.first
+    }
+
+    private var stackedPockets: [Pocket] {
+        guard let displayedPocket else {
+            return []
+        }
+
+        let remainingPockets = activePockets.filter { $0.id != displayedPocket.id }
+        return remainingPockets + [displayedPocket]
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                if expenseStore.expenses.isEmpty {
-                    Text("まだ支出がありません")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
+        GeometryReader { geometry in
+            VStack(alignment: .leading, spacing: 0) {
+                Text("ポケット")
+                    .font(.system(size: 34, weight: .bold))
+                    .padding(.top, max(2, geometry.safeAreaInsets.top - 10))
+                    .padding(.bottom, 6)
 
-                if let mainPocket {
-                    NavigationLink {
-                        PocketDetailView(pocketID: mainPocket.id)
-                    } label: {
-                        selectedPocketCard(pocket: mainPocket)
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if stackedPockets.isEmpty {
+                            emptyMainPocketCard
+                        } else {
+                            pocketWalletStack
+                        }
                     }
-                    .buttonStyle(.plain)
-                } else {
-                    emptyMainPocketCard
+                    .frame(maxWidth: .infinity, alignment: .top)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, 6)
 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("その他のポケット")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    if otherPockets.isEmpty == false {
-                        stackedCardsArea
-                    }
-
-                    Button {
-                        isPresentingAddPocket = true
-                    } label: {
-                        addPocketCard
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 6)
-                }
+                pocketManagementSection
+                    .padding(.bottom, 88)
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .navigationTitle("ポケット")
+        .toolbar(.hidden, for: .navigationBar)
         .tint(mainPocket?.displayColor ?? .accentColor)
         .sheet(isPresented: $isPresentingAddPocket) {
             NavigationStack {
@@ -67,109 +131,145 @@ struct PocketListView: View {
                 PocketFormView(mode: .edit(pocket))
             }
         }
+        .task {
+            try? pocketStore.loadIfNeeded(from: modelContext)
+            syncSelectedPocket()
+        }
+        .onChange(of: deletedPocketRecords.map(\.pocketId)) { _, _ in
+            syncSelectedPocket()
+        }
+        .onChange(of: pocketRecords.map(\.id)) { _, _ in
+            syncSelectedPocket()
+        }
     }
 
-    private var stackedCardsArea: some View {
-        VStack(spacing: -28) {
-            ForEach(Array(otherPockets.enumerated()), id: \.element.id) { index, pocket in
-                smallPocketCard(pocket: pocket)
-                    .zIndex(Double(otherPockets.count - index))
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
-                            pocketStore.setMainPocket(id: pocket.id)
-                        }
-                    }
+    private var pocketWalletStack: some View {
+        PocketCardStackLayout(cardPeekOffset: cardPeekOffset) {
+            ForEach(Array(stackedPockets.enumerated()), id: \.element.id) { index, pocket in
+                walletCard(for: pocket, isFrontCard: pocket.id == displayedPocket?.id)
+                    .zIndex(Double(index + 1))
             }
         }
-        .padding(.top, 4)
-        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
-    private func selectedPocketCard(pocket: Pocket) -> some View {
+    private var pocketManagementSection: some View {
+        Button {
+            isPresentingAddPocket = true
+        } label: {
+            addPocketCard
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func walletCard(for pocket: Pocket, isFrontCard: Bool) -> some View {
+        if isFrontCard {
+            NavigationLink {
+                PocketDetailView(pocketID: pocket.id)
+            } label: {
+                pocketCard(pocket: pocket, isFrontCard: true)
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button {
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                    selectedPocketID = pocket.id
+                }
+            } label: {
+                pocketCard(pocket: pocket, isFrontCard: false)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func pocketCard(pocket: Pocket, isFrontCard: Bool) -> some View {
         let pocketExpenses = expenses(for: pocket.id)
         let total = pocketExpenses.reduce(0) { $0 + $1.amount }
 
         return VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(pocket.name)
-                        .font(.title3.weight(.semibold))
-                    Text("メインポケット")
-                        .font(.caption.weight(.medium))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.white.opacity(0.18))
-                        .clipShape(Capsule())
+                        .font(isFrontCard ? .title3.weight(.semibold) : .headline.weight(.semibold))
+                        .lineLimit(1)
+
+                    HStack(spacing: 6) {
+                        if pocket.isMain {
+                            cardBadge(title: "メイン")
+                        }
+
+                        if isFrontCard, pocket.isMain == false {
+                            cardBadge(title: "表示中")
+                        }
+                    }
                 }
+
                 Spacer()
-                Image(systemName: "wallet.pass.fill")
-                    .font(.headline)
-                    .opacity(0.9)
+
+                if isFrontCard {
+                    HStack(spacing: 8) {
+                        Button {
+                            editingPocket = pocket
+                        } label: {
+                            Image(systemName: "pencil")
+                                .font(.subheadline.weight(.semibold))
+                                .padding(10)
+                                .background(.white.opacity(0.18))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+
+                        Image(systemName: "wallet.pass.fill")
+                            .font(.headline)
+                            .opacity(0.9)
+                    }
+                }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("今月")
-                    .font(.caption)
-                    .opacity(0.85)
-                Text(formatYen(total))
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-            }
+            if isFrontCard {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("今月")
+                        .font(.caption)
+                        .opacity(0.85)
+                    Text(formatYen(total))
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                }
 
-            HStack {
-                Text("\(pocketExpenses.count)件")
-                Spacer()
-                Text(pocketModeLabel(for: pocket))
+                HStack {
+                    Text("\(pocketExpenses.count)件")
+                    Spacer()
+                    Text(pocketModeLabel(for: pocket))
+                }
+                .font(.subheadline)
+                .opacity(0.9)
+            } else {
+                HStack {
+                    Text(formatYen(total))
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Text(pocketModeLabel(for: pocket))
+                        .font(.caption)
+                        .opacity(0.9)
+                }
             }
-            .font(.subheadline)
-            .opacity(0.9)
         }
         .foregroundStyle(.white)
         .padding(20)
-        .frame(maxWidth: .infinity, minHeight: 190, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: cardHeight, alignment: .topLeading)
         .background(pocket.displayColor)
         .clipShape(RoundedRectangle(cornerRadius: 24))
+        .shadow(color: .black.opacity(isFrontCard ? 0.16 : 0.08), radius: isFrontCard ? 18 : 10, x: 0, y: 8)
     }
 
-    private func smallPocketCard(pocket: Pocket) -> some View {
-        let total = expenses(for: pocket.id).reduce(0) { $0 + $1.amount }
-
-        return HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(pocket.name)
-                    .font(.headline)
-                Text(formatYen(total))
-                    .font(.subheadline)
-                    .opacity(0.9)
-                Text("\(pocket.ratioA):\(pocket.ratioB)")
-                    .font(.caption)
-                    .opacity(0.85)
-            }
-
-            Spacer()
-
-            HStack(spacing: 8) {
-                Button {
-                    editingPocket = pocket
-                } label: {
-                    Image(systemName: "pencil")
-                        .font(.subheadline.weight(.semibold))
-                        .padding(10)
-                        .background(.white.opacity(0.18))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-
-                Circle()
-                    .fill(.white.opacity(0.9))
-                    .frame(width: 10, height: 10)
-            }
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity)
-        .background(pocket.displayColor.opacity(0.92))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+    private func cardBadge(title: String) -> some View {
+        Text(title)
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(.white.opacity(0.18))
+            .clipShape(Capsule())
     }
 
     private var addPocketCard: some View {
@@ -231,6 +331,20 @@ struct PocketListView: View {
             return "制限あり"
         }
     }
+
+    private func syncSelectedPocket() {
+        guard activePockets.isEmpty == false else {
+            selectedPocketID = nil
+            return
+        }
+
+        if let selectedPocketID,
+           activePockets.contains(where: { $0.id == selectedPocketID }) {
+            return
+        }
+
+        selectedPocketID = mainPocket?.id ?? activePockets.first?.id
+    }
 }
 
 #Preview {
@@ -238,5 +352,6 @@ struct PocketListView: View {
         PocketListView()
             .environment(ExpenseStore())
             .environment(PocketStore())
+            .modelContainer(for: [ExpenseRecord.self, PocketRecord.self, DeletedPocketRecord.self], inMemory: true)
     }
 }

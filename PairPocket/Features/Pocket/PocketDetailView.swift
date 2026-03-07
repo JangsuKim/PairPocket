@@ -1,6 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct PocketDetailView: View {
+    @Query(sort: \PocketRecord.createdAt, order: .forward) private var pocketRecords: [PocketRecord]
+    @Query private var deletedPocketRecords: [DeletedPocketRecord]
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Environment(ExpenseStore.self) private var expenseStore
     @Environment(PocketStore.self) private var pocketStore
 
@@ -8,8 +13,14 @@ struct PocketDetailView: View {
 
     @State private var editingPocket: Pocket?
 
+    private var deletedPocketIDs: Set<UUID> {
+        Set(deletedPocketRecords.map(\.pocketId))
+    }
+
     private var pocket: Pocket? {
-        pocketStore.pocket(for: pocketID)
+        pocketRecords
+            .first(where: { $0.id == pocketID && deletedPocketIDs.contains($0.id) == false })?
+            .pocket
     }
 
     private var pocketExpenses: [Expense] {
@@ -66,12 +77,6 @@ struct PocketDetailView: View {
                 .navigationTitle(pocket.name)
                 .toolbar {
                     ToolbarItemGroup(placement: .topBarTrailing) {
-                        if pocket.isMain == false {
-                            Button("メインに設定") {
-                                pocketStore.setMainPocket(id: pocket.id)
-                            }
-                        }
-
                         Button("編集") {
                             editingPocket = pocket
                         }
@@ -85,6 +90,19 @@ struct PocketDetailView: View {
         .sheet(item: $editingPocket) { pocket in
             NavigationStack {
                 PocketFormView(mode: .edit(pocket))
+            }
+        }
+        .onAppear {
+            try? pocketStore.reload(from: modelContext)
+        }
+        .onChange(of: deletedPocketRecords.map(\.pocketId)) { _, _ in
+            if pocket == nil {
+                dismiss()
+            }
+        }
+        .onChange(of: pocketRecords.map(\.id)) { _, _ in
+            if pocket == nil {
+                dismiss()
             }
         }
     }
@@ -185,5 +203,6 @@ struct PocketDetailView: View {
         )
         .environment(ExpenseStore())
         .environment(PocketStore())
+        .modelContainer(for: [ExpenseRecord.self, PocketRecord.self], inMemory: true)
     }
 }

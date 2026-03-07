@@ -1,6 +1,10 @@
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(PocketStore.self) private var pocketStore
+
     @State private var showAddExpense = false
 
     var body: some View {
@@ -44,10 +48,15 @@ struct ContentView: View {
         .sheet(isPresented: $showAddExpense) {
             AddExpenseView()
         }
+        .task {
+            try? pocketStore.loadIfNeeded(from: modelContext)
+        }
     }
 }
 
 #Preview {
     ContentView()
         .environment(ExpenseStore())
+        .environment(PocketStore())
+        .modelContainer(for: [ExpenseRecord.self, PocketRecord.self], inMemory: true)
 }

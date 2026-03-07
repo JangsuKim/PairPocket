@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct PocketFormView: View {
     enum Mode {
@@ -25,6 +26,7 @@ struct PocketFormView: View {
     }
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Environment(PocketStore.self) private var pocketStore
 
     let mode: Mode
@@ -36,6 +38,7 @@ struct PocketFormView: View {
     @State private var personalPaymentEnabled: Bool
     @State private var isMain: Bool
     @State private var validationMessage: String?
+    @State private var isShowingDeleteConfirmation = false
 
     init(mode: Mode) {
         self.mode = mode
@@ -97,8 +100,31 @@ struct PocketFormView: View {
                         .foregroundStyle(.red)
                 }
             }
+
+            if case let .edit(pocket) = mode {
+                Section {
+                    Button("ポケットを削除", role: .destructive) {
+                        isShowingDeleteConfirmation = true
+                    }
+                    .disabled(pocket.isMain)
+                } footer: {
+                    if pocket.isMain {
+                        Text("メインポケットは削除できません。")
+                    } else {
+                        Text("削除したポケットは新規入力では選べなくなりますが、過去の履歴には残ります。")
+                    }
+                }
+            }
         }
         .navigationTitle(mode.title)
+        .alert("ポケットを削除しますか？", isPresented: $isShowingDeleteConfirmation) {
+            Button("削除", role: .destructive) {
+                deletePocket()
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            Text("この操作は取り消せません。")
+        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("キャンセル") {
@@ -151,7 +177,7 @@ struct PocketFormView: View {
                 personalPaymentEnabled: personalPaymentEnabled,
                 isMain: shouldBeMain
             )
-            pocketStore.addPocket(pocket)
+            try? pocketStore.addPocket(pocket, in: modelContext)
         case let .edit(existingPocket):
             let updatedPocket = Pocket(
                 id: existingPocket.id,
@@ -165,10 +191,24 @@ struct PocketFormView: View {
                 isMain: isMain,
                 createdAt: existingPocket.createdAt
             )
-            pocketStore.updatePocket(updatedPocket)
+            try? pocketStore.updatePocket(updatedPocket, in: modelContext)
         }
 
         dismiss()
+    }
+
+    private func deletePocket() {
+        guard case let .edit(existingPocket) = mode else {
+            return
+        }
+
+        do {
+            try pocketStore.softDeletePocket(id: existingPocket.id, in: modelContext)
+            try pocketStore.reload(from: modelContext)
+            dismiss()
+        } catch {
+            validationMessage = error.localizedDescription
+        }
     }
 }
 
@@ -176,5 +216,6 @@ struct PocketFormView: View {
     NavigationStack {
         PocketFormView(mode: .add)
             .environment(PocketStore())
+            .modelContainer(for: [PocketRecord.self], inMemory: true)
     }
 }

@@ -1,70 +1,159 @@
 import Foundation
 import Observation
+import SwiftData
 
 @Observable
 final class PocketStore {
-    var pockets: [Pocket]
-
-    init(pockets: [Pocket] = PocketStore.defaultPockets) {
-        self.pockets = PocketStore.normalizedPockets(from: pockets)
-    }
+    private(set) var allPockets: [Pocket] = []
+    private(set) var pockets: [Pocket] = []
+    private var hasLoaded = false
 
     var mainPocket: Pocket? {
         pockets.first(where: \.isMain)
     }
 
-    var otherPockets: [Pocket] {
-        pockets.filter { $0.isMain == false }
-    }
-
-    func addPocket(_ pocket: Pocket) {
-        pockets.append(pocket)
-        normalizeMainPocket(preferredMainID: pocket.isMain ? pocket.id : nil)
-    }
-
-    func updatePocket(_ pocket: Pocket) {
-        guard let index = pockets.firstIndex(where: { $0.id == pocket.id }) else {
+    func loadIfNeeded(from modelContext: ModelContext) throws {
+        guard hasLoaded == false else {
             return
         }
 
-        pockets[index] = pocket
-        normalizeMainPocket(preferredMainID: pocket.isMain ? pocket.id : nil)
+        try reload(from: modelContext)
+        hasLoaded = true
     }
 
-    func setMainPocket(id: UUID) {
-        normalizeMainPocket(preferredMainID: id)
+    func reload(from modelContext: ModelContext) throws {
+        let records = try fetchPocketRecords(from: modelContext)
+
+        if records.isEmpty {
+            for pocket in Self.defaultPockets {
+                modelContext.insert(PocketRecord(pocket: pocket))
+            }
+            try modelContext.save()
+        }
+
+        let refreshedRecords = try fetchPocketRecords(from: modelContext)
+        let deletedIDs = try fetchDeletedPocketIDs(from: modelContext)
+        syncState(from: refreshedRecords.map(\.pocket), deletedPocketIDs: deletedIDs)
     }
 
-    func pocket(for id: UUID) -> Pocket? {
-        pockets.first(where: { $0.id == id })
+    func addPocket(_ pocket: Pocket, in modelContext: ModelContext) throws {
+        modelContext.insert(PocketRecord(pocket: pocket))
+        try persistMainPocket(preferredMainID: pocket.isMain ? pocket.id : nil, in: modelContext)
     }
 
-    private func normalizeMainPocket(preferredMainID: UUID?) {
-        guard pockets.isEmpty == false else {
+    func updatePocket(_ pocket: Pocket, in modelContext: ModelContext) throws {
+        let record = try fetchPocketRecord(id: pocket.id, from: modelContext)
+        record.name = pocket.name
+        record.colorKey = pocket.colorKey
+        record.icon = pocket.icon
+        record.ratioA = pocket.ratioA
+        record.ratioB = pocket.ratioB
+        record.sharedBalanceEnabled = pocket.sharedBalanceEnabled
+        record.personalPaymentEnabled = pocket.personalPaymentEnabled
+        record.isMain = pocket.isMain
+        record.createdAt = pocket.createdAt
+
+        try persistMainPocket(preferredMainID: pocket.isMain ? pocket.id : nil, in: modelContext)
+    }
+
+    func softDeletePocket(id: UUID, in modelContext: ModelContext) throws {
+        let record = try fetchPocketRecord(id: id, from: modelContext)
+
+        guard record.isMain == false else {
+            throw PocketStoreError.mainPocketDeletionNotAllowed
+        }
+
+        if try deletedPocketRecord(id: id, from: modelContext) == nil {
+            modelContext.insert(DeletedPocketRecord(pocketId: id))
+        }
+
+        try persistMainPocket(preferredMainID: nil, in: modelContext)
+    }
+
+    func setMainPocket(id: UUID, in modelContext: ModelContext) throws {
+        try persistMainPocket(preferredMainID: id, in: modelContext)
+    }
+
+    func pocket(for id: UUID, includeDeleted: Bool = false) -> Pocket? {
+        let source = includeDeleted ? allPockets : pockets
+        return source.first(where: { $0.id == id })
+    }
+
+    private func persistMainPocket(preferredMainID: UUID?, in modelContext: ModelContext) throws {
+        let records = try fetchPocketRecords(from: modelContext)
+        let deletedIDs = try fetchDeletedPocketIDs(from: modelContext)
+        let activeIDs = records.map(\.id).filter { deletedIDs.contains($0) == false }
+
+        if activeIDs.isEmpty {
+            for record in records {
+                record.isMain = false
+            }
+            try modelContext.save()
+            syncState(from: records.map(\.pocket), deletedPocketIDs: deletedIDs)
             return
         }
 
-        let fallbackID = preferredMainID
-            ?? pockets.first(where: \.isMain)?.id
-            ?? pockets[0].id
+        let currentMainID = records.first(where: { deletedIDs.contains($0.id) == false && $0.isMain })?.id
+        let fallbackID = preferredMainID ?? currentMainID ?? activeIDs[0]
 
-        pockets = pockets.map { pocket in
-            var updatedPocket = pocket
-            updatedPocket.isMain = pocket.id == fallbackID
-            return updatedPocket
+        for record in records {
+            record.isMain = deletedIDs.contains(record.id) == false && record.id == fallbackID
         }
+
+        try modelContext.save()
+        syncState(from: records.map(\.pocket), deletedPocketIDs: deletedIDs)
     }
 
-    private static func normalizedPockets(from pockets: [Pocket]) -> [Pocket] {
-        guard pockets.isEmpty == false else {
-            return []
+    private func fetchPocketRecords(from modelContext: ModelContext) throws -> [PocketRecord] {
+        let descriptor = FetchDescriptor<PocketRecord>(
+            sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+        )
+        return try modelContext.fetch(descriptor)
+    }
+
+    private func fetchPocketRecord(id: UUID, from modelContext: ModelContext) throws -> PocketRecord {
+        let predicate = #Predicate<PocketRecord> { record in
+            record.id == id
+        }
+        let descriptor = FetchDescriptor<PocketRecord>(predicate: predicate)
+
+        guard let record = try modelContext.fetch(descriptor).first else {
+            throw PocketStoreError.pocketNotFound
         }
 
-        let mainID = pockets.first(where: \.isMain)?.id ?? pockets[0].id
-        return pockets.map { pocket in
-            var updatedPocket = pocket
-            updatedPocket.isMain = pocket.id == mainID
-            return updatedPocket
+        return record
+    }
+
+    private func fetchDeletedPocketIDs(from modelContext: ModelContext) throws -> Set<UUID> {
+        let descriptor = FetchDescriptor<DeletedPocketRecord>()
+        let deletedRecords = try modelContext.fetch(descriptor)
+        return Set(deletedRecords.map(\.pocketId))
+    }
+
+    private func deletedPocketRecord(id: UUID, from modelContext: ModelContext) throws -> DeletedPocketRecord? {
+        let predicate = #Predicate<DeletedPocketRecord> { record in
+            record.pocketId == id
+        }
+        let descriptor = FetchDescriptor<DeletedPocketRecord>(predicate: predicate)
+        return try modelContext.fetch(descriptor).first
+    }
+
+    private func syncState(from pockets: [Pocket], deletedPocketIDs: Set<UUID>) {
+        allPockets = pockets
+        self.pockets = pockets.filter { deletedPocketIDs.contains($0.id) == false }
+    }
+}
+
+enum PocketStoreError: LocalizedError {
+    case pocketNotFound
+    case mainPocketDeletionNotAllowed
+
+    var errorDescription: String? {
+        switch self {
+        case .pocketNotFound:
+            return "ポケットが見つかりません。"
+        case .mainPocketDeletionNotAllowed:
+            return "メインポケットは削除できません。"
         }
     }
 }
