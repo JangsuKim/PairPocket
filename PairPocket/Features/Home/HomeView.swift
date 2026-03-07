@@ -1,20 +1,25 @@
 import SwiftUI
+import SwiftData
 
 struct HomeView: View {
-    @Environment(ExpenseStore.self) private var expenseStore
+    @Query private var expenses: [ExpenseRecord]
 
-    private var totalExpense: Int {
-        expenseStore.expenses.reduce(0) { $0 + $1.amount }
+    private var currentMonthExpenses: [ExpenseRecord] {
+        expenses.filter { isInCurrentMonth($0.date) }
     }
 
-    private var expenseCount: Int {
-        expenseStore.expenses.count
+    private var monthlyTotal: Int {
+        currentMonthExpenses.reduce(0) { $0 + $1.amount }
+    }
+
+    private var monthlyCount: Int {
+        currentMonthExpenses.count
     }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                MonthlySummarySection(totalAmountYen: totalExpense, totalCount: expenseCount)
+                MonthlySummarySection(totalAmountYen: monthlyTotal, totalCount: monthlyCount)
                 QuickAddSection()
                 SettlementSection()
             }
@@ -22,11 +27,15 @@ struct HomeView: View {
         }
         .navigationTitle("ペアポケ")
     }
+
+    private func isInCurrentMonth(_ date: Date) -> Bool {
+        Calendar.current.isDate(date, equalTo: Date(), toGranularity: .month)
+    }
 }
 
 #Preview {
     NavigationStack {
         HomeView()
-            .environment(ExpenseStore())
+            .modelContainer(for: [ExpenseRecord.self], inMemory: true)
     }
 }

@@ -1,13 +1,14 @@
 import SwiftUI
+import SwiftData
 
 struct AddExpenseView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(ExpenseStore.self) private var expenseStore
+    @Environment(\.modelContext) private var modelContext
 
     @State private var selectedPocketID: Int = 0
     @State private var selectedDate = Date()
     @State private var selectedCategoryID: UUID = AddExpenseView.defaultCategoryID
-    @State private var selectedPayer: MemberRole = .me
+    @State private var selectedPayer: MemberRole = .a
     @State private var amountText: String = ""
     @State private var memoText: String = ""
 
@@ -19,24 +20,24 @@ struct AddExpenseView: View {
             domainId: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
             name: "生活費",
             color: .green,
-            ratioMe: 55,
-            ratioPartner: 45
+            ratioA: 55,
+            ratioB: 45
         ),
         .init(
             id: 1,
             domainId: UUID(uuidString: "0B51A05D-934F-4F02-BFE5-6CBA8AFBA761")!,
             name: "旅行",
             color: .orange,
-            ratioMe: 50,
-            ratioPartner: 50
+            ratioA: 50,
+            ratioB: 50
         ),
         .init(
             id: 2,
             domainId: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!,
             name: "家賃",
             color: .purple,
-            ratioMe: 50,
-            ratioPartner: 50
+            ratioA: 50,
+            ratioB: 50
         ),
     ]
 
@@ -65,7 +66,7 @@ struct AddExpenseView: View {
     }
 
     private var burdenA: Int {
-        amountValue * selectedPocket.ratioMe / 100
+        amountValue * selectedPocket.ratioA / 100
     }
 
     private var burdenB: Int {
@@ -90,8 +91,8 @@ struct AddExpenseView: View {
                     .tint(selectedPocket.color)
 
                     Picker("Payer", selection: $selectedPayer) {
-                        Text("A").tag(MemberRole.me)
-                        Text("B").tag(MemberRole.partner)
+                        Text("A").tag(MemberRole.a)
+                        Text("B").tag(MemberRole.b)
                     }
                     .pickerStyle(.segmented)
                     .tint(selectedPocket.color)
@@ -131,22 +132,22 @@ struct AddExpenseView: View {
                 Spacer()
 
                 Button {
-                    let newExpense = Expense(
-                        id: UUID(),
+                    let record = ExpenseRecord(
                         pocketId: selectedPocket.domainId,
                         categoryId: selectedCategory.id,
-                        payerRole: selectedPayer,
                         amount: amountValue,
-                        ratioMe: selectedPocket.ratioMe,
-                        ratioPartner: selectedPocket.ratioPartner,
-                        memo: memoText.isEmpty ? nil : memoText,
                         date: selectedDate,
+                        memo: memoText,
+                        payerRole: selectedPayer,
+                        ratioA: selectedPocket.ratioA,
+                        ratioB: selectedPocket.ratioB,
                         isSettled: false,
                         settlementId: nil,
                         settledAt: nil
                     )
 
-                    expenseStore.addExpense(newExpense)
+                    modelContext.insert(record)
+                    try? modelContext.save()
                     dismiss()
                 } label: {
                     Text("Add")
@@ -223,8 +224,8 @@ private struct ExpensePocket: Identifiable {
     let domainId: UUID
     let name: String
     let color: Color
-    let ratioMe: Int
-    let ratioPartner: Int
+    let ratioA: Int
+    let ratioB: Int
 }
 
 private struct ExpenseCategory: Identifiable {
@@ -234,5 +235,5 @@ private struct ExpenseCategory: Identifiable {
 
 #Preview {
     AddExpenseView()
-        .environment(ExpenseStore())
+        .modelContainer(for: [ExpenseRecord.self], inMemory: true)
 }

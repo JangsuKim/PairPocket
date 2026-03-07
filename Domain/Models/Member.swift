@@ -1,8 +1,8 @@
 import Foundation
 
 public enum MemberRole: String, Codable, Hashable {
-    case me
-    case partner
+    case a
+    case b
 }
 
 public struct Member: Identifiable, Codable, Hashable {

@@ -6,8 +6,8 @@ public struct Expense: Identifiable, Codable, Hashable {
     public var categoryId: UUID
     public var payerRole: MemberRole
     public var amount: Int
-    public var ratioMe: Int
-    public var ratioPartner: Int
+    public var ratioA: Int
+    public var ratioB: Int
     public var memo: String?
     public var date: Date
     public var createdAt: Date
@@ -15,15 +15,15 @@ public struct Expense: Identifiable, Codable, Hashable {
     public var settlementId: UUID?
     public var settledAt: Date?
 
-    // Constraint (not enforced yet): ratioMe + ratioPartner == 100
+    // Constraint (not enforced yet): ratioA + ratioB == 100
     public init(
         id: UUID = UUID(),
         pocketId: UUID,
         categoryId: UUID,
-        payerRole: MemberRole = .me,
+        payerRole: MemberRole = .a,
         amount: Int,
-        ratioMe: Int,
-        ratioPartner: Int,
+        ratioA: Int,
+        ratioB: Int,
         memo: String? = nil,
         date: Date,
         createdAt: Date = Date(),
@@ -36,8 +36,8 @@ public struct Expense: Identifiable, Codable, Hashable {
         self.categoryId = categoryId
         self.payerRole = payerRole
         self.amount = amount
-        self.ratioMe = ratioMe
-        self.ratioPartner = ratioPartner
+        self.ratioA = ratioA
+        self.ratioB = ratioB
         self.memo = memo
         self.date = date
         self.createdAt = createdAt

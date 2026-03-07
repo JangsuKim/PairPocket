@@ -15,15 +15,15 @@ struct PocketDetailView: View {
         pocketExpenses.reduce(0) { $0 + $1.amount }
     }
 
-    private var paidByMe: Int {
+    private var paidByA: Int {
         pocketExpenses
-            .filter { $0.payerRole == .me }
+            .filter { $0.payerRole == .a }
             .reduce(0) { $0 + $1.amount }
     }
 
-    private var paidByPartner: Int {
+    private var paidByB: Int {
         pocketExpenses
-            .filter { $0.payerRole == .partner }
+            .filter { $0.payerRole == .b }
             .reduce(0) { $0 + $1.amount }
     }
 
@@ -57,8 +57,8 @@ struct PocketDetailView: View {
             Text("Payment Summary")
                 .font(.headline)
 
-            summaryRow(title: "Person A", amount: paidByMe)
-            summaryRow(title: "Person B", amount: paidByPartner)
+            summaryRow(title: "Person A", amount: paidByA)
+            summaryRow(title: "Person B", amount: paidByB)
 
             Divider()
 

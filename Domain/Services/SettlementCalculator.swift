@@ -5,10 +5,10 @@ public struct SettlementSummary: Codable, Hashable {
     public var periodEnd: Date
     public var totalAmount: Int
     public var expenseCount: Int
-    public var totalPaidMe: Int
-    public var totalPaidPartner: Int
-    public var totalShouldPayMe: Int
-    public var totalShouldPayPartner: Int
+    public var totalPaidA: Int
+    public var totalPaidB: Int
+    public var totalShouldPayA: Int
+    public var totalShouldPayB: Int
     public var settlementPayer: MemberRole?
     public var settlementReceiver: MemberRole?
     public var settlementAmount: Int
@@ -18,10 +18,10 @@ public struct SettlementSummary: Codable, Hashable {
         periodEnd: Date,
         totalAmount: Int,
         expenseCount: Int,
-        totalPaidMe: Int,
-        totalPaidPartner: Int,
-        totalShouldPayMe: Int,
-        totalShouldPayPartner: Int,
+        totalPaidA: Int,
+        totalPaidB: Int,
+        totalShouldPayA: Int,
+        totalShouldPayB: Int,
         settlementPayer: MemberRole?,
         settlementReceiver: MemberRole?,
         settlementAmount: Int
@@ -30,10 +30,10 @@ public struct SettlementSummary: Codable, Hashable {
         self.periodEnd = periodEnd
         self.totalAmount = totalAmount
         self.expenseCount = expenseCount
-        self.totalPaidMe = totalPaidMe
-        self.totalPaidPartner = totalPaidPartner
-        self.totalShouldPayMe = totalShouldPayMe
-        self.totalShouldPayPartner = totalShouldPayPartner
+        self.totalPaidA = totalPaidA
+        self.totalPaidB = totalPaidB
+        self.totalShouldPayA = totalShouldPayA
+        self.totalShouldPayB = totalShouldPayB
         self.settlementPayer = settlementPayer
         self.settlementReceiver = settlementReceiver
         self.settlementAmount = settlementAmount
@@ -45,54 +45,52 @@ public enum SettlementCalculator {
         let unsettledExpenses = expenses.filter { !$0.isSettled }
 
         var totalAmount = 0
-        var totalPaidMe = 0
-        var totalPaidPartner = 0
-        var totalShouldPayMe = 0
-        var totalShouldPayPartner = 0
+        var totalPaidA = 0
+        var totalPaidB = 0
+        var totalShouldPayA = 0
+        var totalShouldPayB = 0
 
         for expense in unsettledExpenses {
             totalAmount += expense.amount
 
             // Rounding rule (JPY Int):
-            // shouldPayMe = amount * ratioMe / 100 (integer division, floor)
-            // shouldPayPartner = amount - shouldPayMe
-            // This guarantees shouldPayMe + shouldPayPartner == amount.
-            let shouldPayMe = expense.amount * expense.ratioMe / 100
-            let shouldPayPartner = expense.amount - shouldPayMe
+            // shouldPayA = amount * ratioA / 100 (integer division, floor)
+            // shouldPayB = amount - shouldPayA
+            // This guarantees shouldPayA + shouldPayB == amount.
+            let shouldPayA = expense.amount * expense.ratioA / 100
+            let shouldPayB = expense.amount - shouldPayA
 
-            totalShouldPayMe += shouldPayMe
-            totalShouldPayPartner += shouldPayPartner
+            totalShouldPayA += shouldPayA
+            totalShouldPayB += shouldPayB
 
-            if expense.payerRole == .me {
-                totalPaidMe += expense.amount
+            if expense.payerRole == .a {
+                totalPaidA += expense.amount
             } else {
-                totalPaidPartner += expense.amount
+                totalPaidB += expense.amount
             }
         }
 
-        let netMe = totalPaidMe - totalShouldPayMe
-        let netPartner = totalPaidPartner - totalShouldPayPartner
+        let netA = totalPaidA - totalShouldPayA
+        let netB = totalPaidB - totalShouldPayB
 
         let settlementPayer: MemberRole?
         let settlementReceiver: MemberRole?
         let settlementAmount: Int
 
-        if netMe > 0 {
-            settlementPayer = .partner
-            settlementReceiver = .me
-            settlementAmount = netMe
-        } else if netPartner > 0 {
-            settlementPayer = .me
-            settlementReceiver = .partner
-            settlementAmount = netPartner
+        if netA > 0 {
+            settlementPayer = .b
+            settlementReceiver = .a
+            settlementAmount = netA
+        } else if netB > 0 {
+            settlementPayer = .a
+            settlementReceiver = .b
+            settlementAmount = netB
         } else {
             settlementPayer = nil
             settlementReceiver = nil
             settlementAmount = 0
         }
 
-        // Settlement logic does not depend on expense dates.
-        // periodStart/periodEnd are derived only for summary display.
         let periodStart = unsettledExpenses.map(\.date).min() ?? Date.distantPast
         let periodEnd = unsettledExpenses.map(\.date).max() ?? Date.distantPast
 
@@ -101,10 +99,10 @@ public enum SettlementCalculator {
             periodEnd: periodEnd,
             totalAmount: totalAmount,
             expenseCount: unsettledExpenses.count,
-            totalPaidMe: totalPaidMe,
-            totalPaidPartner: totalPaidPartner,
-            totalShouldPayMe: totalShouldPayMe,
-            totalShouldPayPartner: totalShouldPayPartner,
+            totalPaidA: totalPaidA,
+            totalPaidB: totalPaidB,
+            totalShouldPayA: totalShouldPayA,
+            totalShouldPayB: totalShouldPayB,
             settlementPayer: settlementPayer,
             settlementReceiver: settlementReceiver,
             settlementAmount: settlementAmount

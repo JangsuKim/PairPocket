@@ -1,8 +1,8 @@
 import Foundation
 
 enum MemberRole: String, Codable, Hashable {
-    case me
-    case partner
+    case a
+    case b
 }
 
 struct Expense: Identifiable, Codable, Hashable {
@@ -11,8 +11,8 @@ struct Expense: Identifiable, Codable, Hashable {
     var categoryId: UUID
     var payerRole: MemberRole
     var amount: Int
-    var ratioMe: Int
-    var ratioPartner: Int
+    var ratioA: Int
+    var ratioB: Int
     var memo: String?
     var date: Date
     var createdAt: Date
@@ -24,10 +24,10 @@ struct Expense: Identifiable, Codable, Hashable {
         id: UUID = UUID(),
         pocketId: UUID,
         categoryId: UUID,
-        payerRole: MemberRole = .me,
+        payerRole: MemberRole = .a,
         amount: Int,
-        ratioMe: Int,
-        ratioPartner: Int,
+        ratioA: Int,
+        ratioB: Int,
         memo: String? = nil,
         date: Date,
         createdAt: Date = Date(),
@@ -40,8 +40,8 @@ struct Expense: Identifiable, Codable, Hashable {
         self.categoryId = categoryId
         self.payerRole = payerRole
         self.amount = amount
-        self.ratioMe = ratioMe
-        self.ratioPartner = ratioPartner
+        self.ratioA = ratioA
+        self.ratioB = ratioB
         self.memo = memo
         self.date = date
         self.createdAt = createdAt
