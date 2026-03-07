@@ -8,6 +8,12 @@
 
 /* Begin PBXFileReference section */
 		596D660B2F55887F00A15A0F /* PairPocket.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PairPocket.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		599F06942F58144D00CC930E /* Member.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Member.swift; sourceTree = "<group>"; };
+		599F06952F58144D00CC930E /* Pocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pocket.swift; sourceTree = "<group>"; };
+		599F06962F58144D00CC930E /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
+		599F06972F58144D00CC930E /* Expense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expense.swift; sourceTree = "<group>"; };
+		599F06992F581AC300CC930E /* Settlement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settlement.swift; sourceTree = "<group>"; };
+		599F069A2F581AC300CC930E /* SettlementCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementCalculator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -34,6 +40,7 @@
 			children = (
 				596D660D2F55887F00A15A0F /* PairPocket */,
 				596D660C2F55887F00A15A0F /* Products */,
+				599F06922F58142D00CC930E /* Domain */,
 			);
 			sourceTree = "<group>";
 		};
@@ -43,6 +50,35 @@
 				596D660B2F55887F00A15A0F /* PairPocket.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		599F06922F58142D00CC930E /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				599F06932F58143600CC930E /* Models */,
+				599F06982F581AAD00CC930E /* Services */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		599F06932F58143600CC930E /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				599F06942F58144D00CC930E /* Member.swift */,
+				599F06952F58144D00CC930E /* Pocket.swift */,
+				599F06962F58144D00CC930E /* Category.swift */,
+				599F06972F58144D00CC930E /* Expense.swift */,
+				599F06992F581AC300CC930E /* Settlement.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		599F06982F581AAD00CC930E /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				599F069A2F581AC300CC930E /* SettlementCalculator.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -251,6 +287,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SJM2NZY8A8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -282,6 +319,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SJM2NZY8A8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
