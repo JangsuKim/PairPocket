@@ -48,8 +48,6 @@ private struct PocketCardStackLayout: Layout {
 }
 
 struct PocketListView: View {
-    @Query(sort: \PocketRecord.createdAt, order: .forward) private var pocketRecords: [PocketRecord]
-    @Query private var deletedPocketRecords: [DeletedPocketRecord]
     @Environment(ExpenseStore.self) private var expenseStore
     @Environment(PocketStore.self) private var pocketStore
     @Environment(\.modelContext) private var modelContext
@@ -61,14 +59,8 @@ struct PocketListView: View {
     private let cardHeight: CGFloat = 190
     private let cardPeekOffset: CGFloat = 60
 
-    private var deletedPocketIDs: Set<UUID> {
-        Set(deletedPocketRecords.map(\.pocketId))
-    }
-
     private var activePockets: [Pocket] {
-        pocketRecords
-            .filter { deletedPocketIDs.contains($0.id) == false }
-            .map(\.pocket)
+        pocketStore.pockets
     }
 
     private var mainPocket: Pocket? {
@@ -132,13 +124,11 @@ struct PocketListView: View {
             }
         }
         .task {
+            try? expenseStore.loadIfNeeded(from: modelContext)
             try? pocketStore.loadIfNeeded(from: modelContext)
             syncSelectedPocket()
         }
-        .onChange(of: deletedPocketRecords.map(\.pocketId)) { _, _ in
-            syncSelectedPocket()
-        }
-        .onChange(of: pocketRecords.map(\.id)) { _, _ in
+        .onChange(of: pocketStore.pockets.map(\.id)) { _, _ in
             syncSelectedPocket()
         }
     }
@@ -308,7 +298,7 @@ struct PocketListView: View {
     }
 
     private func expenses(for pocketId: UUID) -> [Expense] {
-        expenseStore.expenses.filter { $0.pocketId == pocketId }
+        expenseStore.expenses(for: pocketId)
     }
 
     private func formatYen(_ amount: Int) -> String {
