@@ -1,0 +1,23 @@
+name: iOS Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
+
+      - name: Run Tests
+        run: |
+          xcodebuild \
+            test \
+            -scheme PairPocket \
+            -destination 'platform=iOS Simulator,name=iPhone 17'
