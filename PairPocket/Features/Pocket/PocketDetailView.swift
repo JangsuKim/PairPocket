@@ -15,6 +15,8 @@ struct PocketDetailView: View {
 
     @State private var editingPocket: Pocket?
     @State private var isPresentingCategoryManagement = false
+    @State private var isCategoryExpanded = true
+    @State private var isMonthlyExpanded = false
 
     private let categoryPalette: [Color] = [
         .orange,
@@ -62,6 +64,10 @@ struct PocketDetailView: View {
         pocketExpenses
             .filter { $0.paymentSource == .memberB }
             .reduce(0) { $0 + $1.amount }
+    }
+
+    private var settlementSummary: SettlementSummary {
+        SettlementCalculator.calculate(expenses: pocketExpenses)
     }
 
     private var categorySummaries: [CategorySpendingSummary] {
@@ -160,8 +166,9 @@ struct PocketDetailView: View {
         Group {
             if let pocket {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 16) {
                         summarySection
+                        settlementSection
                         categorySection(for: pocket)
                         monthlySection
                     }
@@ -208,7 +215,7 @@ struct PocketDetailView: View {
     }
 
     private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
             Text("支出サマリー")
                 .font(.headline)
 
@@ -225,72 +232,123 @@ struct PocketDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
+    private var settlementSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("精算予定")
+                .font(.headline)
+
+            Text("現在の精算予定額")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if let payer = settlementSummary.settlementPayer,
+               let receiver = settlementSummary.settlementReceiver,
+               settlementSummary.settlementAmount > 0 {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("\(memberName(for: payer)) → \(memberName(for: receiver))")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Text(formatYen(settlementSummary.settlementAmount))
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                }
+            } else {
+                Text("精算なし")
+                    .font(.title3.weight(.bold))
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
     private func categorySection(for pocket: Pocket) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: isCategoryExpanded ? 16 : 10) {
             HStack {
-                Text("カテゴリ支出")
-                    .font(.headline)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isCategoryExpanded.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("カテゴリ支出")
+                            .font(.headline)
+                        Image(systemName: isCategoryExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+
                 Spacer()
                 Button("カテゴリー管理") {
                     isPresentingCategoryManagement = true
                 }
                 .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
             }
 
-            Chart(donutChartData) { summary in
-                SectorMark(
-                    angle: .value("Amount", summary.amount),
-                    innerRadius: .ratio(0.62),
-                    angularInset: 2
-                )
-                .foregroundStyle(categoryColor(for: summary))
-            }
-            .frame(height: 220)
-            .chartLegend(.hidden)
-            .chartBackground { chartProxy in
-                GeometryReader { geometry in
-                    if let frame = chartProxy.plotFrame {
-                        let plotFrame = geometry[frame]
-
-                        VStack(spacing: 4) {
-                            Text("合計")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text(formatYen(totalAmount))
-                                .font(.title3.weight(.bold))
-                        }
-                        .position(x: plotFrame.midX, y: plotFrame.midY)
-                    }
+            if isCategoryExpanded {
+                Chart(donutChartData) { summary in
+                    SectorMark(
+                        angle: .value("Amount", summary.amount),
+                        innerRadius: .ratio(0.62),
+                        angularInset: 2
+                    )
+                    .foregroundStyle(categoryColor(for: summary))
                 }
-            }
+                .frame(height: 220)
+                .chartLegend(.hidden)
+                .chartBackground { chartProxy in
+                    GeometryReader { geometry in
+                        if let frame = chartProxy.plotFrame {
+                            let plotFrame = geometry[frame]
 
-            if categorySummaries.isEmpty {
-                Text("カテゴリ別の支出データがありません")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(categorySummaries) { summary in
-                        HStack(spacing: 12) {
-                            Circle()
-                                .fill(categoryColor(for: summary))
-                                .frame(width: 10, height: 10)
-
-                            Text(summary.name)
-                                .font(.subheadline)
-
-                            Spacer()
-
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text(formatYen(summary.amount))
-                                    .font(.subheadline.weight(.semibold))
-                                Text(percentageText(for: summary.amount))
+                            VStack(spacing: 4) {
+                                Text("合計")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                Text(formatYen(totalAmount))
+                                    .font(.title3.weight(.bold))
+                            }
+                            .position(x: plotFrame.midX, y: plotFrame.midY)
+                        }
+                    }
+                }
+
+                if categorySummaries.isEmpty {
+                    Text("カテゴリ別の支出データがありません")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(spacing: 12) {
+                        ForEach(categorySummaries) { summary in
+                            HStack(spacing: 12) {
+                                Circle()
+                                    .fill(categoryColor(for: summary))
+                                    .frame(width: 10, height: 10)
+
+                                Text(summary.name)
+                                    .font(.subheadline)
+
+                                Spacer()
+
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text(formatYen(summary.amount))
+                                        .font(.subheadline.weight(.semibold))
+                                    Text(percentageText(for: summary.amount))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
                 }
+            } else {
+                Text(categorySectionSummaryText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
 
             if pocketCategories.isEmpty {
@@ -311,18 +369,36 @@ struct PocketDetailView: View {
     }
 
     private var monthlySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("月別支出")
-                .font(.headline)
-
-            VStack(spacing: 10) {
-                ForEach(monthlySummaries) { summary in
-                    monthlyBarRow(summary)
+        VStack(alignment: .leading, spacing: isMonthlyExpanded ? 16 : 10) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isMonthlyExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Text("月別支出")
+                        .font(.headline)
+                    Image(systemName: isMonthlyExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
                 }
             }
+            .buttonStyle(.plain)
 
-            if pocketExpenses.isEmpty {
-                Text("\(chartYear)年の月別支出はまだありません")
+            if isMonthlyExpanded {
+                VStack(spacing: 10) {
+                    ForEach(monthlySummaries) { summary in
+                        monthlyBarRow(summary)
+                    }
+                }
+
+                if pocketExpenses.isEmpty {
+                    Text("\(chartYear)年の月別支出はまだありません")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Text(monthlySectionSummaryText)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -405,6 +481,31 @@ struct PocketDetailView: View {
         formatter.numberStyle = .decimal
         let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
         return "¥\(formatted)"
+    }
+
+    private var categorySectionSummaryText: String {
+        if categorySummaries.isEmpty {
+            return "カテゴリ別データはまだありません"
+        }
+
+        return "\(categorySummaries.count)項目を表示"
+    }
+
+    private var monthlySectionSummaryText: String {
+        if pocketExpenses.isEmpty {
+            return "\(chartYear)年の月別データはまだありません"
+        }
+
+        return "\(chartYear)年の12か月推移を表示"
+    }
+
+    private func memberName(for role: MemberRole) -> String {
+        switch role {
+        case .memberA:
+            return "MemberA"
+        case .memberB:
+            return "MemberB"
+        }
     }
 
     private func monthlyBarWidth(amount: Int, availableWidth: CGFloat) -> CGFloat {
