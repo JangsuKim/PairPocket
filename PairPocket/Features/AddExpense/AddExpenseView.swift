@@ -6,25 +6,16 @@ struct AddExpenseView: View {
     @Query private var deletedPocketRecords: [DeletedPocketRecord]
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(CategoryStore.self) private var categoryStore
     @Environment(PocketStore.self) private var pocketStore
 
     @State private var selectedPocketID: UUID?
     @State private var selectedDate = Date()
-    @State private var selectedCategoryID: UUID = AddExpenseView.defaultCategoryID
+    @State private var selectedCategoryID: UUID?
     @State private var selectedPaymentSource: PaymentSource = .memberA
     @State private var amountText: String = ""
     @State private var memoText: String = ""
     @State private var saveErrorMessage: String?
-
-    private static let defaultCategoryID = UUID(uuidString: "A1F1EAF5-0F59-4A33-B5B6-3A1F8F8B3B01")!
-
-    private let categories: [ExpenseCategory] = [
-        .init(id: UUID(uuidString: "A1F1EAF5-0F59-4A33-B5B6-3A1F8F8B3B01")!, name: "食費"),
-        .init(id: UUID(uuidString: "E8F9E3FD-6309-4FA4-B36B-D5CF5B0E56A7")!, name: "生活"),
-        .init(id: UUID(uuidString: "5C2EAE9B-349B-40BA-9817-9A0E13CE35F3")!, name: "交通"),
-        .init(id: UUID(uuidString: "BFE80144-9D6A-47B0-B4D9-83096E74CF23")!, name: "娯楽"),
-        .init(id: UUID(uuidString: "D2D8E4E9-D2A2-4C6A-840B-CCDBF07D82AD")!, name: "その他"),
-    ]
 
     private var amountValue: Int {
         Int(amountText) ?? 0
@@ -53,8 +44,20 @@ struct AddExpenseView: View {
         return pockets.first(where: \.isMain) ?? pockets.first
     }
 
-    private var selectedCategory: ExpenseCategory {
-        categories.first(where: { $0.id == selectedCategoryID }) ?? categories[0]
+    private var categories: [Category] {
+        guard let selectedPocket else {
+            return []
+        }
+
+        return categoryStore.categories(for: selectedPocket.id)
+    }
+
+    private var selectedCategory: Category? {
+        guard let selectedCategoryID else {
+            return categories.first
+        }
+
+        return categories.first(where: { $0.id == selectedCategoryID }) ?? categories.first
     }
 
     private var availablePaymentSources: [PaymentSource] {
@@ -98,13 +101,19 @@ struct AddExpenseView: View {
                         DatePicker("日付", selection: $selectedDate, displayedComponents: .date)
                             .datePickerStyle(.compact)
 
-                        Picker("カテゴリ", selection: $selectedCategoryID) {
-                            ForEach(categories) { category in
-                                Text(category.name).tag(category.id)
+                        if categories.isEmpty {
+                            Text("このポケットにはカテゴリがありません")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Picker("カテゴリ", selection: $selectedCategoryID) {
+                                ForEach(categories) { category in
+                                    Text(category.name).tag(Optional(category.id))
+                                }
                             }
+                            .pickerStyle(.menu)
+                            .tint(selectedPocketColor)
                         }
-                        .pickerStyle(.menu)
-                        .tint(selectedPocketColor)
 
                         Picker("支払元", selection: $selectedPaymentSource) {
                             ForEach(availablePaymentSources, id: \.self) { source in
@@ -158,7 +167,7 @@ struct AddExpenseView: View {
 
                     let record = ExpenseRecord(
                         pocketId: selectedPocket.id,
-                        categoryId: selectedCategory.id,
+                        categoryId: selectedCategory?.id,
                         amount: amountValue,
                         date: selectedDate,
                         memo: memoText,
@@ -196,19 +205,27 @@ struct AddExpenseView: View {
             .navigationTitle("支出入力")
             .onAppear {
                 try? pocketStore.loadIfNeeded(from: modelContext)
+                try? categoryStore.loadIfNeeded(from: modelContext)
                 syncSelectedPocket()
+                syncSelectedCategory()
                 syncSelectedPaymentSource()
             }
             .onChange(of: selectedPocketID) { _, _ in
+                syncSelectedCategory()
                 syncSelectedPaymentSource()
             }
             .onChange(of: deletedPocketRecords.map(\.pocketId)) { _, _ in
                 syncSelectedPocket()
+                syncSelectedCategory()
                 syncSelectedPaymentSource()
             }
             .onChange(of: pocketRecords.map(\.id)) { _, _ in
                 syncSelectedPocket()
+                syncSelectedCategory()
                 syncSelectedPaymentSource()
+            }
+            .onChange(of: categoryStore.categories.map(\.id)) { _, _ in
+                syncSelectedCategory()
             }
             .alert("保存に失敗しました", isPresented: saveErrorMessageAlertBinding) {
                 Button("確認", role: .cancel) {
@@ -297,6 +314,20 @@ struct AddExpenseView: View {
         selectedPocketID = pockets.first(where: \.isMain)?.id ?? pockets.first?.id
     }
 
+    private func syncSelectedCategory() {
+        guard categories.isEmpty == false else {
+            selectedCategoryID = nil
+            return
+        }
+
+        if let selectedCategoryID,
+           categories.contains(where: { $0.id == selectedCategoryID }) {
+            return
+        }
+
+        selectedCategoryID = categories.first?.id
+    }
+
     private var saveErrorMessageAlertBinding: Binding<Bool> {
         Binding(
             get: { saveErrorMessage != nil },
@@ -309,13 +340,9 @@ struct AddExpenseView: View {
     }
 }
 
-private struct ExpenseCategory: Identifiable {
-    let id: UUID
-    let name: String
-}
-
 #Preview {
     AddExpenseView()
+        .environment(CategoryStore())
         .environment(PocketStore())
-        .modelContainer(for: [ExpenseRecord.self, PocketRecord.self], inMemory: true)
+        .modelContainer(for: [ExpenseRecord.self, PocketRecord.self, DeletedPocketRecord.self, CategoryRecord.self], inMemory: true)
 }
