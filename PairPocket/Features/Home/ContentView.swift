@@ -3,6 +3,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(ExpenseStore.self) private var expenseStore
     @Environment(PocketStore.self) private var pocketStore
 
     @State private var showAddExpense = false
@@ -49,6 +50,7 @@ struct ContentView: View {
             AddExpenseView()
         }
         .task {
+            try? expenseStore.loadIfNeeded(from: modelContext)
             try? pocketStore.loadIfNeeded(from: modelContext)
         }
     }
