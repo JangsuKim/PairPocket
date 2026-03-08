@@ -45,12 +45,16 @@ struct AddExpenseView: View {
         return categoryStore.categories(for: selectedPocket.id)
     }
 
+    private var selectableCategories: [Category] {
+        categories.filter(\.isActive)
+    }
+
     private var selectedCategory: Category? {
         guard let selectedCategoryID else {
-            return categories.first
+            return selectableCategories.first
         }
 
-        return categories.first(where: { $0.id == selectedCategoryID }) ?? categories.first
+        return selectableCategories.first(where: { $0.id == selectedCategoryID }) ?? selectableCategories.first
     }
 
     private var availablePaymentSources: [PaymentSource] {
@@ -89,7 +93,7 @@ struct AddExpenseView: View {
     }
 
     private var categoryIDs: [UUID] {
-        categoryStore.categories.map(\.id)
+        selectableCategories.map(\.id)
     }
 
     var body: some View {
@@ -148,13 +152,13 @@ struct AddExpenseView: View {
                 DatePicker("日付", selection: $selectedDate, displayedComponents: .date)
                     .datePickerStyle(.compact)
 
-                if categories.isEmpty {
-                    Text("このポケットにはカテゴリがありません")
+                if selectableCategories.isEmpty {
+                    Text("このポケットには有効なカテゴリがありません")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } else {
                     Picker("カテゴリ", selection: $selectedCategoryID) {
-                        ForEach(categories) { category in
+                        ForEach(selectableCategories) { category in
                             Text(category.name).tag(Optional(category.id))
                         }
                     }
@@ -294,17 +298,17 @@ struct AddExpenseView: View {
     }
 
     private func syncSelectedCategory() {
-        guard categories.isEmpty == false else {
+        guard selectableCategories.isEmpty == false else {
             selectedCategoryID = nil
             return
         }
 
         if let selectedCategoryID,
-           categories.contains(where: { $0.id == selectedCategoryID }) {
+           selectableCategories.contains(where: { $0.id == selectedCategoryID }) {
             return
         }
 
-        selectedCategoryID = categories.first?.id
+        selectedCategoryID = selectableCategories.first?.id
     }
 
     private func saveExpense() {
