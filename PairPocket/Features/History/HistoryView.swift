@@ -6,6 +6,7 @@ struct HistoryView: View {
     @Query(sort: \PocketRecord.createdAt, order: .forward) private var pocketRecords: [PocketRecord]
     @Query private var deletedPocketRecords: [DeletedPocketRecord]
     @Environment(\.modelContext) private var modelContext
+    @Environment(CategoryStore.self) private var categoryStore
     @Environment(PocketStore.self) private var pocketStore
 
     @State private var selectedFilter: PocketFilter = .total
@@ -33,6 +34,7 @@ struct HistoryView: View {
         .navigationTitle("履歴")
         .task {
             try? pocketStore.loadIfNeeded(from: modelContext)
+            try? categoryStore.loadIfNeeded(from: modelContext)
         }
     }
 
@@ -297,8 +299,8 @@ struct HistoryView: View {
             return "入金"
         }
 
-        let category = CategoryCatalog.all.first(where: { $0.id == categoryId })
-        return category?.displayName ?? "📦未分類"
+        let category = categoryStore.categories.first(where: { $0.id == categoryId })
+        return category?.name ?? "未分類"
     }
 
     private func pocketLabel(for pocketId: UUID) -> String {
@@ -323,21 +325,6 @@ private enum PocketFilter: Equatable {
 private struct PocketOption: Identifiable {
     let id: UUID
     let name: String
-}
-
-private struct CategoryCatalog {
-    static let all: [CategoryDefinition] = [
-        .init(id: UUID(uuidString: "A1F1EAF5-0F59-4A33-B5B6-3A1F8F8B3B01")!, displayName: "🛒食費"),
-        .init(id: UUID(uuidString: "E8F9E3FD-6309-4FA4-B36B-D5CF5B0E56A7")!, displayName: "🧴生活"),
-        .init(id: UUID(uuidString: "5C2EAE9B-349B-40BA-9817-9A0E13CE35F3")!, displayName: "🚃交通"),
-        .init(id: UUID(uuidString: "BFE80144-9D6A-47B0-B4D9-83096E74CF23")!, displayName: "🎬娯楽"),
-        .init(id: UUID(uuidString: "D2D8E4E9-D2A2-4C6A-840B-CCDBF07D82AD")!, displayName: "🧾その他"),
-    ]
-}
-
-private struct CategoryDefinition {
-    let id: UUID
-    let displayName: String
 }
 
 private struct HistoryFormatters {

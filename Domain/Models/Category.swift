@@ -7,6 +7,7 @@ public struct Category: Identifiable, Codable, Hashable {
     public var icon: String?
     public var sortOrder: Int
     public var isDefault: Bool
+    public var isActive: Bool
 
     public init(
         id: UUID = UUID(),
@@ -14,7 +15,8 @@ public struct Category: Identifiable, Codable, Hashable {
         name: String,
         icon: String? = nil,
         sortOrder: Int = 0,
-        isDefault: Bool = false
+        isDefault: Bool = false,
+        isActive: Bool = true
     ) {
         self.id = id
         self.pocketId = pocketId
@@ -22,5 +24,6 @@ public struct Category: Identifiable, Codable, Hashable {
         self.icon = icon
         self.sortOrder = sortOrder
         self.isDefault = isDefault
+        self.isActive = isActive
     }
 }

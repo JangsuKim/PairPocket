@@ -9,6 +9,7 @@ final class CategoryRecord {
     var icon: String?
     var sortOrder: Int
     var isDefault: Bool
+    var isActive: Bool
 
     init(
         id: UUID = UUID(),
@@ -16,7 +17,8 @@ final class CategoryRecord {
         name: String,
         icon: String? = nil,
         sortOrder: Int = 0,
-        isDefault: Bool = false
+        isDefault: Bool = false,
+        isActive: Bool = true
     ) {
         self.id = id
         self.pocketId = pocketId
@@ -24,6 +26,7 @@ final class CategoryRecord {
         self.icon = icon
         self.sortOrder = sortOrder
         self.isDefault = isDefault
+        self.isActive = isActive
     }
 }
 
@@ -35,7 +38,8 @@ extension CategoryRecord {
             name: category.name,
             icon: category.icon,
             sortOrder: category.sortOrder,
-            isDefault: category.isDefault
+            isDefault: category.isDefault,
+            isActive: category.isActive
         )
     }
 
@@ -46,7 +50,8 @@ extension CategoryRecord {
             name: name,
             icon: icon,
             sortOrder: sortOrder,
-            isDefault: isDefault
+            isDefault: isDefault,
+            isActive: isActive
         )
     }
 }

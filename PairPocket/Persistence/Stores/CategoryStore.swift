@@ -4,6 +4,17 @@ import SwiftData
 
 @Observable
 final class CategoryStore {
+    enum CategoryStoreError: LocalizedError {
+        case cannotDeactivateLastActiveCategory
+
+        var errorDescription: String? {
+            switch self {
+            case .cannotDeactivateLastActiveCategory:
+                return "カテゴリは1つ以上必要です。"
+            }
+        }
+    }
+
     private(set) var categories: [Category] = []
     private var hasLoaded = false
 
@@ -71,6 +82,51 @@ final class CategoryStore {
         try reload(from: modelContext)
     }
 
+    func setCategoryActive(id: UUID, isActive: Bool, in modelContext: ModelContext) throws {
+        guard let record = try fetchCategoryRecord(id: id, from: modelContext) else { return }
+        guard record.isActive != isActive else { return }
+
+        if isActive == false {
+            let activeCount = categories(for: record.pocketId).filter(\.isActive).count
+            guard activeCount > 1 else {
+                throw CategoryStoreError.cannotDeactivateLastActiveCategory
+            }
+        }
+
+        record.isActive = isActive
+        try modelContext.save()
+        try reload(from: modelContext)
+    }
+
+    func moveCategories(
+        in pocketId: UUID,
+        fromOffsets: IndexSet,
+        toOffset: Int,
+        in modelContext: ModelContext
+    ) throws {
+        guard fromOffsets.isEmpty == false else { return }
+
+        let pocketRecords = try fetchCategoryRecords(for: pocketId, from: modelContext)
+        guard pocketRecords.isEmpty == false else { return }
+
+        var reorderedRecords = pocketRecords
+        let movingRecords = fromOffsets.sorted().map { reorderedRecords[$0] }
+
+        for sourceIndex in fromOffsets.sorted(by: >) {
+            reorderedRecords.remove(at: sourceIndex)
+        }
+
+        let destinationIndex = min(max(toOffset, 0), reorderedRecords.count)
+        reorderedRecords.insert(contentsOf: movingRecords, at: destinationIndex)
+
+        for (index, reorderedRecord) in reorderedRecords.enumerated() {
+            reorderedRecord.sortOrder = index
+        }
+
+        try modelContext.save()
+        try reload(from: modelContext)
+    }
+
     func deleteCategory(id: UUID, in modelContext: ModelContext) throws {
         guard let record = try fetchCategoryRecord(id: id, from: modelContext) else { return }
 
@@ -98,6 +154,20 @@ private extension CategoryStore {
         }
         let descriptor = FetchDescriptor<CategoryRecord>(predicate: predicate)
         return try modelContext.fetch(descriptor).first
+    }
+
+    func fetchCategoryRecords(for pocketId: UUID, from modelContext: ModelContext) throws -> [CategoryRecord] {
+        let predicate = #Predicate<CategoryRecord> { record in
+            record.pocketId == pocketId
+        }
+        let descriptor = FetchDescriptor<CategoryRecord>(
+            predicate: predicate,
+            sortBy: [
+                SortDescriptor(\.sortOrder, order: .forward),
+                SortDescriptor(\.name, order: .forward)
+            ]
+        )
+        return try modelContext.fetch(descriptor)
     }
 }
 
