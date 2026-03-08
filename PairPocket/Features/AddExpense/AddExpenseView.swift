@@ -2,50 +2,21 @@ import SwiftUI
 import SwiftData
 
 struct AddExpenseView: View {
+    @Query(sort: \PocketRecord.createdAt, order: .forward) private var pocketRecords: [PocketRecord]
+    @Query private var deletedPocketRecords: [DeletedPocketRecord]
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(PocketStore.self) private var pocketStore
 
-    @State private var selectedPocketID: Int = 0
+    @State private var selectedPocketID: UUID?
     @State private var selectedDate = Date()
     @State private var selectedCategoryID: UUID = AddExpenseView.defaultCategoryID
     @State private var selectedPaymentSource: PaymentSource = .memberA
     @State private var amountText: String = ""
     @State private var memoText: String = ""
+    @State private var saveErrorMessage: String?
 
     private static let defaultCategoryID = UUID(uuidString: "A1F1EAF5-0F59-4A33-B5B6-3A1F8F8B3B01")!
-
-    private let pockets: [ExpensePocket] = [
-        .init(
-            id: 0,
-            domainId: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
-            name: "生活費",
-            color: .green,
-            ratioA: 55,
-            ratioB: 45,
-            sharedBalanceEnabled: false,
-            personalPaymentEnabled: true
-        ),
-        .init(
-            id: 1,
-            domainId: UUID(uuidString: "0B51A05D-934F-4F02-BFE5-6CBA8AFBA761")!,
-            name: "旅行",
-            color: .orange,
-            ratioA: 50,
-            ratioB: 50,
-            sharedBalanceEnabled: true,
-            personalPaymentEnabled: true
-        ),
-        .init(
-            id: 2,
-            domainId: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!,
-            name: "住居",
-            color: .purple,
-            ratioA: 50,
-            ratioB: 50,
-            sharedBalanceEnabled: true,
-            personalPaymentEnabled: false
-        ),
-    ]
 
     private let categories: [ExpenseCategory] = [
         .init(id: UUID(uuidString: "A1F1EAF5-0F59-4A33-B5B6-3A1F8F8B3B01")!, name: "食費"),
@@ -60,11 +31,26 @@ struct AddExpenseView: View {
     }
 
     private var isAddEnabled: Bool {
-        amountValue > 0
+        amountValue > 0 && selectedPocket != nil
     }
 
-    private var selectedPocket: ExpensePocket {
-        pockets.first(where: { $0.id == selectedPocketID }) ?? pockets[0]
+    private var deletedPocketIDs: Set<UUID> {
+        Set(deletedPocketRecords.map(\.pocketId))
+    }
+
+    private var pockets: [Pocket] {
+        pocketRecords
+            .filter { deletedPocketIDs.contains($0.id) == false }
+            .map(\.pocket)
+    }
+
+    private var selectedPocket: Pocket? {
+        if let selectedPocketID,
+           let matchedPocket = pockets.first(where: { $0.id == selectedPocketID }) {
+            return matchedPocket
+        }
+
+        return pockets.first(where: \.isMain) ?? pockets.first
     }
 
     private var selectedCategory: ExpenseCategory {
@@ -72,6 +58,10 @@ struct AddExpenseView: View {
     }
 
     private var availablePaymentSources: [PaymentSource] {
+        guard let selectedPocket else {
+            return []
+        }
+
         var sources: [PaymentSource] = []
 
         if selectedPocket.personalPaymentEnabled {
@@ -87,11 +77,15 @@ struct AddExpenseView: View {
     }
 
     private var burdenA: Int {
-        amountValue * selectedPocket.ratioA / 100
+        amountValue * (selectedPocket?.ratioA ?? 0) / 100
     }
 
     private var burdenB: Int {
         amountValue - burdenA
+    }
+
+    private var selectedPocketColor: Color {
+        selectedPocket?.displayColor ?? .accentColor
     }
 
     var body: some View {
@@ -99,63 +93,71 @@ struct AddExpenseView: View {
             VStack(spacing: 16) {
                 pocketTabs
 
-                VStack(alignment: .leading, spacing: 14) {
-                    DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
-                        .datePickerStyle(.compact)
+                if selectedPocket != nil {
+                    VStack(alignment: .leading, spacing: 14) {
+                        DatePicker("日付", selection: $selectedDate, displayedComponents: .date)
+                            .datePickerStyle(.compact)
 
-                    Picker("Category", selection: $selectedCategoryID) {
-                        ForEach(categories) { category in
-                            Text(category.name).tag(category.id)
+                        Picker("カテゴリ", selection: $selectedCategoryID) {
+                            ForEach(categories) { category in
+                                Text(category.name).tag(category.id)
+                            }
                         }
-                    }
-                    .pickerStyle(.menu)
-                    .tint(selectedPocket.color)
+                        .pickerStyle(.menu)
+                        .tint(selectedPocketColor)
 
-                    Picker("Paid By", selection: $selectedPaymentSource) {
-                        ForEach(availablePaymentSources, id: \.self) { source in
-                            Text(paymentSourceLabel(source)).tag(source)
+                        Picker("支払元", selection: $selectedPaymentSource) {
+                            ForEach(availablePaymentSources, id: \.self) { source in
+                                Text(paymentSourceLabel(source)).tag(source)
+                            }
                         }
-                    }
-                    .pickerStyle(.segmented)
-                    .tint(selectedPocket.color)
+                        .pickerStyle(.segmented)
+                        .tint(selectedPocketColor)
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Amount")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("金額")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
 
-                        TextField("0", text: $amountText)
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
-                            .onChange(of: amountText) { _, newValue in
-                                amountText = newValue.filter(\.isNumber)
+                            TextField("0", text: $amountText)
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                                .keyboardType(.numberPad)
+                                .textFieldStyle(.roundedBorder)
+                                .onChange(of: amountText) { _, newValue in
+                                    amountText = newValue.filter(\.isNumber)
+                                }
+
+                            HStack(spacing: 20) {
+                                burdenRow(name: "A", amount: burdenA)
+                                burdenRow(name: "B", amount: burdenB)
                             }
 
-                        HStack(spacing: 20) {
-                            burdenRow(name: "A", amount: burdenA)
-                            burdenRow(name: "B", amount: burdenB)
+                            Button {
+                                print("change ratio tapped")
+                            } label: {
+                                Text("比率を変更")
+                                    .font(.subheadline)
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
                         }
 
-                        Button {
-                            print("change ratio tapped")
-                        } label: {
-                            Text("比率を変更")
-                                .font(.subheadline)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.secondary)
+                        TextField("メモ", text: $memoText)
+                            .textFieldStyle(.roundedBorder)
                     }
-
-                    TextField("Memo", text: $memoText)
-                        .textFieldStyle(.roundedBorder)
+                } else {
+                    ContentUnavailableView("ポケットがありません", systemImage: "wallet.pass")
                 }
 
                 Spacer()
 
                 Button {
+                    guard let selectedPocket else {
+                        return
+                    }
+
                     let record = ExpenseRecord(
-                        pocketId: selectedPocket.domainId,
+                        pocketId: selectedPocket.id,
                         categoryId: selectedCategory.id,
                         amount: amountValue,
                         date: selectedDate,
@@ -169,17 +171,23 @@ struct AddExpenseView: View {
                     )
 
                     modelContext.insert(record)
-                    try? modelContext.save()
-                    dismiss()
+
+                    do {
+                        try modelContext.save()
+                        dismiss()
+                    } catch {
+                        modelContext.delete(record)
+                        saveErrorMessage = error.localizedDescription
+                    }
                 } label: {
-                    Text("Add")
+                    Text("追加")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
-                .background(selectedPocket.color)
+                .background(selectedPocket?.displayColor ?? .gray)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .opacity(isAddEnabled ? 1 : 0.45)
                 .disabled(!isAddEnabled)
@@ -187,10 +195,27 @@ struct AddExpenseView: View {
             .padding()
             .navigationTitle("支出入力")
             .onAppear {
+                try? pocketStore.loadIfNeeded(from: modelContext)
+                syncSelectedPocket()
                 syncSelectedPaymentSource()
             }
             .onChange(of: selectedPocketID) { _, _ in
                 syncSelectedPaymentSource()
+            }
+            .onChange(of: deletedPocketRecords.map(\.pocketId)) { _, _ in
+                syncSelectedPocket()
+                syncSelectedPaymentSource()
+            }
+            .onChange(of: pocketRecords.map(\.id)) { _, _ in
+                syncSelectedPocket()
+                syncSelectedPaymentSource()
+            }
+            .alert("保存に失敗しました", isPresented: saveErrorMessageAlertBinding) {
+                Button("確認", role: .cancel) {
+                    saveErrorMessage = nil
+                }
+            } message: {
+                Text(saveErrorMessage ?? "不明なエラーが発生しました。")
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -216,10 +241,10 @@ struct AddExpenseView: View {
                             .padding(.horizontal, 12)
                             .background(
                                 Capsule().fill(
-                                    selectedPocketID == pocket.id ? pocket.color.opacity(0.2) : Color.clear
+                                    selectedPocket?.id == pocket.id ? pocket.displayColor.opacity(0.2) : Color.clear
                                 )
                             )
-                            .foregroundStyle(selectedPocketID == pocket.id ? pocket.color : .primary)
+                            .foregroundStyle(selectedPocket?.id == pocket.id ? pocket.displayColor : .primary)
                     }
                     .buttonStyle(.plain)
                 }
@@ -253,7 +278,7 @@ struct AddExpenseView: View {
         case .memberB:
             return "B"
         case .pocket:
-            return "Pocket"
+            return "ポケット"
         }
     }
 
@@ -262,17 +287,26 @@ struct AddExpenseView: View {
             selectedPaymentSource = availablePaymentSources.first ?? .memberA
         }
     }
-}
 
-private struct ExpensePocket: Identifiable {
-    let id: Int
-    let domainId: UUID
-    let name: String
-    let color: Color
-    let ratioA: Int
-    let ratioB: Int
-    let sharedBalanceEnabled: Bool
-    let personalPaymentEnabled: Bool
+    private func syncSelectedPocket() {
+        if let selectedPocketID,
+           pockets.contains(where: { $0.id == selectedPocketID }) {
+            return
+        }
+
+        selectedPocketID = pockets.first(where: \.isMain)?.id ?? pockets.first?.id
+    }
+
+    private var saveErrorMessageAlertBinding: Binding<Bool> {
+        Binding(
+            get: { saveErrorMessage != nil },
+            set: { isPresented in
+                if isPresented == false {
+                    saveErrorMessage = nil
+                }
+            }
+        )
+    }
 }
 
 private struct ExpenseCategory: Identifiable {
@@ -282,5 +316,6 @@ private struct ExpenseCategory: Identifiable {
 
 #Preview {
     AddExpenseView()
-        .modelContainer(for: [ExpenseRecord.self], inMemory: true)
+        .environment(PocketStore())
+        .modelContainer(for: [ExpenseRecord.self, PocketRecord.self], inMemory: true)
 }

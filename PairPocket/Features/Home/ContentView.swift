@@ -1,6 +1,10 @@
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(PocketStore.self) private var pocketStore
+
     @State private var showAddExpense = false
 
     var body: some View {
@@ -8,22 +12,22 @@ struct ContentView: View {
             NavigationStack {
                 HomeView()
             }
-            .tabItem { Label("Home", systemImage: "house") }
+            .tabItem { Label("ホーム", systemImage: "house") }
 
             NavigationStack {
                 PocketListView()
             }
-            .tabItem { Label("Pocket", systemImage: "wallet.pass") }
+            .tabItem { Label("ポケット", systemImage: "wallet.pass") }
 
             NavigationStack {
                 HistoryView()
             }
-            .tabItem { Label("History", systemImage: "clock") }
+            .tabItem { Label("履歴", systemImage: "clock") }
 
             NavigationStack {
                 SettingsView()
             }
-            .tabItem { Label("Settings", systemImage: "gearshape") }
+            .tabItem { Label("設定", systemImage: "gearshape") }
         }
         .overlay(alignment: .bottomTrailing) {
             Button {
@@ -39,10 +43,13 @@ struct ContentView: View {
             }
             .padding(.trailing, 20)
             .padding(.bottom, 72)
-            .accessibilityLabel("Add")
+            .accessibilityLabel("追加")
         }
         .sheet(isPresented: $showAddExpense) {
             AddExpenseView()
+        }
+        .task {
+            try? pocketStore.loadIfNeeded(from: modelContext)
         }
     }
 }
@@ -50,4 +57,6 @@ struct ContentView: View {
 #Preview {
     ContentView()
         .environment(ExpenseStore())
+        .environment(PocketStore())
+        .modelContainer(for: [ExpenseRecord.self, PocketRecord.self], inMemory: true)
 }

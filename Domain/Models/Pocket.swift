@@ -9,6 +9,7 @@ public struct Pocket: Identifiable, Codable, Hashable {
     public var ratioB: Int
     public var sharedBalanceEnabled: Bool
     public var personalPaymentEnabled: Bool
+    public var isMain: Bool
     public var createdAt: Date
 
     // Constraint (not enforced yet): ratioA + ratioB == 100
@@ -21,6 +22,7 @@ public struct Pocket: Identifiable, Codable, Hashable {
         ratioB: Int = 50,
         sharedBalanceEnabled: Bool = false,
         personalPaymentEnabled: Bool = true,
+        isMain: Bool = false,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -31,6 +33,7 @@ public struct Pocket: Identifiable, Codable, Hashable {
         self.ratioB = ratioB
         self.sharedBalanceEnabled = sharedBalanceEnabled
         self.personalPaymentEnabled = personalPaymentEnabled
+        self.isMain = isMain
         self.createdAt = createdAt
     }
 }

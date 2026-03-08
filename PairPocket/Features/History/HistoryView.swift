@@ -3,6 +3,10 @@ import SwiftData
 
 struct HistoryView: View {
     @Query(sort: \ExpenseRecord.date, order: .reverse) private var expenses: [ExpenseRecord]
+    @Query(sort: \PocketRecord.createdAt, order: .forward) private var pocketRecords: [PocketRecord]
+    @Query private var deletedPocketRecords: [DeletedPocketRecord]
+    @Environment(\.modelContext) private var modelContext
+    @Environment(PocketStore.self) private var pocketStore
 
     @State private var selectedFilter: PocketFilter = .total
     @State private var selectedMode: ViewMode = .list
@@ -27,6 +31,9 @@ struct HistoryView: View {
         .padding(.horizontal, 12)
         .padding(.top, 8)
         .navigationTitle("履歴")
+        .task {
+            try? pocketStore.loadIfNeeded(from: modelContext)
+        }
     }
 
     private var filteredExpenses: [ExpenseRecord] {
@@ -38,8 +45,15 @@ struct HistoryView: View {
         }
     }
 
+    private var deletedPocketIDs: Set<UUID> {
+        Set(deletedPocketRecords.map(\.pocketId))
+    }
+
     private var pocketOptions: [PocketOption] {
-        PocketCatalog.all.map {
+        pocketRecords
+            .filter { deletedPocketIDs.contains($0.id) == false }
+            .map(\.pocket)
+            .map {
             PocketOption(id: $0.id, name: $0.name)
         }
     }
@@ -55,7 +69,7 @@ struct HistoryView: View {
     private var pocketFilterTabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                filterChip(title: "Total", isSelected: selectedFilter == .total) {
+                filterChip(title: "全体", isSelected: selectedFilter == .total) {
                     selectedFilter = .total
                 }
 
@@ -83,9 +97,9 @@ struct HistoryView: View {
     }
 
     private var modeSwitcher: some View {
-        Picker("Mode", selection: $selectedMode) {
-            Text("Calendar").tag(ViewMode.calendar)
-            Text("List").tag(ViewMode.list)
+        Picker("表示", selection: $selectedMode) {
+            Text("カレンダー").tag(ViewMode.calendar)
+            Text("リスト").tag(ViewMode.list)
         }
         .pickerStyle(.segmented)
     }
@@ -93,7 +107,7 @@ struct HistoryView: View {
     private var emptyState: some View {
         VStack {
             Spacer(minLength: 36)
-            Text("No expenses yet")
+            Text("まだ支出がありません")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer()
@@ -223,19 +237,19 @@ struct HistoryView: View {
 
     private var tableHeader: some View {
         HStack(spacing: 0) {
-            Text("Date")
+            Text("日付")
                 .frame(width: 74, alignment: .leading)
 
-            Text("Category")
+            Text("カテゴリ")
                 .frame(width: 96, alignment: .leading)
 
-            Text("Memo")
+            Text("メモ")
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("Paid By")
+            Text("支払元")
                 .frame(width: 64, alignment: .center)
 
-            Text("Amount")
+            Text("金額")
                 .frame(width: 84, alignment: .trailing)
         }
         .font(.caption2.weight(.semibold))
@@ -274,13 +288,13 @@ struct HistoryView: View {
         case .memberB:
             return "B"
         case .pocket:
-            return "Pocket"
+            return "ポケット"
         }
     }
 
     private func categoryLabel(for categoryId: UUID?) -> String {
         guard let categoryId else {
-            return "입금"
+            return "入金"
         }
 
         let category = CategoryCatalog.all.first(where: { $0.id == categoryId })
@@ -288,8 +302,11 @@ struct HistoryView: View {
     }
 
     private func pocketLabel(for pocketId: UUID) -> String {
-        let pocket = PocketCatalog.all.first(where: { $0.id == pocketId })
-        return pocket?.name ?? "未分類"
+        if let pocket = pocketRecords.first(where: { $0.id == pocketId })?.pocket {
+            return deletedPocketIDs.contains(pocket.id) ? "\(pocket.name)（削除済み）" : pocket.name
+        }
+
+        return "未分類"
     }
 }
 
@@ -304,19 +321,6 @@ private enum PocketFilter: Equatable {
 }
 
 private struct PocketOption: Identifiable {
-    let id: UUID
-    let name: String
-}
-
-private struct PocketCatalog {
-    static let all: [PocketDefinition] = [
-        .init(id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!, name: "生活費"),
-        .init(id: UUID(uuidString: "0B51A05D-934F-4F02-BFE5-6CBA8AFBA761")!, name: "旅行"),
-        .init(id: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!, name: "家賃"),
-    ]
-}
-
-private struct PocketDefinition {
     let id: UUID
     let name: String
 }
@@ -429,6 +433,7 @@ private struct MonthCell: Identifiable {
 #Preview {
     NavigationStack {
         HistoryView()
-            .modelContainer(for: [ExpenseRecord.self], inMemory: true)
+            .environment(PocketStore())
+            .modelContainer(for: [ExpenseRecord.self, PocketRecord.self], inMemory: true)
     }
 }

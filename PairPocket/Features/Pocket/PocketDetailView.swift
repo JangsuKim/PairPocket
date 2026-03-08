@@ -1,12 +1,34 @@
 import SwiftUI
+import SwiftData
 
 struct PocketDetailView: View {
+    @Query(sort: \PocketRecord.createdAt, order: .forward) private var pocketRecords: [PocketRecord]
+    @Query private var deletedPocketRecords: [DeletedPocketRecord]
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Environment(ExpenseStore.self) private var expenseStore
+    @Environment(PocketStore.self) private var pocketStore
 
-    let pocket: PocketItem
+    let pocketID: UUID
+
+    @State private var editingPocket: Pocket?
+
+    private var deletedPocketIDs: Set<UUID> {
+        Set(deletedPocketRecords.map(\.pocketId))
+    }
+
+    private var pocket: Pocket? {
+        pocketRecords
+            .first(where: { $0.id == pocketID && deletedPocketIDs.contains($0.id) == false })?
+            .pocket
+    }
 
     private var pocketExpenses: [Expense] {
-        expenseStore.expenses
+        guard let pocket else {
+            return []
+        }
+
+        return expenseStore.expenses
             .filter { $0.pocketId == pocket.id }
             .sorted { $0.date > $1.date }
     }
@@ -28,44 +50,92 @@ struct PocketDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                summarySection
+        Group {
+            if let pocket {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        summarySection
+                        pocketInfoSection(for: pocket)
 
-                if pocketExpenses.isEmpty {
-                    Text("No expenses yet")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Expenses")
-                            .font(.headline)
+                        if pocketExpenses.isEmpty {
+                            Text("まだ支出がありません")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("支出一覧")
+                                    .font(.headline)
 
-                        ForEach(pocketExpenses) { expense in
-                            expenseRow(expense)
+                                ForEach(pocketExpenses) { expense in
+                                    expenseRow(expense)
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                }
+                .navigationTitle(pocket.name)
+                .toolbar {
+                    ToolbarItemGroup(placement: .topBarTrailing) {
+                        Button("編集") {
+                            editingPocket = pocket
                         }
                     }
                 }
+            } else {
+                ContentUnavailableView("ポケットが見つかりません", systemImage: "wallet.pass")
+                    .navigationTitle("ポケット")
             }
-            .padding()
         }
-        .navigationTitle(pocket.name)
+        .sheet(item: $editingPocket) { pocket in
+            NavigationStack {
+                PocketFormView(mode: .edit(pocket))
+            }
+        }
+        .onAppear {
+            try? pocketStore.reload(from: modelContext)
+        }
+        .onChange(of: deletedPocketRecords.map(\.pocketId)) { _, _ in
+            if pocket == nil {
+                dismiss()
+            }
+        }
+        .onChange(of: pocketRecords.map(\.id)) { _, _ in
+            if pocket == nil {
+                dismiss()
+            }
+        }
     }
 
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Payment Summary")
+            Text("支払いサマリー")
                 .font(.headline)
 
-            summaryRow(title: "Person A", amount: paidByA)
-            summaryRow(title: "Person B", amount: paidByB)
+            summaryRow(title: "Aの支払い", amount: paidByA)
+            summaryRow(title: "Bの支払い", amount: paidByB)
 
             Divider()
 
-            summaryRow(title: "Total", amount: totalAmount, isEmphasized: true)
+            summaryRow(title: "合計", amount: totalAmount, isEmphasized: true)
         }
         .padding(16)
         .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func pocketInfoSection(for pocket: Pocket) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("ポケット設定")
+                .font(.headline)
+
+            detailRow(title: "比率", value: "\(pocket.ratioA)% / \(pocket.ratioB)%")
+            detailRow(title: "共有残高", value: pocket.sharedBalanceEnabled ? "オン" : "オフ")
+            detailRow(title: "個人支払い", value: pocket.personalPaymentEnabled ? "オン" : "オフ")
+            detailRow(title: "メインポケット", value: pocket.isMain ? "はい" : "いいえ")
+        }
+        .padding(16)
+        .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
@@ -100,6 +170,16 @@ struct PocketDetailView: View {
         }
     }
 
+    @ViewBuilder
+    private func detailRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+        }
+    }
+
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
@@ -119,14 +199,10 @@ struct PocketDetailView: View {
 #Preview {
     NavigationStack {
         PocketDetailView(
-            pocket: .init(
-                id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
-                name: "生活費",
-                color: .green,
-                sharedBalanceEnabled: false,
-                personalPaymentEnabled: true
-            )
+            pocketID: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!
         )
-            .environment(ExpenseStore())
+        .environment(ExpenseStore())
+        .environment(PocketStore())
+        .modelContainer(for: [ExpenseRecord.self, PocketRecord.self], inMemory: true)
     }
 }

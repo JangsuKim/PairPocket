@@ -7,26 +7,26 @@ struct HistoryExpenseDetailView: View {
 
     var body: some View {
         List {
-            Section("Expense") {
-                detailRow(title: "Date", value: HistoryDetailFormatters.date.string(from: expense.date))
-                detailRow(title: "Pocket", value: pocketName)
-                detailRow(title: "Category", value: categoryName)
-                detailRow(title: "Paid By", value: paymentSourceLabel(expense.paymentSource))
-                detailRow(title: "Amount", value: HistoryDetailFormatters.yen(expense.amount))
+            Section("支出情報") {
+                detailRow(title: "日付", value: HistoryDetailFormatters.date.string(from: expense.date))
+                detailRow(title: "ポケット", value: pocketName)
+                detailRow(title: "カテゴリ", value: categoryName)
+                detailRow(title: "支払元", value: paymentSourceLabel(expense.paymentSource))
+                detailRow(title: "金額", value: HistoryDetailFormatters.yen(expense.amount))
             }
 
-            Section("Memo") {
+            Section("メモ") {
                 Text(expense.memo.isEmpty ? "-" : expense.memo)
                     .font(.body)
             }
 
-            Section("Settlement Snapshot") {
-                detailRow(title: "Ratio A", value: "\(expense.ratioA)%")
-                detailRow(title: "Ratio B", value: "\(expense.ratioB)%")
-                detailRow(title: "Settled", value: expense.isSettled ? "Yes" : "No")
+            Section("精算時点の情報") {
+                detailRow(title: "比率 A", value: "\(expense.ratioA)%")
+                detailRow(title: "比率 B", value: "\(expense.ratioB)%")
+                detailRow(title: "精算済み", value: expense.isSettled ? "はい" : "いいえ")
             }
         }
-        .navigationTitle("Expense Detail")
+        .navigationTitle("支出詳細")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -48,7 +48,7 @@ struct HistoryExpenseDetailView: View {
         case .memberB:
             return "B"
         case .pocket:
-            return "Pocket"
+            return "ポケット"
         }
     }
 }
