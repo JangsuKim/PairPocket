@@ -27,7 +27,6 @@ struct PocketFormView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Environment(CategoryStore.self) private var categoryStore
     @Environment(PocketStore.self) private var pocketStore
 
     let mode: Mode
@@ -178,17 +177,7 @@ struct PocketFormView: View {
                 personalPaymentEnabled: personalPaymentEnabled,
                 isMain: shouldBeMain
             )
-            do {
-                try pocketStore.addPocket(
-                    pocket,
-                    defaultCategoryName: "カテゴリ1",
-                    in: modelContext
-                )
-                try categoryStore.reload(from: modelContext)
-            } catch {
-                validationMessage = error.localizedDescription
-                return
-            }
+            try? pocketStore.addPocket(pocket, in: modelContext)
         case let .edit(existingPocket):
             let updatedPocket = Pocket(
                 id: existingPocket.id,
@@ -202,12 +191,7 @@ struct PocketFormView: View {
                 isMain: isMain,
                 createdAt: existingPocket.createdAt
             )
-            do {
-                try pocketStore.updatePocket(updatedPocket, in: modelContext)
-            } catch {
-                validationMessage = error.localizedDescription
-                return
-            }
+            try? pocketStore.updatePocket(updatedPocket, in: modelContext)
         }
 
         dismiss()
@@ -231,8 +215,7 @@ struct PocketFormView: View {
 #Preview {
     NavigationStack {
         PocketFormView(mode: .add)
-            .environment(CategoryStore())
             .environment(PocketStore())
-            .modelContainer(for: [PocketRecord.self, CategoryRecord.self], inMemory: true)
+            .modelContainer(for: [PocketRecord.self], inMemory: true)
     }
 }

@@ -176,29 +176,64 @@ private extension CategoryStore {
         Category(
             id: UUID(uuidString: "A1F1EAF5-0F59-4A33-B5B6-3A1F8F8B3B01")!,
             pocketId: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
-            name: "スーパー",
+            name: "食費",
             sortOrder: 0,
             isDefault: true
         ),
         Category(
             id: UUID(uuidString: "E8F9E3FD-6309-4FA4-B36B-D5CF5B0E56A7")!,
             pocketId: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
-            name: "ドラッグストア",
+            name: "カフェ",
             sortOrder: 1,
             isDefault: true
         ),
         Category(
             id: UUID(uuidString: "5C2EAE9B-349B-40BA-9817-9A0E13CE35F3")!,
             pocketId: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
-            name: "オンライン通販",
+            name: "生活",
             sortOrder: 2,
             isDefault: true
         ),
         Category(
             id: UUID(uuidString: "BFE80144-9D6A-47B0-B4D9-83096E74CF23")!,
-            pocketId: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
-            name: "コンビニ",
-            sortOrder: 3,
+            pocketId: UUID(uuidString: "0B51A05D-934F-4F02-BFE5-6CBA8AFBA761")!,
+            name: "交通",
+            sortOrder: 0,
+            isDefault: true
+        ),
+        Category(
+            id: UUID(uuidString: "D2D8E4E9-D2A2-4C6A-840B-CCDBF07D82AD")!,
+            pocketId: UUID(uuidString: "0B51A05D-934F-4F02-BFE5-6CBA8AFBA761")!,
+            name: "宿泊",
+            sortOrder: 1,
+            isDefault: true
+        ),
+        Category(
+            id: UUID(uuidString: "F1BFAFF3-CC02-4624-A6B7-92E0A44C508B")!,
+            pocketId: UUID(uuidString: "0B51A05D-934F-4F02-BFE5-6CBA8AFBA761")!,
+            name: "食事",
+            sortOrder: 2,
+            isDefault: true
+        ),
+        Category(
+            id: UUID(uuidString: "09D8C552-3A9A-43C7-8590-C8BE17DEDBD6")!,
+            pocketId: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!,
+            name: "家賃",
+            sortOrder: 0,
+            isDefault: true
+        ),
+        Category(
+            id: UUID(uuidString: "5B0A7D25-AB55-4C57-87E9-2BBEC54B028E")!,
+            pocketId: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!,
+            name: "光熱費",
+            sortOrder: 1,
+            isDefault: true
+        ),
+        Category(
+            id: UUID(uuidString: "0D8C77C2-B4C9-4617-9E0D-AE14D149C9B6")!,
+            pocketId: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!,
+            name: "日用品",
+            sortOrder: 2,
             isDefault: true
         ),
     ]
