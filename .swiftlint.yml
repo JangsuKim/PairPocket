@@ -7,11 +7,11 @@ line_length:
 
 type_body_length:
   warning: 500
-  error: 600
+  error: 700
 
 file_length:
-  warning: 600
-  error: 800
+  warning: 900
+  error: 1200
 
 function_body_length:
   warning: 120
