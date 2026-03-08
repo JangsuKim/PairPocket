@@ -41,6 +41,28 @@ final class PocketStore {
         try persistMainPocket(preferredMainID: pocket.isMain ? pocket.id : nil, in: modelContext)
     }
 
+    func addPocket(
+        _ pocket: Pocket,
+        defaultCategoryName: String,
+        in modelContext: ModelContext
+    ) throws {
+        let trimmedCategoryName = defaultCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        modelContext.insert(PocketRecord(pocket: pocket))
+
+        if trimmedCategoryName.isEmpty == false {
+            let category = Category(
+                pocketId: pocket.id,
+                name: trimmedCategoryName,
+                sortOrder: 0,
+                isDefault: true
+            )
+            modelContext.insert(CategoryRecord(category: category))
+        }
+
+        try persistMainPocket(preferredMainID: pocket.isMain ? pocket.id : nil, in: modelContext)
+    }
+
     func updatePocket(_ pocket: Pocket, in modelContext: ModelContext) throws {
         let record = try fetchPocketRecord(id: pocket.id, from: modelContext)
         record.name = pocket.name
@@ -164,29 +186,11 @@ private extension PocketStore {
             id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
             name: "生活費",
             colorKey: "green",
-            ratioA: 55,
-            ratioB: 45,
+            ratioA: 50,
+            ratioB: 50,
             sharedBalanceEnabled: false,
             personalPaymentEnabled: true,
             isMain: true
-        ),
-        Pocket(
-            id: UUID(uuidString: "0B51A05D-934F-4F02-BFE5-6CBA8AFBA761")!,
-            name: "旅行",
-            colorKey: "orange",
-            ratioA: 50,
-            ratioB: 50,
-            sharedBalanceEnabled: true,
-            personalPaymentEnabled: true
-        ),
-        Pocket(
-            id: UUID(uuidString: "A2E2E92C-A4F9-4B6C-BB9F-A928A84E5B8C")!,
-            name: "住居",
-            colorKey: "purple",
-            ratioA: 50,
-            ratioB: 50,
-            sharedBalanceEnabled: true,
-            personalPaymentEnabled: false
         )
     ]
 }
