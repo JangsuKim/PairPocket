@@ -167,10 +167,42 @@ struct PocketDetailView: View {
             if let pocket {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        summarySection
-                        settlementSection
-                        categorySection(for: pocket)
-                        monthlySection
+                        PocketDetailSummary(
+                            paidByA: paidByA,
+                            paidByB: paidByB,
+                            totalAmount: totalAmount,
+                            formatYen: formatYen
+                        )
+                        PocketDetailSettlement(
+                            payerName: settlementSummary.settlementPayer.map(memberName(for:)),
+                            receiverName: settlementSummary.settlementReceiver.map(memberName(for:)),
+                            settlementAmount: settlementSummary.settlementAmount,
+                            formatYen: formatYen
+                        )
+                        PocketDetailCategorySection(
+                            pocketColor: pocket.displayColor,
+                            isExpanded: isCategoryExpanded,
+                            categorySummaries: categorySummaries,
+                            donutChartData: donutChartData,
+                            totalAmount: totalAmount,
+                            categoryCount: pocketCategories.count,
+                            summaryText: categorySectionSummaryText,
+                            formatYen: formatYen,
+                            percentageText: percentageText(for:),
+                            categoryColor: categoryColor(for:),
+                            onToggle: toggleCategorySection,
+                            onManageCategories: presentCategoryManagement
+                        )
+                        PocketDetailChart(
+                            isExpanded: isMonthlyExpanded,
+                            monthlySummaries: monthlySummaries,
+                            isEmpty: pocketExpenses.isEmpty,
+                            chartYear: chartYear,
+                            summaryText: monthlySectionSummaryText,
+                            formatYen: formatYen,
+                            monthlyBarWidth: monthlyBarWidth(amount:availableWidth:),
+                            onToggle: toggleMonthlySection
+                        )
                     }
                     .padding(16)
                 }
@@ -211,245 +243,6 @@ struct PocketDetailView: View {
             if pocket == nil {
                 dismiss()
             }
-        }
-    }
-
-    private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("支出サマリー")
-                .font(.headline)
-
-            summaryAmountRow(title: "MemberA", amount: paidByA)
-            summaryAmountRow(title: "MemberB", amount: paidByB)
-
-            Divider()
-
-            summaryAmountRow(title: "合計", amount: totalAmount, emphasized: true)
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
-    private var settlementSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("精算予定")
-                .font(.headline)
-
-            Text("現在の精算予定額")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if let payer = settlementSummary.settlementPayer,
-               let receiver = settlementSummary.settlementReceiver,
-               settlementSummary.settlementAmount > 0 {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(memberName(for: payer)) → \(memberName(for: receiver))")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    Text(formatYen(settlementSummary.settlementAmount))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                }
-            } else {
-                Text("精算なし")
-                    .font(.title3.weight(.bold))
-            }
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
-    private func categorySection(for pocket: Pocket) -> some View {
-        VStack(alignment: .leading, spacing: isCategoryExpanded ? 16 : 10) {
-            HStack {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isCategoryExpanded.toggle()
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Text("カテゴリ支出")
-                            .font(.headline)
-                        Image(systemName: isCategoryExpanded ? "chevron.up" : "chevron.down")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-                Button("カテゴリー管理") {
-                    isPresentingCategoryManagement = true
-                }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-            }
-
-            if isCategoryExpanded {
-                Chart(donutChartData) { summary in
-                    SectorMark(
-                        angle: .value("Amount", summary.amount),
-                        innerRadius: .ratio(0.62),
-                        angularInset: 2
-                    )
-                    .foregroundStyle(categoryColor(for: summary))
-                }
-                .frame(height: 220)
-                .chartLegend(.hidden)
-                .chartBackground { chartProxy in
-                    GeometryReader { geometry in
-                        if let frame = chartProxy.plotFrame {
-                            let plotFrame = geometry[frame]
-
-                            VStack(spacing: 4) {
-                                Text("合計")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text(formatYen(totalAmount))
-                                    .font(.title3.weight(.bold))
-                            }
-                            .position(x: plotFrame.midX, y: plotFrame.midY)
-                        }
-                    }
-                }
-
-                if categorySummaries.isEmpty {
-                    Text("カテゴリ別の支出データがありません")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(spacing: 12) {
-                        ForEach(categorySummaries) { summary in
-                            HStack(spacing: 12) {
-                                Circle()
-                                    .fill(categoryColor(for: summary))
-                                    .frame(width: 10, height: 10)
-
-                                Text(summary.name)
-                                    .font(.subheadline)
-
-                                Spacer()
-
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text(formatYen(summary.amount))
-                                        .font(.subheadline.weight(.semibold))
-                                    Text(percentageText(for: summary.amount))
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                Text(categorySectionSummaryText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            if pocketCategories.isEmpty {
-                Text("このポケットにはまだカテゴリがありません")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("\(pocketCategories.count)個のカテゴリ")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .tint(pocket.displayColor)
-    }
-
-    private var monthlySection: some View {
-        VStack(alignment: .leading, spacing: isMonthlyExpanded ? 16 : 10) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isMonthlyExpanded.toggle()
-                }
-            } label: {
-                HStack(spacing: 6) {
-                    Text("月別支出")
-                        .font(.headline)
-                    Image(systemName: isMonthlyExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .buttonStyle(.plain)
-
-            if isMonthlyExpanded {
-                VStack(spacing: 10) {
-                    ForEach(monthlySummaries) { summary in
-                        monthlyBarRow(summary)
-                    }
-                }
-
-                if pocketExpenses.isEmpty {
-                    Text("\(chartYear)年の月別支出はまだありません")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            } else {
-                Text(monthlySectionSummaryText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
-    private func monthlyBarRow(_ summary: MonthlySpendingSummary) -> some View {
-        HStack(spacing: 12) {
-            Text(summary.label)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-                .frame(width: 28, alignment: .leading)
-
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(.systemGray5))
-                        .frame(height: 12)
-
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(.blue.gradient)
-                        .frame(
-                            width: monthlyBarWidth(
-                                amount: summary.amount,
-                                availableWidth: geometry.size.width
-                            ),
-                            height: 12
-                        )
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            }
-            .frame(height: 20)
-
-            Text(formatYen(summary.amount))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(width: 64, alignment: .trailing)
-        }
-    }
-
-    private func summaryAmountRow(title: String, amount: Int, emphasized: Bool = false) -> some View {
-        HStack {
-            Text(title)
-                .fontWeight(emphasized ? .semibold : .regular)
-            Spacer()
-            Text(formatYen(amount))
-                .font(emphasized ? .title3.weight(.bold) : .title3.weight(.semibold))
         }
     }
 
@@ -508,6 +301,22 @@ struct PocketDetailView: View {
         }
     }
 
+    private func toggleMonthlySection() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isMonthlyExpanded.toggle()
+        }
+    }
+
+    private func toggleCategorySection() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isCategoryExpanded.toggle()
+        }
+    }
+
+    private func presentCategoryManagement() {
+        isPresentingCategoryManagement = true
+    }
+
     private func monthlyBarWidth(amount: Int, availableWidth: CGFloat) -> CGFloat {
         guard maxMonthlyAmount > 0 else {
             return 0
@@ -519,7 +328,7 @@ struct PocketDetailView: View {
 
 }
 
-private struct CategorySpendingSummary: Identifiable {
+struct CategorySpendingSummary: Identifiable {
     let id: UUID?
     let name: String
     let amount: Int
@@ -533,277 +342,12 @@ private struct CategorySpendingSummary: Identifiable {
     }
 }
 
-private struct MonthlySpendingSummary: Identifiable {
+struct MonthlySpendingSummary: Identifiable {
     let month: Int
     let amount: Int
 
     var id: Int { month }
     var label: String { "\(month)月" }
-}
-
-private struct CategoryManagementSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.editMode) private var editMode
-    @Environment(\.modelContext) private var modelContext
-    @Environment(CategoryStore.self) private var categoryStore
-
-    let pocket: Pocket
-
-    @State private var newCategoryName = ""
-    @State private var errorMessage: String?
-    @State private var editingCategoryID: UUID?
-    @State private var isReordering = false
-
-    private var categories: [Category] {
-        categoryStore.categories(for: pocket.id)
-    }
-
-    private var activeCategoryCount: Int {
-        categories.filter(\.isActive).count
-    }
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("カテゴリ一覧") {
-                    if categories.isEmpty {
-                        Text("カテゴリがありません")
-                            .foregroundStyle(.secondary)
-                    } else if isReordering {
-                        ForEach(categories) { category in
-                            ReorderableCategoryRow(category: category)
-                        }
-                        .onMove(perform: moveCategories)
-                    } else {
-                        ForEach(categories) { category in
-                            EditableCategoryRow(
-                                category: category,
-                                isEditing: editingCategoryID == category.id,
-                                isInteractionLocked: editingCategoryID != nil && editingCategoryID != category.id,
-                                isStatusToggleDisabled: category.isActive && activeCategoryCount == 1
-                            ) { updatedName in
-                                do {
-                                    try categoryStore.renameCategory(id: category.id, to: updatedName, in: modelContext)
-                                    editingCategoryID = nil
-                                } catch {
-                                    errorMessage = error.localizedDescription
-                                }
-                            } onStartEditing: {
-                                editingCategoryID = category.id
-                            } onCancelEditing: {
-                                editingCategoryID = nil
-                            } onSetActive: { isActive in
-                                do {
-                                    try categoryStore.setCategoryActive(id: category.id, isActive: isActive, in: modelContext)
-                                } catch {
-                                    errorMessage = error.localizedDescription
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if isReordering == false {
-                    Section("カテゴリ追加") {
-                    HStack(spacing: 12) {
-                        TextField("新しいカテゴリ名", text: $newCategoryName)
-
-                        Button("追加") {
-                            do {
-                                _ = try categoryStore.addCategory(
-                                    name: newCategoryName,
-                                    to: pocket.id,
-                                    in: modelContext
-                                )
-                                newCategoryName = ""
-                            } catch {
-                                errorMessage = error.localizedDescription
-                            }
-                        }
-                        .disabled(newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-                }
-                }
-            }
-            .navigationTitle("カテゴリー管理")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("閉じる") {
-                        dismiss()
-                    }
-                }
-
-                if categories.isEmpty == false {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button(isReordering ? "完了" : "並び替え") {
-                            withAnimation {
-                                isReordering.toggle()
-                                editingCategoryID = nil
-                                editMode?.wrappedValue = isReordering ? .inactive : .active
-                            }
-                        }
-                    }
-                }
-            }
-            .environment(\.editMode, .constant(isReordering ? .active : .inactive))
-            .task {
-                try? categoryStore.loadIfNeeded(from: modelContext)
-                try? categoryStore.reload(from: modelContext)
-            }
-            .alert("保存に失敗しました", isPresented: errorAlertBinding) {
-                Button("確認", role: .cancel) {
-                    errorMessage = nil
-                }
-            } message: {
-                Text(errorMessage ?? "不明なエラーが発生しました。")
-            }
-        }
-    }
-
-    private var errorAlertBinding: Binding<Bool> {
-        Binding(
-            get: { errorMessage != nil },
-            set: { isPresented in
-                if isPresented == false {
-                    errorMessage = nil
-                }
-            }
-        )
-    }
-
-    private func moveCategories(fromOffsets: IndexSet, toOffset: Int) {
-        do {
-            try categoryStore.moveCategories(
-                in: pocket.id,
-                fromOffsets: fromOffsets,
-                toOffset: toOffset,
-                in: modelContext
-            )
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-}
-
-private struct EditableCategoryRow: View {
-    let category: Category
-    let isEditing: Bool
-    let isInteractionLocked: Bool
-    let isStatusToggleDisabled: Bool
-    let onSave: (String) -> Void
-    let onStartEditing: () -> Void
-    let onCancelEditing: () -> Void
-    let onSetActive: (Bool) -> Void
-
-    @State private var draftName: String
-
-    init(
-        category: Category,
-        isEditing: Bool,
-        isInteractionLocked: Bool,
-        isStatusToggleDisabled: Bool,
-        onSave: @escaping (String) -> Void,
-        onStartEditing: @escaping () -> Void,
-        onCancelEditing: @escaping () -> Void,
-        onSetActive: @escaping (Bool) -> Void
-    ) {
-        self.category = category
-        self.isEditing = isEditing
-        self.isInteractionLocked = isInteractionLocked
-        self.isStatusToggleDisabled = isStatusToggleDisabled
-        self.onSave = onSave
-        self.onStartEditing = onStartEditing
-        self.onCancelEditing = onCancelEditing
-        self.onSetActive = onSetActive
-        _draftName = State(initialValue: category.name)
-    }
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
-                if isEditing {
-                    TextField("カテゴリ名", text: $draftName)
-                } else {
-                    Text(category.name)
-                        .foregroundStyle(category.isActive ? .primary : .secondary)
-                }
-            }
-
-            Spacer()
-
-            if isEditing {
-                Button {
-                    onSave(draftName)
-                } label: {
-                    Image(systemName: "checkmark")
-                }
-                .buttonStyle(.borderless)
-                .disabled(trimmedDraftName.isEmpty || trimmedDraftName == category.name)
-
-                Button {
-                    draftName = category.name
-                    onCancelEditing()
-                } label: {
-                    Image(systemName: "xmark")
-                }
-                .buttonStyle(.borderless)
-            } else {
-                Button {
-                    draftName = category.name
-                    onStartEditing()
-                } label: {
-                    Image(systemName: "square.and.pencil")
-                        .font(.body.weight(.semibold))
-                }
-                .buttonStyle(.borderless)
-                .disabled(isInteractionLocked)
-
-                Toggle("", isOn: activeBinding)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .disabled(isStatusToggleDisabled || isInteractionLocked)
-            }
-        }
-    }
-
-    private var trimmedDraftName: String {
-        draftName.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var activeBinding: Binding<Bool> {
-        Binding(
-            get: { category.isActive },
-            set: { newValue in
-                onSetActive(newValue)
-            }
-        )
-    }
-}
-
-private struct ReorderableCategoryRow: View {
-    let category: Category
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(category.name)
-                    .foregroundStyle(category.isActive ? .primary : .secondary)
-
-                if category.isActive == false {
-                    Text("非表示")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-
-            Image(systemName: "line.3.horizontal")
-                .foregroundStyle(.tertiary)
-        }
-        .padding(.vertical, 2)
-    }
 }
 
 #Preview {
