@@ -6,7 +6,7 @@ struct ContentView: View {
         case home
         case pocket
         case history
-        case settings
+        case settlement
     }
 
     @Environment(\.modelContext) private var modelContext
@@ -42,10 +42,10 @@ struct ContentView: View {
             .tabItem { Label("履歴", systemImage: "clock") }
 
             NavigationStack {
-                SettingsView()
+                SettlementView()
             }
-            .tag(Tab.settings)
-            .tabItem { Label("設定", systemImage: "gearshape") }
+            .tag(Tab.settlement)
+            .tabItem { Label("精算", systemImage: "arrow.left.arrow.right.circle") }
         }
         .onChange(of: selectedTab) { oldValue, newValue in
             if oldValue == .pocket, newValue != .pocket {
