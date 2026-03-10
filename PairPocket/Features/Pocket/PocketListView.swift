@@ -55,6 +55,7 @@ struct PocketListView: View {
     @State private var isPresentingAddPocket = false
     @State private var editingPocket: Pocket?
     @State private var selectedPocketID: UUID?
+    @State private var isShowingPocketLimitAlert = false
 
     private let cardHeight: CGFloat = 190
     private let cardPeekOffset: CGFloat = 60
@@ -65,6 +66,10 @@ struct PocketListView: View {
 
     private var mainPocket: Pocket? {
         activePockets.first(where: \.isMain)
+    }
+
+    private var hasReachedPocketLimit: Bool {
+        activePockets.count >= PocketStore.maximumPocketCount
     }
 
     private var displayedPocket: Pocket? {
@@ -123,6 +128,11 @@ struct PocketListView: View {
                 PocketFormView(mode: .edit(pocket))
             }
         }
+        .alert("ポケットを追加できません", isPresented: $isShowingPocketLimitAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("ポケットは最大\(PocketStore.maximumPocketCount)個まで作成できます。")
+        }
         .task {
             try? expenseStore.loadIfNeeded(from: modelContext)
             try? pocketStore.loadIfNeeded(from: modelContext)
@@ -145,7 +155,11 @@ struct PocketListView: View {
 
     private var pocketManagementSection: some View {
         Button {
-            isPresentingAddPocket = true
+            if hasReachedPocketLimit {
+                isShowingPocketLimitAlert = true
+            } else {
+                isPresentingAddPocket = true
+            }
         } label: {
             addPocketCard
         }
@@ -156,9 +170,7 @@ struct PocketListView: View {
     @ViewBuilder
     private func walletCard(for pocket: Pocket, isFrontCard: Bool) -> some View {
         if isFrontCard {
-            NavigationLink {
-                PocketDetailView(pocketID: pocket.id)
-            } label: {
+            NavigationLink(value: pocket.id) {
                 pocketCard(pocket: pocket, isFrontCard: true)
             }
             .buttonStyle(.plain)
