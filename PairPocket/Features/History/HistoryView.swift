@@ -10,7 +10,7 @@ struct HistoryView: View {
     @Environment(PocketStore.self) private var pocketStore
 
     @State private var selectedFilter: PocketFilter = .total
-    @State private var selectedMode: ViewMode = .list
+    @State private var selectedMode: ViewMode = .calendar
     @State private var displayedMonthStart: Date = HistoryCalendar.monthStart(for: Date())
     @State private var selectedDate: Date = HistoryCalendar.dayStart(for: Date())
 
@@ -32,6 +32,16 @@ struct HistoryView: View {
         .padding(.horizontal, 12)
         .padding(.top, 8)
         .navigationTitle("履歴")
+        .onAppear {
+            resetCalendarToToday()
+        }
+        .onChange(of: selectedMode) { _, newValue in
+            guard newValue == .calendar else {
+                return
+            }
+
+            resetCalendarToToday()
+        }
         .task {
             try? pocketStore.loadIfNeeded(from: modelContext)
             try? categoryStore.loadIfNeeded(from: modelContext)
@@ -138,7 +148,7 @@ struct HistoryView: View {
     private var monthHeader: some View {
         HStack {
             Button {
-                displayedMonthStart = HistoryCalendar.monthOffset(from: displayedMonthStart, by: -1)
+                moveDisplayedMonth(by: -1)
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.subheadline.weight(.semibold))
@@ -154,7 +164,7 @@ struct HistoryView: View {
             Spacer()
 
             Button {
-                displayedMonthStart = HistoryCalendar.monthOffset(from: displayedMonthStart, by: 1)
+                moveDisplayedMonth(by: 1)
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.subheadline.weight(.semibold))
@@ -309,6 +319,18 @@ struct HistoryView: View {
         }
 
         return "未分類"
+    }
+
+    private func resetCalendarToToday() {
+        let today = Date()
+        displayedMonthStart = HistoryCalendar.monthStart(for: today)
+        selectedDate = HistoryCalendar.dayStart(for: today)
+    }
+
+    private func moveDisplayedMonth(by value: Int) {
+        let monthStart = HistoryCalendar.monthOffset(from: displayedMonthStart, by: value)
+        displayedMonthStart = monthStart
+        selectedDate = monthStart
     }
 }
 
