@@ -4,6 +4,8 @@ import SwiftData
 
 @Observable
 final class PocketStore {
+    static let maximumPocketCount = 5
+
     private(set) var allPockets: [Pocket] = []
     private(set) var pockets: [Pocket] = []
     private var hasLoaded = false
@@ -37,6 +39,10 @@ final class PocketStore {
     }
 
     func addPocket(_ pocket: Pocket, in modelContext: ModelContext) throws {
+        guard pockets.count < Self.maximumPocketCount else {
+            throw PocketStoreError.pocketLimitExceeded(maximum: Self.maximumPocketCount)
+        }
+
         modelContext.insert(PocketRecord(pocket: pocket))
         try persistMainPocket(preferredMainID: pocket.isMain ? pocket.id : nil, in: modelContext)
     }
@@ -46,6 +52,10 @@ final class PocketStore {
         defaultCategoryName: String,
         in modelContext: ModelContext
     ) throws {
+        guard pockets.count < Self.maximumPocketCount else {
+            throw PocketStoreError.pocketLimitExceeded(maximum: Self.maximumPocketCount)
+        }
+
         let trimmedCategoryName = defaultCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
 
         modelContext.insert(PocketRecord(pocket: pocket))
@@ -169,6 +179,7 @@ final class PocketStore {
 enum PocketStoreError: LocalizedError {
     case pocketNotFound
     case mainPocketDeletionNotAllowed
+    case pocketLimitExceeded(maximum: Int)
 
     var errorDescription: String? {
         switch self {
@@ -176,6 +187,8 @@ enum PocketStoreError: LocalizedError {
             return "ポケットが見つかりません。"
         case .mainPocketDeletionNotAllowed:
             return "メインポケットは削除できません。"
+        case let .pocketLimitExceeded(maximum):
+            return "ポケットは最大\(maximum)個まで作成できます。"
         }
     }
 }
