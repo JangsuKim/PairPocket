@@ -2,33 +2,56 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    private enum Tab: Hashable {
+        case home
+        case pocket
+        case history
+        case settings
+    }
+
     @Environment(\.modelContext) private var modelContext
     @Environment(ExpenseStore.self) private var expenseStore
     @Environment(PocketStore.self) private var pocketStore
 
     @State private var showAddExpense = false
+    @State private var selectedTab: Tab = .home
+    @State private var previousTab: Tab = .home
+    @State private var pocketNavigationPath = NavigationPath()
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 HomeView()
             }
+            .tag(Tab.home)
             .tabItem { Label("ホーム", systemImage: "house") }
 
-            NavigationStack {
+            NavigationStack(path: $pocketNavigationPath) {
                 PocketListView()
+                    .navigationDestination(for: UUID.self) { pocketID in
+                        PocketDetailView(pocketID: pocketID)
+                    }
             }
+            .tag(Tab.pocket)
             .tabItem { Label("ポケット", systemImage: "wallet.pass") }
 
             NavigationStack {
                 HistoryView()
             }
+            .tag(Tab.history)
             .tabItem { Label("履歴", systemImage: "clock") }
 
             NavigationStack {
                 SettingsView()
             }
+            .tag(Tab.settings)
             .tabItem { Label("設定", systemImage: "gearshape") }
+        }
+        .onChange(of: selectedTab) { oldValue, newValue in
+            if oldValue == .pocket, newValue != .pocket {
+                pocketNavigationPath = NavigationPath()
+            }
+            previousTab = newValue
         }
         .overlay(alignment: .bottomTrailing) {
             Button {
