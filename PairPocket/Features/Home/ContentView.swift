@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    private enum Tab: Hashable {
+    enum ContentTab: Hashable {
         case home
         case pocket
         case history
@@ -14,38 +14,38 @@ struct ContentView: View {
     @Environment(PocketStore.self) private var pocketStore
 
     @State private var showAddExpense = false
-    @State private var selectedTab: Tab = .home
-    @State private var previousTab: Tab = .home
+    @State private var selectedTab: ContentTab = .home
+    @State private var previousTab: ContentTab = .home
     @State private var pocketNavigationPath = NavigationPath()
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            NavigationStack {
-                HomeView()
+        ZStack {
+            tabContainer(for: .home) {
+                NavigationStack {
+                    HomeView()
+                }
             }
-            .tag(Tab.home)
-            .tabItem { Label("ホーム", systemImage: "house") }
 
-            NavigationStack(path: $pocketNavigationPath) {
-                PocketListView()
-                    .navigationDestination(for: UUID.self) { pocketID in
-                        PocketDetailView(pocketID: pocketID)
-                    }
+            tabContainer(for: .pocket) {
+                NavigationStack(path: $pocketNavigationPath) {
+                    PocketListView()
+                        .navigationDestination(for: UUID.self) { pocketID in
+                            PocketDetailView(pocketID: pocketID)
+                        }
+                }
             }
-            .tag(Tab.pocket)
-            .tabItem { Label("ポケット", systemImage: "wallet.pass") }
 
-            NavigationStack {
-                HistoryView()
+            tabContainer(for: .history) {
+                NavigationStack {
+                    HistoryView()
+                }
             }
-            .tag(Tab.history)
-            .tabItem { Label("履歴", systemImage: "clock") }
 
-            NavigationStack {
-                SettlementView()
+            tabContainer(for: .settlement) {
+                NavigationStack {
+                    SettlementView()
+                }
             }
-            .tag(Tab.settlement)
-            .tabItem { Label("精算", systemImage: "arrow.left.arrow.right.circle") }
         }
         .onChange(of: selectedTab) { oldValue, newValue in
             if oldValue == .pocket, newValue != .pocket {
@@ -53,21 +53,11 @@ struct ContentView: View {
             }
             previousTab = newValue
         }
-        .overlay(alignment: .bottomTrailing) {
-            Button {
-                showAddExpense = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 56, height: 56)
-                    .background(Color.accentColor)
-                    .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 72)
-            .accessibilityLabel("追加")
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            CustomTabBar(
+                selectedTab: $selectedTab,
+                showAddExpense: $showAddExpense
+            )
         }
         .sheet(isPresented: $showAddExpense) {
             AddExpenseView()
@@ -76,6 +66,18 @@ struct ContentView: View {
             try? expenseStore.loadIfNeeded(from: modelContext)
             try? pocketStore.loadIfNeeded(from: modelContext)
         }
+    }
+
+    private func tabContainer<Content: View>(
+        for tab: ContentTab,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .opacity(selectedTab == tab ? 1 : 0)
+            .allowsHitTesting(selectedTab == tab)
+            .accessibilityHidden(selectedTab != tab)
+            .zIndex(selectedTab == tab ? 1 : 0)
     }
 }
 
