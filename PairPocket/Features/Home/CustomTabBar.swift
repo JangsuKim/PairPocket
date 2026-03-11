@@ -94,53 +94,33 @@ struct CustomTabBar: View {
 
     @ViewBuilder
     private var selectedTabBackground: some View {
-        if #available(iOS 26.0, *) {
-            Capsule()
-                .fill(.clear)
-                .glassEffect(.regular.interactive(), in: Capsule())
-                .matchedGeometryEffect(id: "selected-tab", in: tabGlassNamespace)
-                .padding(.horizontal, 2)
-        } else {
-            Capsule()
-                .fill(Color.white.opacity(0.72))
-                .matchedGeometryEffect(id: "selected-tab", in: tabGlassNamespace)
-                .padding(.horizontal, 2)
-                .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
-        }
+        Capsule()
+            .fill(Color.white.opacity(0.72))
+            .matchedGeometryEffect(id: "selected-tab", in: tabGlassNamespace)
+            .padding(.horizontal, 2)
+            .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
     }
 }
 
 private struct TabGroupGlassBackground: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content
-                .glassEffect(.regular.interactive(), in: Capsule())
-        } else {
-            content
-                .background(.ultraThinMaterial)
-                .clipShape(Capsule())
-                .overlay {
-                    Capsule()
-                        .stroke(Color.white.opacity(0.65), lineWidth: 1)
-                }
-        }
+        content
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(Color.white.opacity(0.65), lineWidth: 1)
+            }
     }
 }
 
 private struct AddButtonGlassBackground: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content
-                .glassEffect(.regular.interactive(), in: Circle())
-        } else {
-            content
-                .background(.ultraThinMaterial)
-                .clipShape(Circle())
-                .overlay {
-                    Circle()
-                        .stroke(Color.white.opacity(0.75), lineWidth: 1)
-                }
-        }
+        content
+            .background(.thinMaterial, in: Circle())
+            .overlay {
+                Circle()
+                    .stroke(Color.white.opacity(0.75), lineWidth: 1)
+            }
     }
 }
 
