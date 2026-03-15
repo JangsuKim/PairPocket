@@ -44,7 +44,7 @@ struct HomeView: View {
                 } else {
                     MonthlySummarySection(totalAmountYen: monthlyTotal, totalCount: monthlyCount)
                 }
-                QuickAddSection()
+                QuickAddSection(selectedPocket: selectedPocket)
                 SettlementSection()
             }
             .padding()
