@@ -67,7 +67,7 @@ struct PocketDetailView: View {
     }
 
     private var settlementSummary: SettlementSummary {
-        SettlementCalculator.calculate(expenses: pocketExpenses)
+        SettlementEngine.calculate(expenses: pocketExpenses)
     }
 
     private var categorySummaries: [CategorySpendingSummary] {
