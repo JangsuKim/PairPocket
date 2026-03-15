@@ -5,6 +5,7 @@ struct SettlementResultSection: View {
     let toMemberName: String?
     let amountText: String
     let messageText: String?
+    let accentColor: Color
 
     var body: some View {
         SettlementCardSection(title: "精算結果") {
@@ -32,7 +33,7 @@ struct SettlementResultSection: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
-            .background(Color.accentColor.opacity(0.10))
+            .background(accentColor.opacity(0.10))
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
     }

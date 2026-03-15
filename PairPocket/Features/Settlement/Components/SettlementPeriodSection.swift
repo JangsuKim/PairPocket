@@ -5,7 +5,7 @@ struct SettlementPeriodSection: View {
     let durationText: String
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: "calendar")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)

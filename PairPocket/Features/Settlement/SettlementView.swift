@@ -7,8 +7,8 @@ struct SettlementView: View {
     @State private var selectedPocketID: String = "all"
 
     private var pocketOptions: [SettlementPocketOption] {
-        [SettlementPocketOption(id: "all", title: "All")] + pocketStore.pockets.map {
-            SettlementPocketOption(id: $0.id.uuidString, title: $0.name)
+        [SettlementPocketOption(id: "all", title: "全体", color: .secondary)] + pocketStore.pockets.map {
+            SettlementPocketOption(id: $0.id.uuidString, title: $0.name, color: $0.displayColor)
         }
     }
 
@@ -18,6 +18,10 @@ struct SettlementView: View {
         }
 
         return UUID(uuidString: selectedPocketID)
+    }
+
+    private var selectedPocketColor: Color {
+        pocketOptions.first(where: { $0.id == selectedPocketID })?.color ?? .accentColor
     }
 
     private var selectedExpenses: [Expense] {
@@ -134,16 +138,27 @@ struct SettlementView: View {
                     fromMemberName: settlementResultDisplay.fromMemberName,
                     toMemberName: settlementResultDisplay.toMemberName,
                     amountText: settlementResultDisplay.amountText,
-                    messageText: settlementResultDisplay.messageText
+                    messageText: settlementResultDisplay.messageText,
+                    accentColor: selectedPocketColor
                 )
-                SettlementActionSection(buttonTitle: "精算を依頼")
+                SettlementActionSection(
+                    buttonTitle: "精算を依頼",
+                    tintColor: selectedPocketColor
+                )
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 116)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("精算")
+        .tint(selectedPocketColor)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("精算")
+                    .font(.subheadline.weight(.semibold))
+            }
+        }
         .onChange(of: pocketStore.pockets) { _, pockets in
             guard selectedPocketID != "all" else {
                 return
@@ -160,6 +175,7 @@ struct SettlementView: View {
 struct SettlementPocketOption: Identifiable {
     let id: String
     let title: String
+    let color: Color
 }
 
 struct SettlementExpenseSummary: Identifiable {

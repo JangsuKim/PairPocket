@@ -90,34 +90,31 @@ struct PocketListView: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            VStack(alignment: .leading, spacing: 0) {
-                Text("ポケット")
-                    .font(.system(size: 34, weight: .bold))
-                    .padding(.top, max(2, geometry.safeAreaInsets.top - 10))
-                    .padding(.bottom, 6)
-
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        if stackedPockets.isEmpty {
-                            emptyMainPocketCard
-                        } else {
-                            pocketWalletStack
-                        }
+        VStack(alignment: .leading, spacing: 0) {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    if stackedPockets.isEmpty {
+                        emptyMainPocketCard
+                    } else {
+                        pocketWalletStack
                     }
-                    .frame(maxWidth: .infinity, alignment: .top)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.top, 6)
-
-                pocketManagementSection
-                    .padding(.bottom, 88)
+                .frame(maxWidth: .infinity, alignment: .top)
             }
-            .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+            pocketManagementSection
+                .padding(.bottom, 88)
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .padding(.horizontal, 16)
         .tint(mainPocket?.displayColor ?? .accentColor)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("ポケット")
+                    .font(.subheadline.weight(.semibold))
+            }
+        }
         .sheet(isPresented: $isPresentingAddPocket) {
             NavigationStack {
                 PocketFormView(mode: .add)

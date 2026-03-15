@@ -3,6 +3,8 @@ import SwiftUI
 struct SettlementSection: View {
     @Environment(ExpenseStore.self) private var expenseStore
 
+    private let allPocketColor: Color = .secondary
+
     private var unsettledExpenses: [Expense] {
         expenseStore.unsettledExpenses
     }
@@ -46,7 +48,7 @@ struct SettlementSection: View {
 
     var body: some View {
         SettlementCardSection(title: "精算") {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 20) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("全ポケットの未精算をまとめて表示")
                         .font(.subheadline)
@@ -69,7 +71,7 @@ struct SettlementSection: View {
                         .frame(width: 140, height: 24)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.accentColor)
+                .tint(allPocketColor)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .frame(maxWidth: .infinity, alignment: .center)
             }
@@ -101,7 +103,7 @@ struct SettlementSection: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity)
-        .background(Color.accentColor.opacity(0.10))
+        .background(allPocketColor.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 

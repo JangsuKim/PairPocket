@@ -14,8 +14,10 @@ struct HistoryView: View {
     @State private var displayedMonthStart: Date = HistoryCalendar.monthStart(for: Date())
     @State private var selectedDate: Date = HistoryCalendar.dayStart(for: Date())
 
+    private let overallAccentColor: Color = .secondary
+
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 12) {
             pocketFilterTabs
             modeSwitcher
 
@@ -29,9 +31,15 @@ struct HistoryView: View {
                 }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .navigationTitle("履歴")
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("履歴")
+                    .font(.subheadline.weight(.semibold))
+            }
+        }
         .onAppear {
             resetCalendarToToday()
         }
@@ -66,8 +74,8 @@ struct HistoryView: View {
             .filter { deletedPocketIDs.contains($0.id) == false }
             .map(\.pocket)
             .map {
-            PocketOption(id: $0.id, name: $0.name)
-        }
+                PocketOption(id: $0.id, name: $0.name, color: $0.displayColor)
+            }
     }
 
     private var calendarDatesWithExpenses: Set<Date> {
@@ -81,31 +89,27 @@ struct HistoryView: View {
     private var pocketFilterTabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                filterChip(title: "全体", isSelected: selectedFilter == .total) {
+                PocketSelectionChip(
+                    title: "全体",
+                    color: .secondary,
+                    isSelected: selectedFilter == .total
+                ) {
                     selectedFilter = .total
                 }
 
                 ForEach(pocketOptions) { option in
-                    filterChip(title: option.name, isSelected: selectedFilter == .pocket(option.id)) {
-                        selectedFilter = .pocket(option.id)
+                    if let pocketID = option.id {
+                        PocketSelectionChip(
+                            title: option.name,
+                            color: option.color,
+                            isSelected: selectedFilter == .pocket(pocketID)
+                        ) {
+                            selectedFilter = .pocket(pocketID)
+                        }
                     }
                 }
             }
-            .padding(.vertical, 2)
         }
-    }
-
-    private func filterChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(isSelected ? Color.primary : Color(.secondarySystemBackground))
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
     }
 
     private var modeSwitcher: some View {
@@ -205,11 +209,11 @@ struct HistoryView: View {
                                 .foregroundStyle(isSelected ? Color.white : Color.primary)
 
                             Circle()
-                                .fill(hasExpense ? (isSelected ? Color.white : Color.accentColor) : Color.clear)
+                                .fill(hasExpense ? (isSelected ? Color.white : overallAccentColor) : Color.clear)
                                 .frame(width: 4, height: 4)
                         }
                         .frame(maxWidth: .infinity, minHeight: 36)
-                        .background(isSelected ? Color.accentColor : Color.clear)
+                        .background(isSelected ? overallAccentColor : Color.clear)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                     .buttonStyle(.plain)
@@ -271,7 +275,13 @@ struct HistoryView: View {
 
     private func expenseRow(_ expense: ExpenseRecord) -> some View {
         HStack(spacing: 0) {
-            Text(HistoryFormatters.rowDate.string(from: expense.date))
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(pocketColor(for: expense.pocketId))
+                    .frame(width: 7, height: 7)
+
+                Text(HistoryFormatters.rowDate.string(from: expense.date))
+            }
                 .frame(width: 74, alignment: .leading)
 
             Text(categoryLabel(for: expense.categoryId))
@@ -321,6 +331,10 @@ struct HistoryView: View {
         return "未分類"
     }
 
+    private func pocketColor(for pocketId: UUID) -> Color {
+        pocketRecords.first(where: { $0.id == pocketId })?.pocket.displayColor ?? .gray
+    }
+
     private func resetCalendarToToday() {
         let today = Date()
         displayedMonthStart = HistoryCalendar.monthStart(for: today)
@@ -345,8 +359,9 @@ private enum PocketFilter: Equatable {
 }
 
 private struct PocketOption: Identifiable {
-    let id: UUID
+    let id: UUID?
     let name: String
+    let color: Color
 }
 
 private struct HistoryFormatters {
