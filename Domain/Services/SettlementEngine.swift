@@ -57,7 +57,7 @@ public enum SettlementEngine {
         let periodStart = unsettledEntries.map(\.date).min() ?? Date.distantPast
         let periodEnd = unsettledEntries.map(\.date).max() ?? Date.distantPast
 
-        return SettlementCalculator.calculate(
+        return SettlementCalculator.calculate(input: .init(
             periodStart: periodStart,
             periodEnd: periodEnd,
             totalSpent: totalSpent,
@@ -68,7 +68,7 @@ public enum SettlementEngine {
             totalPaidByMemberB: totalPaidByMemberB,
             totalShareOfMemberA: totalShareOfMemberA,
             totalShareOfMemberB: totalShareOfMemberB
-        )
+        ))
     }
 
     public static func calculate(expenses: [Expense]) -> SettlementSummary {
