@@ -2,19 +2,25 @@ import SwiftUI
 
 struct SettlementPeriodSection: View {
     let periodText: String
+    let durationText: String
 
     var body: some View {
-        SettlementCardSection(title: "精算期間") {
-            HStack(spacing: 12) {
-                Image(systemName: "calendar")
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
+        HStack(spacing: 8) {
+            Image(systemName: "calendar")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
 
+            HStack(spacing: 6) {
                 Text(periodText)
-                    .font(.subheadline.weight(.medium))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
 
-                Spacer()
+                Text(durationText)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
             }
+
+            Spacer()
         }
     }
 }

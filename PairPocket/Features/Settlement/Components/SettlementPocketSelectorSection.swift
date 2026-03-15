@@ -5,9 +5,13 @@ struct SettlementPocketSelectorSection: View {
     let pocketOptions: [SettlementPocketOption]
 
     var body: some View {
-        SettlementCardSection(title: "ポケット") {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("ポケット")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     ForEach(pocketOptions) { option in
                         Button {
                             selectedPocketID = option.id
@@ -15,8 +19,8 @@ struct SettlementPocketSelectorSection: View {
                             Text(option.title)
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(selectedPocketID == option.id ? .white : .primary)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 10)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
                                 .background(selectedPocketID == option.id ? Color.accentColor : Color(.secondarySystemBackground))
                                 .clipShape(Capsule())
                         }
