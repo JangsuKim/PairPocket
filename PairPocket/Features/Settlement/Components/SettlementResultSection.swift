@@ -1,21 +1,29 @@
 import SwiftUI
 
 struct SettlementResultSection: View {
-    let fromMemberName: String
-    let toMemberName: String
+    let fromMemberName: String?
+    let toMemberName: String?
     let amountText: String
+    let messageText: String?
 
     var body: some View {
         SettlementCardSection(title: "精算結果") {
             VStack(spacing: 10) {
-                HStack(spacing: 10) {
-                    resultBadge(title: fromMemberName)
-                    Spacer(minLength: 0)
-                    Image(systemName: "arrow.right")
+                if let fromMemberName,
+                   let toMemberName {
+                    HStack(spacing: 10) {
+                        resultBadge(title: fromMemberName)
+                        Spacer(minLength: 0)
+                        Image(systemName: "arrow.right")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 0)
+                        resultBadge(title: toMemberName)
+                    }
+                } else if let messageText {
+                    Text(messageText)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
-                    Spacer(minLength: 0)
-                    resultBadge(title: toMemberName)
                 }
 
                 Text(amountText)
