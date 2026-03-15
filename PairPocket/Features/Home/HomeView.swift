@@ -30,7 +30,7 @@ struct HomeView: View {
         let pocketColor = selectedPocket?.displayColor ?? .accentColor
 
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 if pockets.isEmpty == false {
                     PocketSummarySection(
                         pockets: pockets,
@@ -47,10 +47,18 @@ struct HomeView: View {
                 QuickAddSection(selectedPocket: selectedPocket)
                 SettlementSection()
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 96)
         }
         .tint(pocketColor)
-        .navigationTitle("ペアポケ")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("ペアポケ")
+                    .font(.subheadline.weight(.semibold))
+            }
+        }
         .task {
             try? expenseStore.loadIfNeeded(from: modelContext)
             try? pocketStore.loadIfNeeded(from: modelContext)

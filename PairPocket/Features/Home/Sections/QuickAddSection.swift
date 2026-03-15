@@ -18,7 +18,7 @@ struct QuickAddSection: View {
     }
 
     private var isAddEnabled: Bool {
-        selectedPocket != nil && selectedCategory != nil && amountValue > 0
+        selectedPocket != nil && selectedCategory != nil
     }
 
     private var currentMemberRole: MemberRole {
@@ -157,6 +157,11 @@ struct QuickAddSection: View {
 
     private func saveExpense() {
         guard let selectedPocket, let selectedCategory else {
+            return
+        }
+
+        guard amountValue > 0 else {
+            saveErrorMessage = "金額を入力してください。"
             return
         }
 
