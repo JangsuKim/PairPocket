@@ -7,8 +7,11 @@ struct SettlementActionSection: View {
         Button {
         } label: {
             Text(buttonTitle)
+                .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity)
+                .frame(height: 48)
         }
         .buttonStyle(.borderedProminent)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
