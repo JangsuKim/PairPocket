@@ -81,11 +81,13 @@ struct QuickAddSection: View {
             } label: {
                 Text("追加")
                     .frame(maxWidth: .infinity)
+                    .frame(width: 140, height: 24)
             }
             .buttonStyle(.borderedProminent)
             .tint(selectedPocket?.displayColor ?? .accentColor)
             .disabled(!isAddEnabled)
             .opacity(isAddEnabled ? 1 : 0.45)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(16)
         .background(.thinMaterial)
@@ -105,14 +107,14 @@ struct QuickAddSection: View {
                 saveErrorMessage = nil
             }
         } message: {
-            Text(saveErrorMessage ?? "不明なエラーが発生しました。")
+            Text(saveErrorMessage ?? "不明なエラーが発生しました")
         }
     }
 
     @ViewBuilder
     private var categoryMenu: some View {
         if categories.isEmpty {
-            Text("カテゴリ 없음")
+            Text("カテゴリがありません")
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)

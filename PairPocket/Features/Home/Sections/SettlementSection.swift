@@ -65,13 +65,13 @@ struct SettlementSection: View {
                     SettlementView()
                 } label: {
                     Text("精算画面へ")
-                        .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 44)
+                        .frame(width: 140, height: 24)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.accentColor)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .frame(maxWidth: .infinity, alignment: .center)
             }
         }
     }
@@ -98,8 +98,8 @@ struct SettlementSection: View {
             Text(settlementResultDisplay.amountText)
                 .font(.system(size: 24, weight: .bold, design: .rounded))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
         .frame(maxWidth: .infinity)
         .background(Color.accentColor.opacity(0.10))
         .clipShape(RoundedRectangle(cornerRadius: 16))
@@ -108,9 +108,9 @@ struct SettlementSection: View {
     private func memberName(for role: MemberRole) -> String {
         switch role {
         case .memberA:
-            return "A"
+            return "memberA"
         case .memberB:
-            return "B"
+            return "memberB"
         }
     }
 
