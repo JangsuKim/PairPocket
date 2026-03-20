@@ -2,6 +2,10 @@ import SwiftUI
 
 struct SettlementSection: View {
     @Environment(ExpenseStore.self) private var expenseStore
+    @AppStorage("settings.memberA.name") private var memberAName = "MemberA"
+    @AppStorage("settings.memberA.icon") private var memberAIcon = "person.circle.fill"
+    @AppStorage("settings.memberB.name") private var memberBName = "MemberB"
+    @AppStorage("settings.memberB.icon") private var memberBIcon = "person.circle"
 
     private let allPocketColor: Color = .secondary
 
@@ -20,8 +24,8 @@ struct SettlementSection: View {
     private var settlementResultDisplay: HomeSettlementResultDisplay {
         guard let summary = settlementSummary else {
             return HomeSettlementResultDisplay(
-                fromMemberName: nil,
-                toMemberName: nil,
+                fromMemberRole: nil,
+                toMemberRole: nil,
                 amountText: formattedYen(0),
                 messageText: "未精算データがありません"
             )
@@ -31,16 +35,16 @@ struct SettlementSection: View {
               let receiver = summary.settlementReceiver,
               summary.settlementAmount > 0 else {
             return HomeSettlementResultDisplay(
-                fromMemberName: nil,
-                toMemberName: nil,
+                fromMemberRole: nil,
+                toMemberRole: nil,
                 amountText: formattedYen(0),
                 messageText: "精算は不要です"
             )
         }
 
         return HomeSettlementResultDisplay(
-            fromMemberName: memberName(for: payer),
-            toMemberName: memberName(for: receiver),
+            fromMemberRole: payer,
+            toMemberRole: receiver,
             amountText: formattedYen(summary.settlementAmount),
             messageText: nil
         )
@@ -79,40 +83,61 @@ struct SettlementSection: View {
     }
 
     private var settlementAmountCard: some View {
-        VStack(spacing: 8) {
-            if let fromMemberName = settlementResultDisplay.fromMemberName,
-               let toMemberName = settlementResultDisplay.toMemberName {
+        VStack(spacing: 6) {
+            if let fromMemberRole = settlementResultDisplay.fromMemberRole,
+               let toMemberRole = settlementResultDisplay.toMemberRole {
                 HStack(spacing: 10) {
-                    UserChip(name: fromMemberName)
+                    MemberProfileView(
+                        role: fromMemberRole,
+                        name: memberDisplayName(for: fromMemberRole),
+                        iconSystemName: memberIcon(for: fromMemberRole),
+                        avatarSize: 72
+                    )
                     Spacer(minLength: 0)
-                    Image(systemName: "arrow.right")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                    VStack(spacing: 4) {
+                        Image(systemName: "arrow.right")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        Text(settlementResultDisplay.amountText)
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                    }
                     Spacer(minLength: 0)
-                    UserChip(name: toMemberName)
+                    MemberProfileView(
+                        role: toMemberRole,
+                        name: memberDisplayName(for: toMemberRole),
+                        iconSystemName: memberIcon(for: toMemberRole),
+                        avatarSize: 72
+                    )
                 }
             } else if let messageText = settlementResultDisplay.messageText {
                 Text(messageText)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
-
-            Text(settlementResultDisplay.amountText)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(allPocketColor.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
-    private func memberName(for role: MemberRole) -> String {
+    private func memberDisplayName(for role: MemberRole) -> String {
         switch role {
         case .memberA:
-            return "memberA"
+            return memberAName
         case .memberB:
-            return "memberB"
+            return memberBName
+        }
+    }
+
+    private func memberIcon(for role: MemberRole) -> String {
+        switch role {
+        case .memberA:
+            return memberAIcon
+        case .memberB:
+            return memberBIcon
         }
     }
 
@@ -126,8 +151,8 @@ struct SettlementSection: View {
 }
 
 private struct HomeSettlementResultDisplay {
-    let fromMemberName: String?
-    let toMemberName: String?
+    let fromMemberRole: MemberRole?
+    let toMemberRole: MemberRole?
     let amountText: String
     let messageText: String?
 }

@@ -3,6 +3,10 @@ import SwiftUI
 struct SettlementView: View {
     @Environment(ExpenseStore.self) private var expenseStore
     @Environment(PocketStore.self) private var pocketStore
+    @AppStorage("settings.memberA.name") private var memberAName = "MemberA"
+    @AppStorage("settings.memberA.icon") private var memberAIcon = "person.circle.fill"
+    @AppStorage("settings.memberB.name") private var memberBName = "MemberB"
+    @AppStorage("settings.memberB.icon") private var memberBIcon = "person.circle"
 
     @State private var selectedPocketID: String = "all"
 
@@ -45,11 +49,11 @@ struct SettlementView: View {
 
         return [
             SettlementExpenseSummary(
-                memberName: memberName(for: .memberA),
+                memberName: memberDisplayName(for: .memberA),
                 amountText: SettlementDisplayFormatter.yen(summary?.totalPaidByMemberA ?? 0)
             ),
             SettlementExpenseSummary(
-                memberName: memberName(for: .memberB),
+                memberName: memberDisplayName(for: .memberB),
                 amountText: SettlementDisplayFormatter.yen(summary?.totalPaidByMemberB ?? 0)
             )
         ]
@@ -82,8 +86,12 @@ struct SettlementView: View {
     private var settlementResultDisplay: SettlementResultDisplay {
         guard let summary = settlementSummary else {
             return SettlementResultDisplay(
+                fromMemberRole: nil,
                 fromMemberName: nil,
+                fromMemberIcon: nil,
+                toMemberRole: nil,
                 toMemberName: nil,
+                toMemberIcon: nil,
                 amountText: SettlementDisplayFormatter.yen(0),
                 messageText: "未精算データがありません"
             )
@@ -93,27 +101,44 @@ struct SettlementView: View {
               let receiver = summary.settlementReceiver,
               summary.settlementAmount > 0 else {
             return SettlementResultDisplay(
+                fromMemberRole: nil,
                 fromMemberName: nil,
+                fromMemberIcon: nil,
+                toMemberRole: nil,
                 toMemberName: nil,
+                toMemberIcon: nil,
                 amountText: SettlementDisplayFormatter.yen(0),
                 messageText: "精算は不要です"
             )
         }
 
         return SettlementResultDisplay(
-            fromMemberName: memberName(for: payer),
-            toMemberName: memberName(for: receiver),
+            fromMemberRole: payer,
+            fromMemberName: memberDisplayName(for: payer),
+            fromMemberIcon: memberIcon(for: payer),
+            toMemberRole: receiver,
+            toMemberName: memberDisplayName(for: receiver),
+            toMemberIcon: memberIcon(for: receiver),
             amountText: SettlementDisplayFormatter.yen(summary.settlementAmount),
             messageText: nil
         )
     }
 
-    private func memberName(for role: MemberRole) -> String {
+    private func memberDisplayName(for role: MemberRole) -> String {
         switch role {
         case .memberA:
-            return "MemberA"
+            return memberAName
         case .memberB:
-            return "MemberB"
+            return memberBName
+        }
+    }
+
+    private func memberIcon(for role: MemberRole) -> String {
+        switch role {
+        case .memberA:
+            return memberAIcon
+        case .memberB:
+            return memberBIcon
         }
     }
 
@@ -135,8 +160,12 @@ struct SettlementView: View {
                     totalAmountText: totalAmountText
                 )
                 SettlementResultSection(
+                    fromMemberRole: settlementResultDisplay.fromMemberRole,
                     fromMemberName: settlementResultDisplay.fromMemberName,
+                    fromMemberIcon: settlementResultDisplay.fromMemberIcon,
+                    toMemberRole: settlementResultDisplay.toMemberRole,
                     toMemberName: settlementResultDisplay.toMemberName,
+                    toMemberIcon: settlementResultDisplay.toMemberIcon,
                     amountText: settlementResultDisplay.amountText,
                     messageText: settlementResultDisplay.messageText,
                     accentColor: selectedPocketColor
@@ -185,8 +214,12 @@ struct SettlementExpenseSummary: Identifiable {
 }
 
 private struct SettlementResultDisplay {
+    let fromMemberRole: MemberRole?
     let fromMemberName: String?
+    let fromMemberIcon: String?
+    let toMemberRole: MemberRole?
     let toMemberName: String?
+    let toMemberIcon: String?
     let amountText: String
     let messageText: String?
 }
