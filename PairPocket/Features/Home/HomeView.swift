@@ -58,6 +58,16 @@ struct HomeView: View {
                 Text("ペアポケ")
                     .font(.subheadline.weight(.semibold))
             }
+
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    SettingsView()
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("設定")
+            }
         }
         .task {
             try? expenseStore.loadIfNeeded(from: modelContext)
