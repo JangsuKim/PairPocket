@@ -86,16 +86,16 @@ struct SettlementView: View {
     private var settlementResultDisplay: SettlementResultDisplay {
         guard let summary = settlementSummary else {
             return SettlementResultDisplay(
+                arrowAssetName: nil,
                 arrowSystemName: nil,
                 amountText: SettlementDisplayFormatter.yen(0),
                 messageText: "未精算データがありません"
             )
         }
 
-        guard let payer = summary.settlementPayer,
-              let receiver = summary.settlementReceiver,
-              summary.settlementAmount > 0 else {
+        guard let signedAmount = signedSettlementAmount(for: summary) else {
             return SettlementResultDisplay(
+                arrowAssetName: nil,
                 arrowSystemName: nil,
                 amountText: SettlementDisplayFormatter.yen(0),
                 messageText: "精算は不要です"
@@ -103,8 +103,9 @@ struct SettlementView: View {
         }
 
         return SettlementResultDisplay(
-            arrowSystemName: arrowSystemName(payer: payer, receiver: receiver),
-            amountText: SettlementDisplayFormatter.yen(summary.settlementAmount),
+            arrowAssetName: settlementArrowAssetName(for: signedAmount),
+            arrowSystemName: nil,
+            amountText: SettlementDisplayFormatter.yen(abs(signedAmount)),
             messageText: nil
         )
     }
@@ -137,6 +138,35 @@ struct SettlementView: View {
         return "arrow.right"
     }
 
+    private func signedSettlementAmount(for summary: SettlementSummary) -> Int? {
+        if summary.settlementAmount == 0 {
+            return 0
+        }
+
+        guard let payer = summary.settlementPayer,
+              let receiver = summary.settlementReceiver else {
+            return nil
+        }
+
+        if payer == .host && receiver == .partner {
+            return summary.settlementAmount
+        }
+        if payer == .partner && receiver == .host {
+            return -summary.settlementAmount
+        }
+        return nil
+    }
+
+    private func settlementArrowAssetName(for signedAmount: Int) -> String {
+        if signedAmount > 0 {
+            return "SettlementArrowHostToPartner"
+        }
+        if signedAmount < 0 {
+            return "SettlementArrowPartnerToHost"
+        }
+        return "SettlementArrowBidirectional"
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
@@ -159,6 +189,7 @@ struct SettlementView: View {
                     hostIcon: memberIcon(for: .host),
                     partnerName: memberDisplayName(for: .partner),
                     partnerIcon: memberIcon(for: .partner),
+                    arrowAssetName: settlementResultDisplay.arrowAssetName,
                     arrowSystemName: settlementResultDisplay.arrowSystemName,
                     amountText: settlementResultDisplay.amountText,
                     messageText: settlementResultDisplay.messageText,
@@ -211,6 +242,7 @@ struct SettlementExpenseSummary: Identifiable {
 }
 
 private struct SettlementResultDisplay {
+    let arrowAssetName: String?
     let arrowSystemName: String?
     let amountText: String
     let messageText: String?
