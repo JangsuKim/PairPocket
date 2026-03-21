@@ -1,12 +1,11 @@
 import SwiftUI
 
 struct SettlementResultSection: View {
-    let fromMemberRole: MemberRole?
-    let fromMemberName: String?
-    let fromMemberIcon: String?
-    let toMemberRole: MemberRole?
-    let toMemberName: String?
-    let toMemberIcon: String?
+    let hostName: String
+    let hostIcon: String
+    let partnerName: String
+    let partnerIcon: String
+    let arrowSystemName: String?
     let amountText: String
     let messageText: String?
     let accentColor: Color
@@ -14,22 +13,17 @@ struct SettlementResultSection: View {
     var body: some View {
         SettlementCardSection(title: "精算結果") {
             VStack(spacing: 6) {
-                if let fromMemberRole,
-                   let fromMemberName,
-                   let fromMemberIcon,
-                   let toMemberRole,
-                   let toMemberName,
-                   let toMemberIcon {
+                if let arrowSystemName {
                     HStack(spacing: 10) {
                         MemberProfileView(
-                            role: fromMemberRole,
-                            name: fromMemberName,
-                            iconSystemName: fromMemberIcon,
+                            role: .host,
+                            name: hostName,
+                            iconSystemName: hostIcon,
                             avatarSize: 56
                         )
                         Spacer(minLength: 8)
                         VStack(spacing: 4) {
-                            Image(systemName: "arrow.right")
+                            Image(systemName: arrowSystemName)
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(.secondary)
 
@@ -41,9 +35,9 @@ struct SettlementResultSection: View {
                         .frame(minWidth: 96)
                         Spacer(minLength: 8)
                         MemberProfileView(
-                            role: toMemberRole,
-                            name: toMemberName,
-                            iconSystemName: toMemberIcon,
+                            role: .partner,
+                            name: partnerName,
+                            iconSystemName: partnerIcon,
                             avatarSize: 56
                         )
                     }

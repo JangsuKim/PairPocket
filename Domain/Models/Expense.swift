@@ -1,18 +1,46 @@
 import Foundation
 
 public enum PaymentSource: String, Codable, Hashable {
-    case memberA
-    case memberB
+    case host
+    case partner
     case pocket
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = Self.fromPersistedRawValue(rawValue)
+    }
+
+    public static func fromPersistedRawValue(_ rawValue: String) -> PaymentSource {
+        switch rawValue {
+        case "host":
+            return .host
+        case "partner":
+            return .partner
+        case "pocket":
+            return .pocket
+        default:
+            return .host
+        }
+    }
 
     public var memberRole: MemberRole? {
         switch self {
-        case .memberA:
-            return .memberA
-        case .memberB:
-            return .memberB
+        case .host:
+            return .host
+        case .partner:
+            return .partner
         case .pocket:
             return nil
+        }
+    }
+
+    public var displayName: String {
+        switch self {
+        case .host, .partner:
+            return memberRole?.displayName ?? MemberRole.host.displayName
+        case .pocket:
+            return "ポケット"
         }
     }
 }
@@ -37,6 +65,22 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
     public var isSettled: Bool
     public var settlementId: UUID?
     public var settledAt: Date?
+    public var createdByUserId: String?
+    public var paidByUserId: String?
+
+    public var hostRatio: Int {
+        get { ratioA }
+        set { ratioA = newValue }
+    }
+
+    public var partnerRatio: Int {
+        get { ratioB }
+        set { ratioB = newValue }
+    }
+
+    public var paidBy: MemberRole {
+        paymentSource.memberRole ?? .host
+    }
 
     // Constraint (not enforced yet): ratioA + ratioB == 100
     public init(
@@ -53,7 +97,9 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
         createdAt: Date = Date(),
         isSettled: Bool = false,
         settlementId: UUID? = nil,
-        settledAt: Date? = nil
+        settledAt: Date? = nil,
+        createdByUserId: String? = nil,
+        paidByUserId: String? = nil
     ) {
         self.id = id
         self.pocketId = pocketId
@@ -69,6 +115,8 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
         self.isSettled = isSettled
         self.settlementId = settlementId
         self.settledAt = settledAt
+        self.createdByUserId = createdByUserId
+        self.paidByUserId = paidByUserId
     }
 }
 

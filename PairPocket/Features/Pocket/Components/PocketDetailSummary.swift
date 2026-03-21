@@ -11,8 +11,8 @@ struct PocketDetailSummary: View {
             Text("支出サマリー")
                 .font(.headline)
 
-            summaryAmountRow(title: "MemberA", amount: paidByA)
-            summaryAmountRow(title: "MemberB", amount: paidByB)
+            summaryAmountRow(title: MemberRole.host.displayName, amount: paidByA)
+            summaryAmountRow(title: MemberRole.partner.displayName, amount: paidByB)
 
             Divider()
 
@@ -34,4 +34,3 @@ struct PocketDetailSummary: View {
         }
     }
 }
-

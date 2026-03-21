@@ -12,6 +12,16 @@ public struct Pocket: Identifiable, Codable, Hashable {
     public var isMain: Bool
     public var createdAt: Date
 
+    public var hostRatio: Int {
+        get { ratioA }
+        set { ratioA = newValue }
+    }
+
+    public var partnerRatio: Int {
+        get { ratioB }
+        set { ratioB = newValue }
+    }
+
     // Constraint (not enforced yet): ratioA + ratioB == 100
     public init(
         id: UUID = UUID(),

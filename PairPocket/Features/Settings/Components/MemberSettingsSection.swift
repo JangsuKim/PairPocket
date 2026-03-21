@@ -1,16 +1,19 @@
 import SwiftUI
 
 struct MemberSettingsSection: View {
-    @AppStorage(SettingsStorageKeys.memberAName) private var memberAName = "MemberA"
-    @AppStorage(SettingsStorageKeys.memberAIcon) private var memberAIcon = "person.circle.fill"
-    @AppStorage(SettingsStorageKeys.memberBName) private var memberBName = "MemberB"
-    @AppStorage(SettingsStorageKeys.memberBIcon) private var memberBIcon = "person.circle"
+    @AppStorage(MemberPreferenceKeys.hostName) private var hostName = MemberRole.host.displayName
+    @AppStorage(MemberPreferenceKeys.hostIcon) private var hostIcon = "person.circle.fill"
+    @AppStorage(MemberPreferenceKeys.partnerName) private var partnerName = MemberRole.partner.displayName
+    @AppStorage(MemberPreferenceKeys.partnerIcon) private var partnerIcon = "person.circle"
     @State private var editingMember: EditableMember?
 
     var body: some View {
         relationshipCard
             .sheet(item: $editingMember) { member in
                 memberEditSheet(member)
+            }
+            .task {
+                MemberPreferences.migrateLegacyValues()
             }
     }
 
@@ -21,17 +24,17 @@ struct MemberSettingsSection: View {
 
             HStack(alignment: .top, spacing: 12) {
                 memberArea(
-                    member: .memberA,
-                    name: $memberAName,
-                    icon: $memberAIcon
+                    member: .host,
+                    name: $hostName,
+                    icon: $hostIcon
                 )
 
                 linkingArea
 
                 memberArea(
-                    member: .memberB,
-                    name: $memberBName,
-                    icon: $memberBIcon
+                    member: .partner,
+                    name: $partnerName,
+                    icon: $partnerIcon
                 )
             }
         }
@@ -110,38 +113,33 @@ struct MemberSettingsSection: View {
     }
 
     private func memberTitle(for member: EditableMember) -> String {
-        switch member {
-        case .memberA:
-            return "自分"
-        case .memberB:
-            return "パートナー"
-        }
+        memberRole(for: member).displayName
     }
 
     private func memberRole(for member: EditableMember) -> MemberRole {
         switch member {
-        case .memberA:
-            return .memberA
-        case .memberB:
-            return .memberB
+        case .host:
+            return .host
+        case .partner:
+            return .partner
         }
     }
 
     private func memberNameBinding(for member: EditableMember) -> Binding<String> {
         switch member {
-        case .memberA:
-            return $memberAName
-        case .memberB:
-            return $memberBName
+        case .host:
+            return $hostName
+        case .partner:
+            return $partnerName
         }
     }
 
     private func memberIconBinding(for member: EditableMember) -> Binding<String> {
         switch member {
-        case .memberA:
-            return $memberAIcon
-        case .memberB:
-            return $memberBIcon
+        case .host:
+            return $hostIcon
+        case .partner:
+            return $partnerIcon
         }
     }
 
@@ -162,17 +160,10 @@ struct MemberSettingsSection: View {
 }
 
 private enum EditableMember: String, Identifiable {
-    case memberA
-    case memberB
+    case host
+    case partner
 
     var id: String { rawValue }
-}
-
-private enum SettingsStorageKeys {
-    static let memberAName = "settings.memberA.name"
-    static let memberAIcon = "settings.memberA.icon"
-    static let memberBName = "settings.memberB.name"
-    static let memberBIcon = "settings.memberB.icon"
 }
 
 #Preview {

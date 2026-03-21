@@ -16,6 +16,8 @@ final class ExpenseRecord {
     var isSettled: Bool
     var settlementId: UUID?
     var settledAt: Date?
+    var createdByUserId: String?
+    var paidByUserId: String?
 
     var entryType: PocketEntryType {
         get {
@@ -32,11 +34,7 @@ final class ExpenseRecord {
 
     var paymentSource: PaymentSource {
         get {
-            guard let paymentSource = PaymentSource(rawValue: paymentSourceRaw) else {
-                preconditionFailure("Unsupported paymentSourceRaw: \(paymentSourceRaw)")
-            }
-
-            return paymentSource
+            PaymentSource.fromPersistedRawValue(paymentSourceRaw)
         }
         set {
             paymentSourceRaw = newValue.rawValue
@@ -51,12 +49,14 @@ final class ExpenseRecord {
         amount: Int,
         date: Date,
         memo: String = "",
-        paymentSourceRaw: String,
+        paymentSourceRaw: String = PaymentSource.host.rawValue,
         ratioA: Int,
         ratioB: Int,
         isSettled: Bool = false,
         settlementId: UUID? = nil,
-        settledAt: Date? = nil
+        settledAt: Date? = nil,
+        createdByUserId: String? = nil,
+        paidByUserId: String? = nil
     ) {
         self.id = id
         self.pocketId = pocketId
@@ -65,12 +65,14 @@ final class ExpenseRecord {
         self.amount = amount
         self.date = date
         self.memo = memo
-        self.paymentSourceRaw = paymentSourceRaw
+        self.paymentSourceRaw = PaymentSource.fromPersistedRawValue(paymentSourceRaw).rawValue
         self.ratioA = ratioA
         self.ratioB = ratioB
         self.isSettled = isSettled
         self.settlementId = settlementId
         self.settledAt = settledAt
+        self.createdByUserId = createdByUserId
+        self.paidByUserId = paidByUserId
     }
 
     convenience init(
@@ -86,7 +88,9 @@ final class ExpenseRecord {
         ratioB: Int = 0,
         isSettled: Bool = false,
         settlementId: UUID? = nil,
-        settledAt: Date? = nil
+        settledAt: Date? = nil,
+        createdByUserId: String? = nil,
+        paidByUserId: String? = nil
     ) {
         self.init(
             id: id,
@@ -101,7 +105,9 @@ final class ExpenseRecord {
             ratioB: ratioB,
             isSettled: isSettled,
             settlementId: settlementId,
-            settledAt: settledAt
+            settledAt: settledAt,
+            createdByUserId: createdByUserId,
+            paidByUserId: paidByUserId
         )
     }
 
@@ -122,7 +128,9 @@ extension ExpenseRecord {
             ratioB: entry.ratioB,
             isSettled: entry.isSettled,
             settlementId: entry.settlementId,
-            settledAt: entry.settledAt
+            settledAt: entry.settledAt,
+            createdByUserId: entry.createdByUserId,
+            paidByUserId: entry.paidByUserId
         )
     }
 
@@ -141,7 +149,9 @@ extension ExpenseRecord {
             createdAt: date,
             isSettled: isSettled,
             settlementId: settlementId,
-            settledAt: settledAt
+            settledAt: settledAt,
+            createdByUserId: createdByUserId,
+            paidByUserId: paidByUserId
         )
     }
 }

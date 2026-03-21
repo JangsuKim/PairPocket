@@ -79,8 +79,8 @@ struct PocketFormView: View {
             }
 
             Section("分担比率") {
-                Stepper("memberA \(ratioA)%", value: $ratioA, in: 0...100)
-                LabeledContent("memberB") {
+                Stepper("\(MemberRole.host.displayName) \(ratioA)%", value: $ratioA, in: 0...100)
+                LabeledContent(MemberRole.partner.displayName) {
                     Text("\(ratioB)%")
                 }
             }

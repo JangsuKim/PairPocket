@@ -4,6 +4,7 @@ struct HistoryExpenseDetailView: View {
     let expense: ExpenseRecord
     let pocketName: String
     let categoryName: String
+    private let localUserId = MemberPreferences.ensureLocalUserId()
 
     var body: some View {
         List {
@@ -11,7 +12,14 @@ struct HistoryExpenseDetailView: View {
                 detailRow(title: "日付", value: HistoryDetailFormatters.date.string(from: expense.date))
                 detailRow(title: "ポケット", value: pocketName)
                 detailRow(title: "カテゴリ", value: categoryName)
-                detailRow(title: "支払元", value: paymentSourceLabel(expense.paymentSource))
+                detailRow(
+                    title: "支払元",
+                    value: MemberPreferences.payerDisplayName(
+                        paymentSource: expense.paymentSource,
+                        paidByUserId: expense.paidByUserId,
+                        localUserId: localUserId
+                    )
+                )
                 detailRow(title: "金額", value: HistoryDetailFormatters.yen(expense.amount))
             }
 
@@ -41,16 +49,6 @@ struct HistoryExpenseDetailView: View {
         .font(.subheadline)
     }
 
-    private func paymentSourceLabel(_ source: PaymentSource) -> String {
-        switch source {
-        case .memberA:
-            return "A"
-        case .memberB:
-            return "B"
-        case .pocket:
-            return "ポケット"
-        }
-    }
 }
 
 private struct HistoryDetailFormatters {

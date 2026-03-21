@@ -8,10 +8,10 @@ public enum SettlementCalculator {
         public let totalDeposited: Int
         public let currentBalance: Int
         public let expenseCount: Int
-        public let totalPaidByMemberA: Int
-        public let totalPaidByMemberB: Int
-        public let totalShareOfMemberA: Int
-        public let totalShareOfMemberB: Int
+        public let totalPaidByHost: Int
+        public let totalPaidByPartner: Int
+        public let totalShareOfHost: Int
+        public let totalShareOfPartner: Int
 
         public init(
             periodStart: Date,
@@ -20,10 +20,10 @@ public enum SettlementCalculator {
             totalDeposited: Int,
             currentBalance: Int,
             expenseCount: Int,
-            totalPaidByMemberA: Int,
-            totalPaidByMemberB: Int,
-            totalShareOfMemberA: Int,
-            totalShareOfMemberB: Int
+            totalPaidByHost: Int,
+            totalPaidByPartner: Int,
+            totalShareOfHost: Int,
+            totalShareOfPartner: Int
         ) {
             self.periodStart = periodStart
             self.periodEnd = periodEnd
@@ -31,10 +31,10 @@ public enum SettlementCalculator {
             self.totalDeposited = totalDeposited
             self.currentBalance = currentBalance
             self.expenseCount = expenseCount
-            self.totalPaidByMemberA = totalPaidByMemberA
-            self.totalPaidByMemberB = totalPaidByMemberB
-            self.totalShareOfMemberA = totalShareOfMemberA
-            self.totalShareOfMemberB = totalShareOfMemberB
+            self.totalPaidByHost = totalPaidByHost
+            self.totalPaidByPartner = totalPaidByPartner
+            self.totalShareOfHost = totalShareOfHost
+            self.totalShareOfPartner = totalShareOfPartner
         }
     }
 
@@ -56,10 +56,10 @@ public enum SettlementCalculator {
 
     public static func calculate(input: SummaryInput) -> SettlementSummary {
         let settlement = calculateSettlement(
-            totalPaidByMemberA: input.totalPaidByMemberA,
-            totalPaidByMemberB: input.totalPaidByMemberB,
-            totalShareOfMemberA: input.totalShareOfMemberA,
-            totalShareOfMemberB: input.totalShareOfMemberB
+            totalPaidByHost: input.totalPaidByHost,
+            totalPaidByPartner: input.totalPaidByPartner,
+            totalShareOfHost: input.totalShareOfHost,
+            totalShareOfPartner: input.totalShareOfPartner
         )
 
         return SettlementSummary(
@@ -69,10 +69,10 @@ public enum SettlementCalculator {
             totalDeposited: input.totalDeposited,
             currentBalance: input.currentBalance,
             expenseCount: input.expenseCount,
-            totalPaidByMemberA: input.totalPaidByMemberA,
-            totalPaidByMemberB: input.totalPaidByMemberB,
-            totalShareOfMemberA: input.totalShareOfMemberA,
-            totalShareOfMemberB: input.totalShareOfMemberB,
+            totalPaidByHost: input.totalPaidByHost,
+            totalPaidByPartner: input.totalPaidByPartner,
+            totalShareOfHost: input.totalShareOfHost,
+            totalShareOfPartner: input.totalShareOfPartner,
             settlementPayer: settlement.settlementPayer,
             settlementReceiver: settlement.settlementReceiver,
             settlementAmount: settlement.settlementAmount
@@ -80,27 +80,27 @@ public enum SettlementCalculator {
     }
 
     public static func calculateSettlement(
-        totalPaidByMemberA: Int,
-        totalPaidByMemberB: Int,
-        totalShareOfMemberA: Int,
-        totalShareOfMemberB: Int
+        totalPaidByHost: Int,
+        totalPaidByPartner: Int,
+        totalShareOfHost: Int,
+        totalShareOfPartner: Int
     ) -> SettlementResult {
-        let netBalanceOfMemberA = totalPaidByMemberA - totalShareOfMemberA
-        let netBalanceOfMemberB = totalPaidByMemberB - totalShareOfMemberB
+        let netBalanceOfHost = totalPaidByHost - totalShareOfHost
+        let netBalanceOfPartner = totalPaidByPartner - totalShareOfPartner
 
-        if netBalanceOfMemberA > 0 {
+        if netBalanceOfHost > 0 {
             return SettlementResult(
-                settlementPayer: .memberB,
-                settlementReceiver: .memberA,
-                settlementAmount: netBalanceOfMemberA
+                settlementPayer: .partner,
+                settlementReceiver: .host,
+                settlementAmount: netBalanceOfHost
             )
         }
 
-        if netBalanceOfMemberB > 0 {
+        if netBalanceOfPartner > 0 {
             return SettlementResult(
-                settlementPayer: .memberA,
-                settlementReceiver: .memberB,
-                settlementAmount: netBalanceOfMemberB
+                settlementPayer: .host,
+                settlementReceiver: .partner,
+                settlementAmount: netBalanceOfPartner
             )
         }
 

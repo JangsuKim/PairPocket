@@ -2,10 +2,10 @@ import SwiftUI
 
 struct SettlementSection: View {
     @Environment(ExpenseStore.self) private var expenseStore
-    @AppStorage("settings.memberA.name") private var memberAName = "MemberA"
-    @AppStorage("settings.memberA.icon") private var memberAIcon = "person.circle.fill"
-    @AppStorage("settings.memberB.name") private var memberBName = "MemberB"
-    @AppStorage("settings.memberB.icon") private var memberBIcon = "person.circle"
+    @AppStorage(MemberPreferenceKeys.hostName) private var hostName = MemberRole.host.displayName
+    @AppStorage(MemberPreferenceKeys.hostIcon) private var hostIcon = "person.circle.fill"
+    @AppStorage(MemberPreferenceKeys.partnerName) private var partnerName = MemberRole.partner.displayName
+    @AppStorage(MemberPreferenceKeys.partnerIcon) private var partnerIcon = "person.circle"
 
     private let allPocketColor: Color = .secondary
 
@@ -24,10 +24,8 @@ struct SettlementSection: View {
     private var settlementResultDisplay: HomeSettlementResultDisplay {
         guard let summary = settlementSummary else {
             return HomeSettlementResultDisplay(
-                fromMemberRole: nil,
-                toMemberRole: nil,
-                amountText: formattedYen(0),
-                messageText: "未精算データがありません"
+                arrowSystemName: "arrow.left.and.right",
+                amountText: formattedYen(0)
             )
         }
 
@@ -35,18 +33,14 @@ struct SettlementSection: View {
               let receiver = summary.settlementReceiver,
               summary.settlementAmount > 0 else {
             return HomeSettlementResultDisplay(
-                fromMemberRole: nil,
-                toMemberRole: nil,
-                amountText: formattedYen(0),
-                messageText: "精算は不要です"
+                arrowSystemName: "arrow.left.and.right",
+                amountText: formattedYen(0)
             )
         }
 
         return HomeSettlementResultDisplay(
-            fromMemberRole: payer,
-            toMemberRole: receiver,
-            amountText: formattedYen(summary.settlementAmount),
-            messageText: nil
+            arrowSystemName: arrowSystemName(payer: payer, receiver: receiver),
+            amountText: formattedYen(summary.settlementAmount)
         )
     }
 
@@ -80,40 +74,38 @@ struct SettlementSection: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         }
+        .task {
+            MemberPreferences.migrateLegacyValues()
+        }
     }
 
     private var settlementAmountCard: some View {
         VStack(spacing: 6) {
-            if let fromMemberRole = settlementResultDisplay.fromMemberRole,
-               let toMemberRole = settlementResultDisplay.toMemberRole {
-                HStack(spacing: 10) {
-                    MemberProfileView(
-                        role: fromMemberRole,
-                        name: memberDisplayName(for: fromMemberRole),
-                        iconSystemName: memberIcon(for: fromMemberRole),
-                        avatarSize: 72
-                    )
-                    Spacer(minLength: 0)
-                    VStack(spacing: 4) {
-                        Image(systemName: "arrow.right")
+            HStack(spacing: 10) {
+                MemberProfileView(
+                    role: .host,
+                    name: memberDisplayName(for: .host),
+                    iconSystemName: memberIcon(for: .host),
+                    avatarSize: 72
+                )
+                Spacer(minLength: 0)
+                VStack(spacing: 4) {
+                    if let arrowSystemName = settlementResultDisplay.arrowSystemName {
+                        Image(systemName: arrowSystemName)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.secondary)
-
-                        Text(settlementResultDisplay.amountText)
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
                     }
-                    Spacer(minLength: 0)
-                    MemberProfileView(
-                        role: toMemberRole,
-                        name: memberDisplayName(for: toMemberRole),
-                        iconSystemName: memberIcon(for: toMemberRole),
-                        avatarSize: 72
-                    )
+
+                    Text(settlementResultDisplay.amountText)
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                 }
-            } else if let messageText = settlementResultDisplay.messageText {
-                Text(messageText)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                MemberProfileView(
+                    role: .partner,
+                    name: memberDisplayName(for: .partner),
+                    iconSystemName: memberIcon(for: .partner),
+                    avatarSize: 72
+                )
             }
         }
         .padding(.horizontal, 16)
@@ -125,20 +117,30 @@ struct SettlementSection: View {
 
     private func memberDisplayName(for role: MemberRole) -> String {
         switch role {
-        case .memberA:
-            return memberAName
-        case .memberB:
-            return memberBName
+        case .host:
+            return hostName.isEmpty ? MemberPreferences.fallbackName(for: role) : hostName
+        case .partner:
+            return partnerName.isEmpty ? MemberPreferences.fallbackName(for: role) : partnerName
         }
     }
 
     private func memberIcon(for role: MemberRole) -> String {
         switch role {
-        case .memberA:
-            return memberAIcon
-        case .memberB:
-            return memberBIcon
+        case .host:
+            return hostIcon
+        case .partner:
+            return partnerIcon
         }
+    }
+
+    private func arrowSystemName(payer: MemberRole, receiver: MemberRole) -> String {
+        if payer == .host && receiver == .partner {
+            return "arrow.right"
+        }
+        if payer == .partner && receiver == .host {
+            return "arrow.left"
+        }
+        return "arrow.right"
     }
 
     private func formattedYen(_ amount: Int) -> String {
@@ -146,15 +148,13 @@ struct SettlementSection: View {
         formatter.locale = Locale(identifier: "ja_JP")
         formatter.numberStyle = .decimal
         let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
-        return "¥\(formatted)"
+        return "\(formatted)円"
     }
 }
 
 private struct HomeSettlementResultDisplay {
-    let fromMemberRole: MemberRole?
-    let toMemberRole: MemberRole?
+    let arrowSystemName: String?
     let amountText: String
-    let messageText: String?
 }
 
 #Preview {

@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct QuickAddSection: View {
-    @AppStorage("currentMemberRole") private var currentMemberRoleRawValue = MemberRole.memberA.rawValue
+    @AppStorage(MemberPreferenceKeys.currentMemberRole) private var currentMemberRoleRawValue = MemberRole.host.rawValue
     @Environment(\.modelContext) private var modelContext
     @Environment(CategoryStore.self) private var categoryStore
     @Environment(ExpenseStore.self) private var expenseStore
@@ -22,15 +22,19 @@ struct QuickAddSection: View {
     }
 
     private var currentMemberRole: MemberRole {
-        MemberRole(rawValue: currentMemberRoleRawValue) ?? .memberA
+        MemberRole.fromPersistedRawValue(currentMemberRoleRawValue)
+    }
+
+    private var localUserId: String {
+        MemberPreferences.ensureLocalUserId()
     }
 
     private var currentPaymentSource: PaymentSource {
         switch currentMemberRole {
-        case .memberA:
-            return .memberA
-        case .memberB:
-            return .memberB
+        case .host:
+            return .host
+        case .partner:
+            return .partner
         }
     }
 
@@ -93,6 +97,7 @@ struct QuickAddSection: View {
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .task {
+            MemberPreferences.migrateLegacyValues()
             try? categoryStore.loadIfNeeded(from: modelContext)
             syncSelectedCategory()
         }
@@ -172,13 +177,19 @@ struct QuickAddSection: View {
             categoryId: selectedCategory.id,
             paymentSource: currentPaymentSource,
             amount: amountValue,
-            ratioA: selectedPocket.ratioA,
-            ratioB: selectedPocket.ratioB,
+            ratioA: selectedPocket.hostRatio,
+            ratioB: selectedPocket.partnerRatio,
             memo: nil,
             date: Date(),
             isSettled: false,
             settlementId: nil,
-            settledAt: nil
+            settledAt: nil,
+            createdByUserId: localUserId,
+            paidByUserId: MemberPreferences.resolvePaidByUserId(
+                paymentSource: currentPaymentSource,
+                localUserId: localUserId,
+                localRole: currentMemberRole
+            )
         )
 
         do {

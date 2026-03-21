@@ -7,10 +7,10 @@ public struct SettlementSummary: Codable, Hashable {
     public var totalDeposited: Int
     public var currentBalance: Int
     public var expenseCount: Int
-    public var totalPaidByMemberA: Int
-    public var totalPaidByMemberB: Int
-    public var totalShareOfMemberA: Int
-    public var totalShareOfMemberB: Int
+    public var totalPaidByHost: Int
+    public var totalPaidByPartner: Int
+    public var totalShareOfHost: Int
+    public var totalShareOfPartner: Int
     public var settlementPayer: MemberRole?
     public var settlementReceiver: MemberRole?
     public var settlementAmount: Int
@@ -22,10 +22,10 @@ public struct SettlementSummary: Codable, Hashable {
         totalDeposited: Int,
         currentBalance: Int,
         expenseCount: Int,
-        totalPaidByMemberA: Int,
-        totalPaidByMemberB: Int,
-        totalShareOfMemberA: Int,
-        totalShareOfMemberB: Int,
+        totalPaidByHost: Int,
+        totalPaidByPartner: Int,
+        totalShareOfHost: Int,
+        totalShareOfPartner: Int,
         settlementPayer: MemberRole?,
         settlementReceiver: MemberRole?,
         settlementAmount: Int
@@ -36,10 +36,10 @@ public struct SettlementSummary: Codable, Hashable {
         self.totalDeposited = totalDeposited
         self.currentBalance = currentBalance
         self.expenseCount = expenseCount
-        self.totalPaidByMemberA = totalPaidByMemberA
-        self.totalPaidByMemberB = totalPaidByMemberB
-        self.totalShareOfMemberA = totalShareOfMemberA
-        self.totalShareOfMemberB = totalShareOfMemberB
+        self.totalPaidByHost = totalPaidByHost
+        self.totalPaidByPartner = totalPaidByPartner
+        self.totalShareOfHost = totalShareOfHost
+        self.totalShareOfPartner = totalShareOfPartner
         self.settlementPayer = settlementPayer
         self.settlementReceiver = settlementReceiver
         self.settlementAmount = settlementAmount

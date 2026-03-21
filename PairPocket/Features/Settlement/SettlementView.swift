@@ -3,10 +3,10 @@ import SwiftUI
 struct SettlementView: View {
     @Environment(ExpenseStore.self) private var expenseStore
     @Environment(PocketStore.self) private var pocketStore
-    @AppStorage("settings.memberA.name") private var memberAName = "MemberA"
-    @AppStorage("settings.memberA.icon") private var memberAIcon = "person.circle.fill"
-    @AppStorage("settings.memberB.name") private var memberBName = "MemberB"
-    @AppStorage("settings.memberB.icon") private var memberBIcon = "person.circle"
+    @AppStorage(MemberPreferenceKeys.hostName) private var hostName = MemberRole.host.displayName
+    @AppStorage(MemberPreferenceKeys.hostIcon) private var hostIcon = "person.circle.fill"
+    @AppStorage(MemberPreferenceKeys.partnerName) private var partnerName = MemberRole.partner.displayName
+    @AppStorage(MemberPreferenceKeys.partnerIcon) private var partnerIcon = "person.circle"
 
     @State private var selectedPocketID: String = "all"
 
@@ -49,12 +49,12 @@ struct SettlementView: View {
 
         return [
             SettlementExpenseSummary(
-                memberName: memberDisplayName(for: .memberA),
-                amountText: SettlementDisplayFormatter.yen(summary?.totalPaidByMemberA ?? 0)
+                memberName: memberDisplayName(for: .host),
+                amountText: SettlementDisplayFormatter.yen(summary?.totalPaidByHost ?? 0)
             ),
             SettlementExpenseSummary(
-                memberName: memberDisplayName(for: .memberB),
-                amountText: SettlementDisplayFormatter.yen(summary?.totalPaidByMemberB ?? 0)
+                memberName: memberDisplayName(for: .partner),
+                amountText: SettlementDisplayFormatter.yen(summary?.totalPaidByPartner ?? 0)
             )
         ]
     }
@@ -86,12 +86,7 @@ struct SettlementView: View {
     private var settlementResultDisplay: SettlementResultDisplay {
         guard let summary = settlementSummary else {
             return SettlementResultDisplay(
-                fromMemberRole: nil,
-                fromMemberName: nil,
-                fromMemberIcon: nil,
-                toMemberRole: nil,
-                toMemberName: nil,
-                toMemberIcon: nil,
+                arrowSystemName: nil,
                 amountText: SettlementDisplayFormatter.yen(0),
                 messageText: "未精算データがありません"
             )
@@ -101,24 +96,14 @@ struct SettlementView: View {
               let receiver = summary.settlementReceiver,
               summary.settlementAmount > 0 else {
             return SettlementResultDisplay(
-                fromMemberRole: nil,
-                fromMemberName: nil,
-                fromMemberIcon: nil,
-                toMemberRole: nil,
-                toMemberName: nil,
-                toMemberIcon: nil,
+                arrowSystemName: nil,
                 amountText: SettlementDisplayFormatter.yen(0),
                 messageText: "精算は不要です"
             )
         }
 
         return SettlementResultDisplay(
-            fromMemberRole: payer,
-            fromMemberName: memberDisplayName(for: payer),
-            fromMemberIcon: memberIcon(for: payer),
-            toMemberRole: receiver,
-            toMemberName: memberDisplayName(for: receiver),
-            toMemberIcon: memberIcon(for: receiver),
+            arrowSystemName: arrowSystemName(payer: payer, receiver: receiver),
             amountText: SettlementDisplayFormatter.yen(summary.settlementAmount),
             messageText: nil
         )
@@ -126,20 +111,30 @@ struct SettlementView: View {
 
     private func memberDisplayName(for role: MemberRole) -> String {
         switch role {
-        case .memberA:
-            return memberAName
-        case .memberB:
-            return memberBName
+        case .host:
+            return hostName.isEmpty ? MemberPreferences.fallbackName(for: role) : hostName
+        case .partner:
+            return partnerName.isEmpty ? MemberPreferences.fallbackName(for: role) : partnerName
         }
     }
 
     private func memberIcon(for role: MemberRole) -> String {
         switch role {
-        case .memberA:
-            return memberAIcon
-        case .memberB:
-            return memberBIcon
+        case .host:
+            return hostIcon
+        case .partner:
+            return partnerIcon
         }
+    }
+
+    private func arrowSystemName(payer: MemberRole, receiver: MemberRole) -> String {
+        if payer == .host && receiver == .partner {
+            return "arrow.right"
+        }
+        if payer == .partner && receiver == .host {
+            return "arrow.left"
+        }
+        return "arrow.right"
     }
 
     var body: some View {
@@ -160,12 +155,11 @@ struct SettlementView: View {
                     totalAmountText: totalAmountText
                 )
                 SettlementResultSection(
-                    fromMemberRole: settlementResultDisplay.fromMemberRole,
-                    fromMemberName: settlementResultDisplay.fromMemberName,
-                    fromMemberIcon: settlementResultDisplay.fromMemberIcon,
-                    toMemberRole: settlementResultDisplay.toMemberRole,
-                    toMemberName: settlementResultDisplay.toMemberName,
-                    toMemberIcon: settlementResultDisplay.toMemberIcon,
+                    hostName: memberDisplayName(for: .host),
+                    hostIcon: memberIcon(for: .host),
+                    partnerName: memberDisplayName(for: .partner),
+                    partnerIcon: memberIcon(for: .partner),
+                    arrowSystemName: settlementResultDisplay.arrowSystemName,
                     amountText: settlementResultDisplay.amountText,
                     messageText: settlementResultDisplay.messageText,
                     accentColor: selectedPocketColor
@@ -198,6 +192,9 @@ struct SettlementView: View {
                 selectedPocketID = "all"
             }
         }
+        .task {
+            MemberPreferences.migrateLegacyValues()
+        }
     }
 }
 
@@ -214,12 +211,7 @@ struct SettlementExpenseSummary: Identifiable {
 }
 
 private struct SettlementResultDisplay {
-    let fromMemberRole: MemberRole?
-    let fromMemberName: String?
-    let fromMemberIcon: String?
-    let toMemberRole: MemberRole?
-    let toMemberName: String?
-    let toMemberIcon: String?
+    let arrowSystemName: String?
     let amountText: String
     let messageText: String?
 }

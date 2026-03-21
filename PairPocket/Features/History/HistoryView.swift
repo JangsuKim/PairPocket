@@ -15,6 +15,7 @@ struct HistoryView: View {
     @State private var selectedDate: Date = HistoryCalendar.dayStart(for: Date())
 
     private let overallAccentColor: Color = .secondary
+    private let localUserId = MemberPreferences.ensureLocalUserId()
 
     var body: some View {
         VStack(spacing: 12) {
@@ -292,7 +293,11 @@ struct HistoryView: View {
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(paymentSourceLabel(expense.paymentSource))
+            Text(MemberPreferences.payerDisplayName(
+                paymentSource: expense.paymentSource,
+                paidByUserId: expense.paidByUserId,
+                localUserId: localUserId
+            ))
                 .frame(width: 64, alignment: .center)
 
             Text(HistoryFormatters.yen(expense.amount))
@@ -301,17 +306,6 @@ struct HistoryView: View {
         }
         .font(.caption)
         .padding(.vertical, 4)
-    }
-
-    private func paymentSourceLabel(_ source: PaymentSource) -> String {
-        switch source {
-        case .memberA:
-            return "A"
-        case .memberB:
-            return "B"
-        case .pocket:
-            return "ポケット"
-        }
     }
 
     private func categoryLabel(for categoryId: UUID?) -> String {
