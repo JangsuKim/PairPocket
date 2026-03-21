@@ -88,26 +88,26 @@ struct SettlementView: View {
     private var settlementResultDisplay: SettlementResultDisplay {
         guard let summary = settlementSummary else {
             return SettlementResultDisplay(
-                arrowAssetName: nil,
+                arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
-                amountText: SettlementDisplayFormatter.yen(0),
-                messageText: "未精算データがありません"
+                amountText: SettlementDisplayFormatter.yenWithSuffix(0),
+                messageText: nil
             )
         }
 
         guard let signedAmount = SettlementResultPresenter.signedAmount(for: summary) else {
             return SettlementResultDisplay(
-                arrowAssetName: nil,
+                arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
-                amountText: SettlementDisplayFormatter.yen(0),
-                messageText: "精算は不要です"
+                amountText: SettlementDisplayFormatter.yenWithSuffix(0),
+                messageText: nil
             )
         }
 
         return SettlementResultDisplay(
             arrowAssetName: SettlementResultPresenter.arrowAssetName(for: signedAmount),
             arrowSystemName: nil,
-            amountText: SettlementDisplayFormatter.yen(abs(signedAmount)),
+            amountText: SettlementDisplayFormatter.yenWithSuffix(abs(signedAmount)),
             messageText: nil
         )
     }
@@ -239,6 +239,11 @@ private enum SettlementDisplayFormatter {
     static func yen(_ amount: Int) -> String {
         let formatted = yenFormatter.string(from: NSNumber(value: amount)) ?? "0"
         return "¥\(formatted)"
+    }
+
+    static func yenWithSuffix(_ amount: Int) -> String {
+        let formatted = yenFormatter.string(from: NSNumber(value: amount)) ?? "0"
+        return "\(formatted)円"
     }
 }
 
