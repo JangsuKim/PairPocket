@@ -198,7 +198,7 @@ private extension PocketStore {
         Pocket(
             id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
             name: "生活費",
-            colorKey: "green",
+            colorKey: "mint",
             ratioA: 50,
             ratioB: 50,
             sharedBalanceEnabled: false,

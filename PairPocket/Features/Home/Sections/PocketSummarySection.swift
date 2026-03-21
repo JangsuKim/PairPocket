@@ -102,19 +102,3 @@ struct PocketSummarySection: View {
         }
     }
 }
-
-#Preview {
-    PocketSummarySection(
-        pockets: [
-            Pocket(name: "Main", colorKey: "green", icon: "house", isMain: true),
-            Pocket(name: "Travel", colorKey: "orange", icon: "airplane"),
-            Pocket(name: "Rent", colorKey: "blue", icon: "building.2")
-        ],
-        selectedPocket: Pocket(name: "Travel", colorKey: "orange", icon: "airplane"),
-        totalAmountYen: 128000,
-        totalCount: 14,
-        onSelectPocket: { _ in }
-    )
-    .padding()
-    .background(Color(.systemGroupedBackground))
-}

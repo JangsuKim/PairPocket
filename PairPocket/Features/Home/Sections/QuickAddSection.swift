@@ -212,9 +212,3 @@ struct QuickAddSection: View {
         )
     }
 }
-
-#Preview {
-    QuickAddSection(
-        selectedPocket: Pocket(name: "Main", colorKey: "green", isMain: true)
-    )
-}

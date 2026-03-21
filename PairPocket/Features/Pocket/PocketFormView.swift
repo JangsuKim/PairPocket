@@ -47,7 +47,7 @@ struct PocketFormView: View {
         switch mode {
         case .add:
             _name = State(initialValue: "")
-            _colorKey = State(initialValue: PocketColorOption.green.rawValue)
+            _colorKey = State(initialValue: PocketColorOption.mint.rawValue)
             _ratioA = State(initialValue: 50)
             _sharedBalanceEnabled = State(initialValue: false)
             _personalPaymentEnabled = State(initialValue: true)
@@ -68,6 +68,46 @@ struct PocketFormView: View {
 
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var editingPocketID: UUID? {
+        if case let .edit(pocket) = mode {
+            return pocket.id
+        }
+        return nil
+    }
+
+    private var usedColorKeysByOtherActivePockets: Set<String> {
+        Set(
+            pocketStore.pockets
+                .filter { pocket in
+                    pocket.id != editingPocketID
+                }
+                .map { pocket in
+                    normalizedColorKey(pocket.colorKey)
+                }
+        )
+    }
+
+    private var availableColorOptions: [PocketColorOption] {
+        PocketColorOption.allCases.filter { option in
+            isColorUnavailable(option) == false
+        }
+    }
+
+    private var colorSelectionBinding: Binding<String> {
+        Binding(
+            get: { colorKey },
+            set: { newValue in
+                let normalizedNewValue = normalizedColorKey(newValue)
+
+                guard usedColorKeysByOtherActivePockets.contains(normalizedNewValue) == false else {
+                    return
+                }
+
+                colorKey = normalizedNewValue
+            }
+        )
     }
 
     var body: some View {
@@ -142,16 +182,66 @@ struct PocketFormView: View {
     }
 
     private var colorSelection: some View {
-        Picker("色", selection: $colorKey) {
-            ForEach(PocketColorOption.allCases) { option in
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(option.color)
-                        .frame(width: 12, height: 12)
-                    Text(option.title)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("色")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5),
+                spacing: 6
+            ) {
+                ForEach(PocketColorOption.allCases) { option in
+                    let unavailable = isColorUnavailable(option)
+                    let isSelected = normalizedColorKey(colorKey) == option.rawValue
+
+                    Button {
+                        colorSelectionBinding.wrappedValue = option.rawValue
+                    } label: {
+                        VStack(spacing: 3) {
+                            Circle()
+                                .fill(unavailable ? Color.gray.opacity(0.55) : option.color)
+                                .frame(width: 10, height: 10)
+
+                            Text(option.title)
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .foregroundStyle(unavailable ? .secondary : .primary)
+
+                            if unavailable {
+                                Text("使用中")
+                                    .font(.caption2)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                                    .foregroundStyle(.secondary)
+                            } else if isSelected {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 6)
+                        .background(Color(.secondarySystemBackground))
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    isSelected ? option.color.opacity(0.9) : Color(.separator).opacity(0.5),
+                                    lineWidth: isSelected ? 1.5 : 1
+                                )
+                        )
+                        .clipShape(Capsule())
+                        .opacity(unavailable ? 0.6 : 1)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(unavailable)
                 }
-                .tag(option.rawValue)
             }
+        }
+        .onAppear {
+            ensureColorSelectionIsAvailable()
         }
     }
 
@@ -163,6 +253,11 @@ struct PocketFormView: View {
 
         guard (0...100).contains(ratioA), (0...100).contains(ratioB) else {
             validationMessage = "比率の値が正しくありません。"
+            return
+        }
+
+        if usedColorKeysByOtherActivePockets.contains(normalizedColorKey(colorKey)) {
+            validationMessage = "使用中の色は選択できません。"
             return
         }
 
@@ -226,6 +321,38 @@ struct PocketFormView: View {
             validationMessage = error.localizedDescription
         }
     }
+
+    private func isColorUnavailable(_ option: PocketColorOption) -> Bool {
+        usedColorKeysByOtherActivePockets.contains(option.rawValue)
+    }
+
+    private func ensureColorSelectionIsAvailable() {
+        let normalizedSelectedColorKey = normalizedColorKey(colorKey)
+
+        if usedColorKeysByOtherActivePockets.contains(normalizedSelectedColorKey) {
+            if let firstAvailableColorOption = availableColorOptions.first {
+                colorKey = firstAvailableColorOption.rawValue
+            }
+        }
+    }
+
+    private func normalizedColorKey(_ colorKey: String) -> String {
+        switch colorKey {
+        case "mint":
+            return PocketColorOption.mint.rawValue
+        case "peach":
+            return PocketColorOption.peach.rawValue
+        case "lavender":
+            return PocketColorOption.lavender.rawValue
+        case "sky":
+            return PocketColorOption.sky.rawValue
+        case "blush":
+            return PocketColorOption.blush.rawValue
+        default:
+            return PocketColorOption.mint.rawValue
+        }
+    }
+
 }
 
 #Preview {

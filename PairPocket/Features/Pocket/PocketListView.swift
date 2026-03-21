@@ -57,8 +57,26 @@ struct PocketListView: View {
     @State private var selectedPocketID: UUID?
     @State private var isShowingPocketLimitAlert = false
 
-    private let cardHeight: CGFloat = 190
-    private let cardPeekOffset: CGFloat = 60
+    private var cardHeight: CGFloat {
+        190
+    }
+
+    private var cardPeekOffset: CGFloat {
+        switch activePockets.count {
+        case 1:
+            return 0
+        case 2:
+            return 120
+        case 3:
+            return 105
+        case 4:
+            return 100
+        case 5:
+            return 95
+        default:
+            return 60
+        }
+    }
 
     private var activePockets: [Pocket] {
         pocketStore.pockets
