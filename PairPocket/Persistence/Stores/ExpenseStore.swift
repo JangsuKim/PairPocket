@@ -24,9 +24,15 @@ final class ExpenseStore {
     }
 
     func addExpense(_ expense: Expense, in modelContext: ModelContext) throws {
-        modelContext.insert(ExpenseRecord(entry: expense))
+        let normalizedExpense = ExpenseIdentityPolicy.normalized(expense)
+        modelContext.insert(ExpenseRecord(entry: normalizedExpense))
         try modelContext.save()
         try reload(from: modelContext)
+    }
+
+    func backfillIdentityFieldsIfNeeded(in modelContext: ModelContext) throws {
+        // Reserved for a future migration when invite/link is implemented.
+        _ = modelContext
     }
 
     func expenses(for pocketId: UUID) -> [Expense] {

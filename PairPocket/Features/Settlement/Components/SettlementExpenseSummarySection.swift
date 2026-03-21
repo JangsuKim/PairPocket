@@ -8,9 +8,10 @@ struct SettlementExpenseSummarySection: View {
         SettlementCardSection(title: "支出サマリー") {
             VStack(spacing: 12) {
                 ForEach(expenseSummaries) { summary in
-                    HStack {
+                    HStack(alignment: .center) {
                         Text(summary.memberName)
                             .font(.subheadline.weight(.semibold))
+                            .frame(width: 120, alignment: .center)
 
                         Spacer()
 

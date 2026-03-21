@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct AddExpenseView: View {
+    @AppStorage(MemberPreferenceKeys.currentMemberRole) private var currentMemberRoleRawValue = MemberRole.host.rawValue
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(ExpenseStore.self) private var expenseStore
@@ -11,13 +12,21 @@ struct AddExpenseView: View {
     @State private var selectedPocketID: UUID?
     @State private var selectedDate = Date()
     @State private var selectedCategoryID: UUID?
-    @State private var selectedPaymentSource: PaymentSource = .memberA
+    @State private var selectedPaymentSource: PaymentSource = .host
     @State private var amountText: String = ""
     @State private var memoText: String = ""
     @State private var saveErrorMessage: String?
 
     private var amountValue: Int {
         Int(amountText) ?? 0
+    }
+
+    private var currentMemberRole: MemberRole {
+        MemberRole.fromPersistedRawValue(currentMemberRoleRawValue)
+    }
+
+    private var localUserId: String {
+        MemberPreferences.ensureLocalUserId()
     }
 
     private var isAddEnabled: Bool {
@@ -65,8 +74,8 @@ struct AddExpenseView: View {
         var sources: [PaymentSource] = []
 
         if selectedPocket.personalPaymentEnabled {
-            sources.append(.memberA)
-            sources.append(.memberB)
+            sources.append(.host)
+            sources.append(.partner)
         }
 
         if selectedPocket.sharedBalanceEnabled {
@@ -188,8 +197,8 @@ struct AddExpenseView: View {
                         }
 
                     HStack(spacing: 20) {
-                        burdenRow(name: "A", amount: burdenA)
-                        burdenRow(name: "B", amount: burdenB)
+                        burdenRow(name: MemberRole.host.displayName, amount: burdenA)
+                        burdenRow(name: MemberRole.partner.displayName, amount: burdenB)
                     }
 
                     Button {
@@ -272,19 +281,12 @@ struct AddExpenseView: View {
     }
 
     private func paymentSourceLabel(_ source: PaymentSource) -> String {
-        switch source {
-        case .memberA:
-            return "A"
-        case .memberB:
-            return "B"
-        case .pocket:
-            return "ポケット"
-        }
+        source.displayName
     }
 
     private func syncSelectedPaymentSource() {
         if availablePaymentSources.contains(selectedPaymentSource) == false {
-            selectedPaymentSource = availablePaymentSources.first ?? .memberA
+            selectedPaymentSource = availablePaymentSources.first ?? .host
         }
     }
 
@@ -316,18 +318,27 @@ struct AddExpenseView: View {
             return
         }
 
+        let createdByUserId = localUserId
+        let paidByUserId = MemberPreferences.resolvePaidByUserId(
+            paymentSource: selectedPaymentSource,
+            localUserId: localUserId,
+            localRole: currentMemberRole
+        )
+
         let expense = Expense(
             pocketId: selectedPocket.id,
             categoryId: selectedCategory?.id,
             paymentSource: selectedPaymentSource,
             amount: amountValue,
-            ratioA: selectedPocket.ratioA,
-            ratioB: selectedPocket.ratioB,
+            ratioA: selectedPocket.hostRatio,
+            ratioB: selectedPocket.partnerRatio,
             memo: memoText,
             date: selectedDate,
             isSettled: false,
             settlementId: nil,
-            settledAt: nil
+            settledAt: nil,
+            createdByUserId: createdByUserId,
+            paidByUserId: paidByUserId
         )
 
         do {

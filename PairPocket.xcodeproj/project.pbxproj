@@ -10,6 +10,10 @@
 		5963CFA02F66A23B007F7520 /* SettlementSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5963CF9F2F66A23B007F7520 /* SettlementSummary.swift */; };
 		5963D04A2F66A529007F7520 /* SettlementEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5963D0492F66A529007F7520 /* SettlementEngine.swift */; };
 		5963D04C2F66ADD5007F7520 /* SettlementExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5963D04B2F66ADD5007F7520 /* SettlementExecutor.swift */; };
+		59F20A452F6EBE7B0057CEE3 /* RelationshipContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59F20A442F6EBE7B0057CEE3 /* RelationshipContext.swift */; };
+		59F20A472F6EBE840057CEE3 /* MemberRoleResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59F20A462F6EBE840057CEE3 /* MemberRoleResolver.swift */; };
+		59F20A492F6EBE9A0057CEE3 /* ExpenseIdentityPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59F20A482F6EBE9A0057CEE3 /* ExpenseIdentityPolicy.swift */; };
+		59F20A4B2F6EBECB0057CEE3 /* SettlementInterpretationBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59F20A4A2F6EBECB0057CEE3 /* SettlementInterpretationBoundary.swift */; };
 		7A0D00012F60000100AA0001 /* Member.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599F06942F58144D00CC930E /* Member.swift */; };
 		7A0D00022F60000100AA0001 /* Pocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599F06952F58144D00CC930E /* Pocket.swift */; };
 		7A0D00032F60000100AA0001 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599F06962F58144D00CC930E /* Category.swift */; };
@@ -29,11 +33,28 @@
 		599F06972F58144D00CC930E /* Expense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expense.swift; sourceTree = "<group>"; };
 		599F06992F581AC300CC930E /* Settlement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settlement.swift; sourceTree = "<group>"; };
 		599F069A2F581AC300CC930E /* SettlementCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementCalculator.swift; sourceTree = "<group>"; };
+		59F20A442F6EBE7B0057CEE3 /* RelationshipContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelationshipContext.swift; sourceTree = "<group>"; };
+		59F20A462F6EBE840057CEE3 /* MemberRoleResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberRoleResolver.swift; sourceTree = "<group>"; };
+		59F20A482F6EBE9A0057CEE3 /* ExpenseIdentityPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseIdentityPolicy.swift; sourceTree = "<group>"; };
+		59F20A4A2F6EBECB0057CEE3 /* SettlementInterpretationBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementInterpretationBoundary.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		59F20A412F6E9DFC0057CEE3 /* Exceptions for "PairPocket" folder in "PairPocket" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 596D660A2F55887F00A15A0F /* PairPocket */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		596D660D2F55887F00A15A0F /* PairPocket */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				59F20A412F6E9DFC0057CEE3 /* Exceptions for "PairPocket" folder in "PairPocket" target */,
+			);
 			path = PairPocket;
 			sourceTree = "<group>";
 		};
@@ -85,6 +106,7 @@
 				599F06972F58144D00CC930E /* Expense.swift */,
 				599F06992F581AC300CC930E /* Settlement.swift */,
 				5963CF9F2F66A23B007F7520 /* SettlementSummary.swift */,
+				59F20A442F6EBE7B0057CEE3 /* RelationshipContext.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -95,6 +117,9 @@
 				599F069A2F581AC300CC930E /* SettlementCalculator.swift */,
 				5963D0492F66A529007F7520 /* SettlementEngine.swift */,
 				5963D04B2F66ADD5007F7520 /* SettlementExecutor.swift */,
+				59F20A462F6EBE840057CEE3 /* MemberRoleResolver.swift */,
+				59F20A482F6EBE9A0057CEE3 /* ExpenseIdentityPolicy.swift */,
+				59F20A4A2F6EBECB0057CEE3 /* SettlementInterpretationBoundary.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -177,9 +202,13 @@
 				7A0D00042F60000100AA0001 /* Expense.swift in Sources */,
 				7A0D00012F60000100AA0001 /* Member.swift in Sources */,
 				7A0D00022F60000100AA0001 /* Pocket.swift in Sources */,
+				59F20A452F6EBE7B0057CEE3 /* RelationshipContext.swift in Sources */,
 				5963D04A2F66A529007F7520 /* SettlementEngine.swift in Sources */,
+				59F20A492F6EBE9A0057CEE3 /* ExpenseIdentityPolicy.swift in Sources */,
+				59F20A472F6EBE840057CEE3 /* MemberRoleResolver.swift in Sources */,
 				7A0D00052F60000100AA0001 /* Settlement.swift in Sources */,
 				5963D04C2F66ADD5007F7520 /* SettlementExecutor.swift in Sources */,
+				59F20A4B2F6EBECB0057CEE3 /* SettlementInterpretationBoundary.swift in Sources */,
 				7A0D00062F60000100AA0001 /* SettlementCalculator.swift in Sources */,
 				5963CFA02F66A23B007F7520 /* SettlementSummary.swift in Sources */,
 			);
@@ -317,6 +346,7 @@
 				DEVELOPMENT_TEAM = SJM2NZY8A8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PairPocket/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -349,6 +379,7 @@
 				DEVELOPMENT_TEAM = SJM2NZY8A8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PairPocket/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

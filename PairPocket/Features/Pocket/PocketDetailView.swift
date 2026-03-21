@@ -56,13 +56,13 @@ struct PocketDetailView: View {
 
     private var paidByA: Int {
         pocketExpenses
-            .filter { $0.paymentSource == .memberA }
+            .filter { $0.paymentSource == .host }
             .reduce(0) { $0 + $1.amount }
     }
 
     private var paidByB: Int {
         pocketExpenses
-            .filter { $0.paymentSource == .memberB }
+            .filter { $0.paymentSource == .partner }
             .reduce(0) { $0 + $1.amount }
     }
 
@@ -293,12 +293,7 @@ struct PocketDetailView: View {
     }
 
     private func memberName(for role: MemberRole) -> String {
-        switch role {
-        case .memberA:
-            return "MemberA"
-        case .memberB:
-            return "MemberB"
-        }
+        role.displayName
     }
 
     private func toggleMonthlySection() {

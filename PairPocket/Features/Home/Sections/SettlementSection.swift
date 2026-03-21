@@ -2,6 +2,12 @@ import SwiftUI
 
 struct SettlementSection: View {
     @Environment(ExpenseStore.self) private var expenseStore
+    @AppStorage(MemberPreferenceKeys.hostName) private var hostName = MemberRole.host.displayName
+    @AppStorage(MemberPreferenceKeys.hostIcon) private var hostIcon = "person.circle.fill"
+    @AppStorage(MemberPreferenceKeys.partnerName) private var partnerName = MemberRole.partner.displayName
+    @AppStorage(MemberPreferenceKeys.partnerIcon) private var partnerIcon = "person.circle"
+
+    private let allPocketColor: Color = .secondary
 
     private var unsettledExpenses: [Expense] {
         expenseStore.unsettledExpenses
@@ -18,10 +24,8 @@ struct SettlementSection: View {
     private var settlementResultDisplay: HomeSettlementResultDisplay {
         guard let summary = settlementSummary else {
             return HomeSettlementResultDisplay(
-                fromMemberName: nil,
-                toMemberName: nil,
-                amountText: formattedYen(0),
-                messageText: "未精算データがありません"
+                arrowSystemName: "arrow.left.and.right",
+                amountText: formattedYen(0)
             )
         }
 
@@ -29,24 +33,20 @@ struct SettlementSection: View {
               let receiver = summary.settlementReceiver,
               summary.settlementAmount > 0 else {
             return HomeSettlementResultDisplay(
-                fromMemberName: nil,
-                toMemberName: nil,
-                amountText: formattedYen(0),
-                messageText: "精算は不要です"
+                arrowSystemName: "arrow.left.and.right",
+                amountText: formattedYen(0)
             )
         }
 
         return HomeSettlementResultDisplay(
-            fromMemberName: memberName(for: payer),
-            toMemberName: memberName(for: receiver),
-            amountText: formattedYen(summary.settlementAmount),
-            messageText: nil
+            arrowSystemName: arrowSystemName(payer: payer, receiver: receiver),
+            amountText: formattedYen(summary.settlementAmount)
         )
     }
 
     var body: some View {
         SettlementCardSection(title: "精算") {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 20) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("全ポケットの未精算をまとめて表示")
                         .font(.subheadline)
@@ -69,49 +69,78 @@ struct SettlementSection: View {
                         .frame(width: 140, height: 24)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.accentColor)
+                .tint(allPocketColor)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         }
+        .task {
+            MemberPreferences.migrateLegacyValues()
+        }
     }
 
     private var settlementAmountCard: some View {
-        VStack(spacing: 8) {
-            if let fromMemberName = settlementResultDisplay.fromMemberName,
-               let toMemberName = settlementResultDisplay.toMemberName {
-                HStack(spacing: 10) {
-                    UserChip(name: fromMemberName)
-                    Spacer(minLength: 0)
-                    Image(systemName: "arrow.right")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Spacer(minLength: 0)
-                    UserChip(name: toMemberName)
-                }
-            } else if let messageText = settlementResultDisplay.messageText {
-                Text(messageText)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
+        VStack(spacing: 6) {
+            HStack(spacing: 10) {
+                MemberProfileView(
+                    role: .host,
+                    name: memberDisplayName(for: .host),
+                    iconSystemName: memberIcon(for: .host),
+                    avatarSize: 72
+                )
+                Spacer(minLength: 0)
+                VStack(spacing: 4) {
+                    if let arrowSystemName = settlementResultDisplay.arrowSystemName {
+                        Image(systemName: arrowSystemName)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
 
-            Text(settlementResultDisplay.amountText)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                    Text(settlementResultDisplay.amountText)
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                }
+                Spacer(minLength: 0)
+                MemberProfileView(
+                    role: .partner,
+                    name: memberDisplayName(for: .partner),
+                    iconSystemName: memberIcon(for: .partner),
+                    avatarSize: 72
+                )
+            }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
-        .background(Color.accentColor.opacity(0.10))
+        .background(allPocketColor.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
-    private func memberName(for role: MemberRole) -> String {
+    private func memberDisplayName(for role: MemberRole) -> String {
         switch role {
-        case .memberA:
-            return "memberA"
-        case .memberB:
-            return "memberB"
+        case .host:
+            return hostName.isEmpty ? MemberPreferences.fallbackName(for: role) : hostName
+        case .partner:
+            return partnerName.isEmpty ? MemberPreferences.fallbackName(for: role) : partnerName
         }
+    }
+
+    private func memberIcon(for role: MemberRole) -> String {
+        switch role {
+        case .host:
+            return hostIcon
+        case .partner:
+            return partnerIcon
+        }
+    }
+
+    private func arrowSystemName(payer: MemberRole, receiver: MemberRole) -> String {
+        if payer == .host && receiver == .partner {
+            return "arrow.right"
+        }
+        if payer == .partner && receiver == .host {
+            return "arrow.left"
+        }
+        return "arrow.right"
     }
 
     private func formattedYen(_ amount: Int) -> String {
@@ -119,15 +148,13 @@ struct SettlementSection: View {
         formatter.locale = Locale(identifier: "ja_JP")
         formatter.numberStyle = .decimal
         let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
-        return "¥\(formatted)"
+        return "\(formatted)円"
     }
 }
 
 private struct HomeSettlementResultDisplay {
-    let fromMemberName: String?
-    let toMemberName: String?
+    let arrowSystemName: String?
     let amountText: String
-    let messageText: String?
 }
 
 #Preview {

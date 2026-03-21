@@ -9,10 +9,10 @@ public enum SettlementEngine {
         var totalSpent = 0
         var totalDeposited = 0
         var currentBalance = 0
-        var totalPaidByMemberA = 0
-        var totalPaidByMemberB = 0
-        var totalShareNumeratorA = 0
-        var totalShareNumeratorB = 0
+        var totalPaidByHost = 0
+        var totalPaidByPartner = 0
+        var totalShareNumeratorHost = 0
+        var totalShareNumeratorPartner = 0
 
         for deposit in unsettledDeposits {
             totalDeposited += deposit.amount
@@ -20,37 +20,38 @@ public enum SettlementEngine {
         }
 
         for expense in unsettledExpenses {
+            let rolePaymentSource = SettlementInterpretationBoundary.rolePaymentSource(for: expense)
             totalSpent += expense.amount
 
             // Aggregate proportional shares first and round once at the period level
             // to avoid accumulating per-expense rounding bias.
-            if expense.paymentSource == .memberA || expense.paymentSource == .memberB {
-                totalShareNumeratorA += expense.amount * expense.ratioA
-                totalShareNumeratorB += expense.amount * expense.ratioB
+            if rolePaymentSource == .host || rolePaymentSource == .partner {
+                totalShareNumeratorHost += expense.amount * expense.hostRatio
+                totalShareNumeratorPartner += expense.amount * expense.partnerRatio
             }
 
-            switch expense.paymentSource {
-            case .memberA:
-                totalPaidByMemberA += expense.amount
-            case .memberB:
-                totalPaidByMemberB += expense.amount
+            switch rolePaymentSource {
+            case .host:
+                totalPaidByHost += expense.amount
+            case .partner:
+                totalPaidByPartner += expense.amount
             case .pocket:
                 currentBalance -= expense.amount
             }
         }
 
-        let totalShareOfMemberA = roundedShare(
-            numerator: totalShareNumeratorA,
-            otherNumerator: totalShareNumeratorB,
-            totalPaid: totalPaidByMemberA,
-            otherTotalPaid: totalPaidByMemberB,
+        let totalShareOfHost = roundedShare(
+            numerator: totalShareNumeratorHost,
+            otherNumerator: totalShareNumeratorPartner,
+            totalPaid: totalPaidByHost,
+            otherTotalPaid: totalPaidByPartner,
             preferCurrentMemberOnFullTie: true
         )
-        let totalShareOfMemberB = roundedShare(
-            numerator: totalShareNumeratorB,
-            otherNumerator: totalShareNumeratorA,
-            totalPaid: totalPaidByMemberB,
-            otherTotalPaid: totalPaidByMemberA,
+        let totalShareOfPartner = roundedShare(
+            numerator: totalShareNumeratorPartner,
+            otherNumerator: totalShareNumeratorHost,
+            totalPaid: totalPaidByPartner,
+            otherTotalPaid: totalPaidByHost,
             preferCurrentMemberOnFullTie: false
         )
 
@@ -64,10 +65,10 @@ public enum SettlementEngine {
             totalDeposited: totalDeposited,
             currentBalance: currentBalance,
             expenseCount: unsettledExpenses.count,
-            totalPaidByMemberA: totalPaidByMemberA,
-            totalPaidByMemberB: totalPaidByMemberB,
-            totalShareOfMemberA: totalShareOfMemberA,
-            totalShareOfMemberB: totalShareOfMemberB
+            totalPaidByHost: totalPaidByHost,
+            totalPaidByPartner: totalPaidByPartner,
+            totalShareOfHost: totalShareOfHost,
+            totalShareOfPartner: totalShareOfPartner
         ))
     }
 
