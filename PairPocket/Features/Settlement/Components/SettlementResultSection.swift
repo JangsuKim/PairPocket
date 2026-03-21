@@ -27,7 +27,7 @@ struct SettlementResultSection: View {
                         amountText: amountText,
                         arrowAssetName: arrowAssetName,
                         arrowSystemName: arrowSystemName,
-                        avatarSize: 56,
+                        avatarSize: 72,
                         amountFont: .system(size: 22, weight: .bold, design: .rounded),
                         arrowWidth: 70,
                         arrowHeight: 40,

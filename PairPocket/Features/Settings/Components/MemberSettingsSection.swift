@@ -138,11 +138,12 @@ struct MemberSettingsSection: View {
                                     )
                                     .overlay {
                                         Circle()
-                                            .stroke(
+                                            .strokeBorder(
                                                 isPresetSelected(assetName: assetName, for: member) ? Color.accentColor : Color.clear,
                                                 lineWidth: 2
                                             )
                                     }
+                                    .frame(width: 48, height: 48)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -150,57 +151,61 @@ struct MemberSettingsSection: View {
                             ForEach(uploadedPhotoHistory(for: member).indices, id: \.self) { index in
                                 let photo = uploadedPhotoHistory(for: member)[index]
                                 ZStack(alignment: .topTrailing) {
-                                    Button {
-                                        memberPhotoDataBinding(for: member).wrappedValue = photo
-                                    } label: {
-                                        MemberAvatarView(
-                                            iconSystemName: memberIconBinding(for: member).wrappedValue,
+                                Button {
+                                    memberPhotoDataBinding(for: member).wrappedValue = photo
+                                } label: {
+                                    MemberAvatarView(
+                                        iconSystemName: memberIconBinding(for: member).wrappedValue,
                                             photoData: photo,
                                             role: memberRole(for: member),
                                             size: 48
                                         )
                                         .overlay {
                                             Circle()
-                                                .stroke(
+                                                .strokeBorder(
                                                     isUploadedPhotoSelected(photo, for: member) ? Color.accentColor : Color.clear,
                                                     lineWidth: 2
-                                                )
-                                        }
+                                            )
                                     }
-                                    .buttonStyle(.plain)
-
-                                    Button {
-                                        pendingUploadedPhotoDeletion = PendingUploadedPhotoDeletion(
-                                            member: member,
-                                            index: index
-                                        )
-                                    } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .font(.caption2)
-                                            .foregroundStyle(.white, .black.opacity(0.6))
-                                            .background(Color.clear)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .offset(x: 6, y: -6)
+                                    .frame(width: 48, height: 48)
                                 }
-                            }
+                                .buttonStyle(.plain)
 
-                            PhotosPicker(
-                                selection: $selectedPhotoItem,
-                                matching: .images,
+                                Button {
+                                    pendingUploadedPhotoDeletion = PendingUploadedPhotoDeletion(
+                                        member: member,
+                                        index: index
+                                    )
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.caption2)
+                                        .foregroundStyle(.white, .black.opacity(0.6))
+                                        .background(Color.clear)
+                                }
+                                .buttonStyle(.plain)
+                                .offset(x: 6, y: -6)
+                            }
+                            .frame(width: 48, height: 48)
+                        }
+
+                        PhotosPicker(
+                            selection: $selectedPhotoItem,
+                            matching: .images,
                                 photoLibrary: .shared()
                             ) {
                                 Circle()
                                     .fill(Color(.secondarySystemGroupedBackground))
                                     .frame(width: 48, height: 48)
                                     .overlay {
-                                        Image(systemName: "plus")
-                                            .font(.headline.weight(.semibold))
-                                            .foregroundStyle(.secondary)
-                                    }
+                                    Image(systemName: "plus")
+                                        .font(.headline.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(width: 48, height: 48)
                             }
                             .buttonStyle(.plain)
                         }
+                        .padding(.top, 6)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .frame(maxHeight: 180)
