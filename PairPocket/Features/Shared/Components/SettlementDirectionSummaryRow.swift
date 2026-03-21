@@ -3,8 +3,10 @@ import SwiftUI
 struct SettlementDirectionSummaryRow: View {
     let hostName: String
     let hostIcon: String
+    let hostPhotoData: Data?
     let partnerName: String
     let partnerIcon: String
+    let partnerPhotoData: Data?
     let amountText: String
     let arrowAssetName: String?
     let arrowSystemName: String?
@@ -23,6 +25,7 @@ struct SettlementDirectionSummaryRow: View {
                 role: .host,
                 name: hostName,
                 iconSystemName: hostIcon,
+                photoData: hostPhotoData,
                 avatarSize: avatarSize
             )
             Spacer(minLength: spacerMinLength)
@@ -49,6 +52,7 @@ struct SettlementDirectionSummaryRow: View {
                 role: .partner,
                 name: partnerName,
                 iconSystemName: partnerIcon,
+                photoData: partnerPhotoData,
                 avatarSize: avatarSize
             )
         }

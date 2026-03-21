@@ -4,8 +4,10 @@ struct SettlementSection: View {
     @Environment(ExpenseStore.self) private var expenseStore
     @AppStorage(MemberPreferenceKeys.hostName) private var hostName = MemberRole.host.displayName
     @AppStorage(MemberPreferenceKeys.hostIcon) private var hostIcon = "person.circle.fill"
+    @AppStorage(MemberPreferenceKeys.hostPhotoData) private var hostPhotoData = Data()
     @AppStorage(MemberPreferenceKeys.partnerName) private var partnerName = MemberRole.partner.displayName
     @AppStorage(MemberPreferenceKeys.partnerIcon) private var partnerIcon = "person.circle"
+    @AppStorage(MemberPreferenceKeys.partnerPhotoData) private var partnerPhotoData = Data()
 
     private let allPocketColor: Color = .secondary
 
@@ -85,8 +87,10 @@ struct SettlementSection: View {
             SettlementDirectionSummaryRow(
                 hostName: memberDisplayName(for: .host),
                 hostIcon: memberIcon(for: .host),
+                hostPhotoData: memberPhotoData(for: .host),
                 partnerName: memberDisplayName(for: .partner),
                 partnerIcon: memberIcon(for: .partner),
+                partnerPhotoData: memberPhotoData(for: .partner),
                 amountText: settlementResultDisplay.amountText,
                 arrowAssetName: settlementResultDisplay.arrowAssetName,
                 arrowSystemName: settlementResultDisplay.arrowSystemName,
@@ -122,6 +126,15 @@ struct SettlementSection: View {
             return hostIcon
         case .partner:
             return partnerIcon
+        }
+    }
+
+    private func memberPhotoData(for role: MemberRole) -> Data? {
+        switch role {
+        case .host:
+            return hostPhotoData.isEmpty ? nil : hostPhotoData
+        case .partner:
+            return partnerPhotoData.isEmpty ? nil : partnerPhotoData
         }
     }
 

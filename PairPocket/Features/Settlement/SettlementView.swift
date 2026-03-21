@@ -5,8 +5,10 @@ struct SettlementView: View {
     @Environment(PocketStore.self) private var pocketStore
     @AppStorage(MemberPreferenceKeys.hostName) private var hostName = MemberRole.host.displayName
     @AppStorage(MemberPreferenceKeys.hostIcon) private var hostIcon = "person.circle.fill"
+    @AppStorage(MemberPreferenceKeys.hostPhotoData) private var hostPhotoData = Data()
     @AppStorage(MemberPreferenceKeys.partnerName) private var partnerName = MemberRole.partner.displayName
     @AppStorage(MemberPreferenceKeys.partnerIcon) private var partnerIcon = "person.circle"
+    @AppStorage(MemberPreferenceKeys.partnerPhotoData) private var partnerPhotoData = Data()
 
     @State private var selectedPocketID: String = "all"
 
@@ -128,6 +130,15 @@ struct SettlementView: View {
         }
     }
 
+    private func memberPhotoData(for role: MemberRole) -> Data? {
+        switch role {
+        case .host:
+            return hostPhotoData.isEmpty ? nil : hostPhotoData
+        case .partner:
+            return partnerPhotoData.isEmpty ? nil : partnerPhotoData
+        }
+    }
+
     private func arrowSystemName(payer: MemberRole, receiver: MemberRole) -> String {
         if payer == .host && receiver == .partner {
             return "arrow.right"
@@ -187,8 +198,10 @@ struct SettlementView: View {
                 SettlementResultSection(
                     hostName: memberDisplayName(for: .host),
                     hostIcon: memberIcon(for: .host),
+                    hostPhotoData: memberPhotoData(for: .host),
                     partnerName: memberDisplayName(for: .partner),
                     partnerIcon: memberIcon(for: .partner),
+                    partnerPhotoData: memberPhotoData(for: .partner),
                     arrowAssetName: settlementResultDisplay.arrowAssetName,
                     arrowSystemName: settlementResultDisplay.arrowSystemName,
                     amountText: settlementResultDisplay.amountText,

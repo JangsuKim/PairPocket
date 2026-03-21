@@ -1,10 +1,21 @@
 import Foundation
 
+enum MemberIconSource {
+    case asset(String)
+    case system(String)
+}
+
 enum MemberPreferenceKeys {
     static let hostName = "settings.host.name"
     static let hostIcon = "settings.host.icon"
+    static let hostPhotoData = "settings.host.photoData"
+    static let hostUploadedPhotoData = "settings.host.uploadedPhotoData"
+    static let hostUploadedPhotoHistory = "settings.host.uploadedPhotoHistory"
     static let partnerName = "settings.partner.name"
     static let partnerIcon = "settings.partner.icon"
+    static let partnerPhotoData = "settings.partner.photoData"
+    static let partnerUploadedPhotoData = "settings.partner.uploadedPhotoData"
+    static let partnerUploadedPhotoHistory = "settings.partner.uploadedPhotoHistory"
 
     static let currentMemberRole = "currentMemberRole"
     static let localUserId = "localUserId"
@@ -15,12 +26,80 @@ enum MemberPreferenceKeys {
 }
 
 enum MemberPreferences {
+    static let defaultMemberIconAssetName = "DefaultMemberIconGray"
+    static let selectableDefaultIconAssetNames = [
+        "DefaultMemberIconBlue",
+        "DefaultMemberIconPink"
+    ]
+    static let uploadedPhotoHistoryLimit = 8
+
+    static var allSupportedIconAssetNames: Set<String> {
+        Set([defaultMemberIconAssetName] + selectableDefaultIconAssetNames)
+    }
+
+    static func defaultIconAssetName(for role: MemberRole) -> String {
+        defaultMemberIconAssetName
+    }
+
+    static func resolvedIconSource(storedIconName: String, for role: MemberRole) -> MemberIconSource {
+        let trimmed = storedIconName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == legacySystemIconName(for: role) {
+            return .asset(defaultMemberIconAssetName)
+        }
+        if allSupportedIconAssetNames.contains(trimmed) {
+            return .asset(trimmed)
+        }
+        return .system(trimmed)
+    }
+
     static func migrateLegacyValues(defaults: UserDefaults = .standard) {
         let role = defaults.string(forKey: MemberPreferenceKeys.currentMemberRole)
         guard role == nil || role == MemberRole.host.rawValue || role == MemberRole.partner.rawValue else {
             defaults.set(MemberRole.host.rawValue, forKey: MemberPreferenceKeys.currentMemberRole)
             return
         }
+
+        migrateLegacyUploadedPhotoIfNeeded(for: .host, defaults: defaults)
+        migrateLegacyUploadedPhotoIfNeeded(for: .partner, defaults: defaults)
+    }
+
+    static func uploadedPhotoHistory(for role: MemberRole, defaults: UserDefaults = .standard) -> [Data] {
+        guard let data = defaults.data(forKey: uploadedPhotoHistoryKey(for: role)),
+              let decoded = try? JSONDecoder().decode([Data].self, from: data) else {
+            return []
+        }
+        return decoded
+    }
+
+    static func saveUploadedPhotoHistory(_ photos: [Data], for role: MemberRole, defaults: UserDefaults = .standard) {
+        let sanitized = photos.filter { $0.isEmpty == false }
+        guard let encoded = try? JSONEncoder().encode(sanitized) else {
+            return
+        }
+        defaults.set(encoded, forKey: uploadedPhotoHistoryKey(for: role))
+    }
+
+    static func appendUploadedPhoto(_ photoData: Data, for role: MemberRole, defaults: UserDefaults = .standard) {
+        guard photoData.isEmpty == false else {
+            return
+        }
+
+        var history = uploadedPhotoHistory(for: role, defaults: defaults)
+        history.removeAll(where: { $0 == photoData })
+        history.insert(photoData, at: 0)
+        if history.count > uploadedPhotoHistoryLimit {
+            history = Array(history.prefix(uploadedPhotoHistoryLimit))
+        }
+        saveUploadedPhotoHistory(history, for: role, defaults: defaults)
+    }
+
+    static func removeUploadedPhoto(at index: Int, for role: MemberRole, defaults: UserDefaults = .standard) {
+        var history = uploadedPhotoHistory(for: role, defaults: defaults)
+        guard history.indices.contains(index) else {
+            return
+        }
+        history.remove(at: index)
+        saveUploadedPhotoHistory(history, for: role, defaults: defaults)
     }
 
     static func fallbackName(for role: MemberRole) -> String {
@@ -103,5 +182,45 @@ enum MemberPreferences {
         if context.hasValidLinkedIdentity == false {
             saveRelationshipContext(.standalone, defaults: defaults)
         }
+    }
+
+    private static func legacySystemIconName(for role: MemberRole) -> String {
+        switch role {
+        case .host:
+            return "person.circle.fill"
+        case .partner:
+            return "person.circle"
+        }
+    }
+
+    private static func uploadedPhotoHistoryKey(for role: MemberRole) -> String {
+        switch role {
+        case .host:
+            return MemberPreferenceKeys.hostUploadedPhotoHistory
+        case .partner:
+            return MemberPreferenceKeys.partnerUploadedPhotoHistory
+        }
+    }
+
+    private static func legacyUploadedPhotoKey(for role: MemberRole) -> String {
+        switch role {
+        case .host:
+            return MemberPreferenceKeys.hostUploadedPhotoData
+        case .partner:
+            return MemberPreferenceKeys.partnerUploadedPhotoData
+        }
+    }
+
+    private static func migrateLegacyUploadedPhotoIfNeeded(for role: MemberRole, defaults: UserDefaults) {
+        if uploadedPhotoHistory(for: role, defaults: defaults).isEmpty == false {
+            return
+        }
+
+        guard let legacyData = defaults.data(forKey: legacyUploadedPhotoKey(for: role)),
+              legacyData.isEmpty == false else {
+            return
+        }
+
+        saveUploadedPhotoHistory([legacyData], for: role, defaults: defaults)
     }
 }

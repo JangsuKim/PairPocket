@@ -1,18 +1,47 @@
 import SwiftUI
+import UIKit
 
 struct MemberAvatarView: View {
     let iconSystemName: String
+    var photoData: Data? = nil
+    var role: MemberRole? = nil
     var size: CGFloat = 34
 
     var body: some View {
-        Circle()
-            .fill(.quaternary)
-            .frame(width: size, height: size)
-            .overlay {
-                Image(systemName: iconSystemName)
-                    .font(.system(size: size * 0.46, weight: .regular))
-                    .foregroundStyle(.secondary)
+        if let photoData, let uiImage = UIImage(data: photoData) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+                .frame(width: size, height: size)
+                .clipShape(Circle())
+        } else if let role {
+            switch MemberPreferences.resolvedIconSource(storedIconName: iconSystemName, for: role) {
+            case .asset(let assetName):
+                Image(assetName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+            case .system(let systemName):
+                Circle()
+                    .fill(.quaternary)
+                    .frame(width: size, height: size)
+                    .overlay {
+                        Image(systemName: systemName)
+                            .font(.system(size: size * 0.46, weight: .regular))
+                            .foregroundStyle(.secondary)
+                    }
             }
+        } else {
+            Circle()
+                .fill(.quaternary)
+                .frame(width: size, height: size)
+                .overlay {
+                    Image(systemName: iconSystemName)
+                        .font(.system(size: size * 0.46, weight: .regular))
+                        .foregroundStyle(.secondary)
+                }
+        }
     }
 }
 
@@ -20,11 +49,12 @@ struct MemberBadgeView: View {
     let role: MemberRole
     let name: String
     var iconSystemName: String = "person.circle.fill"
+    var photoData: Data? = nil
     var showsRoleLabel: Bool = false
 
     var body: some View {
         HStack(spacing: 8) {
-            MemberAvatarView(iconSystemName: iconSystemName, size: 24)
+            MemberAvatarView(iconSystemName: iconSystemName, photoData: photoData, role: role, size: 24)
 
             Text(displayName)
                 .font(.subheadline.weight(.semibold))
@@ -62,13 +92,14 @@ struct MemberProfileView: View {
     let role: MemberRole
     let name: String
     var iconSystemName: String
+    var photoData: Data? = nil
     var avatarSize: CGFloat = 76
     var nameFont: Font = .subheadline.weight(.semibold)
     var showsRoleText: Bool = false
 
     var body: some View {
         VStack(spacing: 10) {
-            MemberAvatarView(iconSystemName: iconSystemName, size: avatarSize)
+            MemberAvatarView(iconSystemName: iconSystemName, photoData: photoData, role: role, size: avatarSize)
 
             Text(displayName)
                 .font(nameFont)

@@ -3,8 +3,10 @@ import SwiftUI
 struct SettlementResultSection: View {
     let hostName: String
     let hostIcon: String
+    let hostPhotoData: Data?
     let partnerName: String
     let partnerIcon: String
+    let partnerPhotoData: Data?
     let arrowAssetName: String?
     let arrowSystemName: String?
     let amountText: String
@@ -18,8 +20,10 @@ struct SettlementResultSection: View {
                     SettlementDirectionSummaryRow(
                         hostName: hostName,
                         hostIcon: hostIcon,
+                        hostPhotoData: hostPhotoData,
                         partnerName: partnerName,
                         partnerIcon: partnerIcon,
+                        partnerPhotoData: partnerPhotoData,
                         amountText: amountText,
                         arrowAssetName: arrowAssetName,
                         arrowSystemName: arrowSystemName,
