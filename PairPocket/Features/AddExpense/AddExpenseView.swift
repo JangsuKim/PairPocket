@@ -66,6 +66,13 @@ struct AddExpenseView: View {
         return selectableCategories.first(where: { $0.id == selectedCategoryID }) ?? selectableCategories.first
     }
 
+    private var selectedCategorySelection: Binding<UUID?> {
+        Binding(
+            get: { selectedCategoryID ?? selectableCategories.first?.id },
+            set: { selectedCategoryID = $0 }
+        )
+    }
+
     private var availablePaymentSources: [PaymentSource] {
         guard let selectedPocket else {
             return []
@@ -166,7 +173,7 @@ struct AddExpenseView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } else {
-                    Picker("カテゴリ", selection: $selectedCategoryID) {
+                    Picker("カテゴリ", selection: selectedCategorySelection) {
                         ForEach(selectableCategories) { category in
                             Text(category.name).tag(Optional(category.id))
                         }

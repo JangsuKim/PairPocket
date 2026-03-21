@@ -21,9 +21,6 @@ struct MemberSettingsSection: View {
             .sheet(item: $editingMember) { member in
                 memberEditSheet(member)
             }
-            .task {
-                MemberPreferences.migrateLegacyValues()
-            }
             .task(id: selectedPhotoItem) {
                 guard let selectedPhotoItem, let member = editingMember else {
                     return
@@ -325,33 +322,13 @@ struct MemberSettingsSection: View {
     }
 
     private func applyPickedPhoto(from item: PhotosPickerItem, to member: EditableMember) async {
-        guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data) else {
+        guard let encodedData = await MemberSettingsPhotoHelper.preparedPhotoData(from: item) else {
             return
         }
 
-        let resized = resizedImage(image, maxDimension: 1024)
-        let encodedData = resized.jpegData(compressionQuality: 0.8) ?? data
         memberPhotoDataBinding(for: member).wrappedValue = encodedData
         MemberPreferences.appendUploadedPhoto(encodedData, for: memberRole(for: member))
         selectedPhotoItem = nil
-    }
-
-    private func resizedImage(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
-        let size = image.size
-        let largestSide = max(size.width, size.height)
-        guard largestSide > maxDimension else {
-            return image
-        }
-
-        let scale = maxDimension / largestSide
-        let targetSize = CGSize(width: size.width * scale, height: size.height * scale)
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = 1
-        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
-        return renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: targetSize))
-        }
     }
 
     @ViewBuilder
@@ -381,7 +358,7 @@ struct MemberSettingsSection: View {
         // Touch AppStorage values so SwiftUI refreshes when defaults change.
         _ = hostUploadedPhotoHistory
         _ = partnerUploadedPhotoHistory
-        return MemberPreferences.uploadedPhotoHistory(for: memberRole(for: member))
+        return MemberSettingsHistoryHelper.uploadedPhotos(for: memberRole(for: member))
     }
 
     private func isUploadedPhotoSelected(_ photoData: Data, for member: EditableMember) -> Bool {
@@ -389,18 +366,12 @@ struct MemberSettingsSection: View {
     }
 
     private func removeUploadedPhoto(at index: Int, for member: EditableMember) {
-        let history = uploadedPhotoHistory(for: member)
-        guard history.indices.contains(index) else {
-            return
-        }
-
-        let removingData = history[index]
-        MemberPreferences.removeUploadedPhoto(at: index, for: memberRole(for: member))
-
-        if memberPhotoDataBinding(for: member).wrappedValue == removingData {
-            memberPhotoDataBinding(for: member).wrappedValue = Data()
-            memberIconBinding(for: member).wrappedValue = MemberPreferences.defaultMemberIconAssetName
-        }
+        MemberSettingsHistoryHelper.removeUploadedPhoto(
+            at: index,
+            for: memberRole(for: member),
+            photoData: memberPhotoDataBinding(for: member),
+            iconName: memberIconBinding(for: member)
+        )
     }
 }
 
@@ -414,6 +385,61 @@ private enum EditableMember: String, Identifiable {
 private struct PendingUploadedPhotoDeletion {
     let member: EditableMember
     let index: Int
+}
+
+private enum MemberSettingsPhotoHelper {
+    static func preparedPhotoData(from item: PhotosPickerItem) async -> Data? {
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data) else {
+            return nil
+        }
+
+        let resized = resizedImage(image, maxDimension: 1024)
+        return resized.jpegData(compressionQuality: 0.8) ?? data
+    }
+
+    private static func resizedImage(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
+        let size = image.size
+        let largestSide = max(size.width, size.height)
+        guard largestSide > maxDimension else {
+            return image
+        }
+
+        let scale = maxDimension / largestSide
+        let targetSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+    }
+}
+
+private enum MemberSettingsHistoryHelper {
+    static func uploadedPhotos(for role: MemberRole) -> [Data] {
+        MemberPreferences.uploadedPhotoHistory(for: role)
+    }
+
+    static func removeUploadedPhoto(
+        at index: Int,
+        for role: MemberRole,
+        photoData: Binding<Data>,
+        iconName: Binding<String>
+    ) {
+        let history = uploadedPhotos(for: role)
+        guard history.indices.contains(index) else {
+            return
+        }
+
+        let removingData = history[index]
+        MemberPreferences.removeUploadedPhoto(at: index, for: role)
+
+        if photoData.wrappedValue == removingData {
+            photoData.wrappedValue = Data()
+            iconName.wrappedValue = MemberPreferences.defaultMemberIconAssetName
+        }
+    }
 }
 
 #Preview {

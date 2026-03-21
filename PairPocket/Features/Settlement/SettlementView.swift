@@ -95,7 +95,7 @@ struct SettlementView: View {
             )
         }
 
-        guard let signedAmount = signedSettlementAmount(for: summary) else {
+        guard let signedAmount = SettlementResultPresenter.signedAmount(for: summary) else {
             return SettlementResultDisplay(
                 arrowAssetName: nil,
                 arrowSystemName: nil,
@@ -105,7 +105,7 @@ struct SettlementView: View {
         }
 
         return SettlementResultDisplay(
-            arrowAssetName: settlementArrowAssetName(for: signedAmount),
+            arrowAssetName: SettlementResultPresenter.arrowAssetName(for: signedAmount),
             arrowSystemName: nil,
             amountText: SettlementDisplayFormatter.yen(abs(signedAmount)),
             messageText: nil
@@ -137,45 +137,6 @@ struct SettlementView: View {
         case .partner:
             return partnerPhotoData.isEmpty ? nil : partnerPhotoData
         }
-    }
-
-    private func arrowSystemName(payer: MemberRole, receiver: MemberRole) -> String {
-        if payer == .host && receiver == .partner {
-            return "arrow.right"
-        }
-        if payer == .partner && receiver == .host {
-            return "arrow.left"
-        }
-        return "arrow.right"
-    }
-
-    private func signedSettlementAmount(for summary: SettlementSummary) -> Int? {
-        if summary.settlementAmount == 0 {
-            return 0
-        }
-
-        guard let payer = summary.settlementPayer,
-              let receiver = summary.settlementReceiver else {
-            return nil
-        }
-
-        if payer == .host && receiver == .partner {
-            return summary.settlementAmount
-        }
-        if payer == .partner && receiver == .host {
-            return -summary.settlementAmount
-        }
-        return nil
-    }
-
-    private func settlementArrowAssetName(for signedAmount: Int) -> String {
-        if signedAmount > 0 {
-            return "SettlementArrowHostToPartner"
-        }
-        if signedAmount < 0 {
-            return "SettlementArrowPartnerToHost"
-        }
-        return "SettlementArrowBidirectional"
     }
 
     var body: some View {
@@ -235,9 +196,6 @@ struct SettlementView: View {
             if containsSelectedPocket == false {
                 selectedPocketID = "all"
             }
-        }
-        .task {
-            MemberPreferences.migrateLegacyValues()
         }
     }
 }

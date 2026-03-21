@@ -32,7 +32,7 @@ struct SettlementSection: View {
             )
         }
 
-        guard let signedAmount = signedSettlementAmount(for: summary) else {
+        guard let signedAmount = SettlementResultPresenter.signedAmount(for: summary) else {
             return HomeSettlementResultDisplay(
                 arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
@@ -41,7 +41,7 @@ struct SettlementSection: View {
         }
 
         return HomeSettlementResultDisplay(
-            arrowAssetName: settlementArrowAssetName(for: signedAmount),
+            arrowAssetName: SettlementResultPresenter.arrowAssetName(for: signedAmount),
             arrowSystemName: nil,
             amountText: formattedYen(abs(signedAmount))
         )
@@ -76,9 +76,6 @@ struct SettlementSection: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .frame(maxWidth: .infinity, alignment: .center)
             }
-        }
-        .task {
-            MemberPreferences.migrateLegacyValues()
         }
     }
 
@@ -136,45 +133,6 @@ struct SettlementSection: View {
         case .partner:
             return partnerPhotoData.isEmpty ? nil : partnerPhotoData
         }
-    }
-
-    private func arrowSystemName(payer: MemberRole, receiver: MemberRole) -> String {
-        if payer == .host && receiver == .partner {
-            return "arrow.right"
-        }
-        if payer == .partner && receiver == .host {
-            return "arrow.left"
-        }
-        return "arrow.right"
-    }
-
-    private func signedSettlementAmount(for summary: SettlementSummary) -> Int? {
-        if summary.settlementAmount == 0 {
-            return 0
-        }
-
-        guard let payer = summary.settlementPayer,
-              let receiver = summary.settlementReceiver else {
-            return nil
-        }
-
-        if payer == .host && receiver == .partner {
-            return summary.settlementAmount
-        }
-        if payer == .partner && receiver == .host {
-            return -summary.settlementAmount
-        }
-        return nil
-    }
-
-    private func settlementArrowAssetName(for signedAmount: Int) -> String {
-        if signedAmount > 0 {
-            return "SettlementArrowHostToPartner"
-        }
-        if signedAmount < 0 {
-            return "SettlementArrowPartnerToHost"
-        }
-        return "SettlementArrowBidirectional"
     }
 
     private func formattedYen(_ amount: Int) -> String {

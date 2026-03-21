@@ -97,7 +97,6 @@ struct QuickAddSection: View {
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .task {
-            MemberPreferences.migrateLegacyValues()
             try? categoryStore.loadIfNeeded(from: modelContext)
             syncSelectedCategory()
         }
