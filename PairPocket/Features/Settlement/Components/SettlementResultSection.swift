@@ -3,8 +3,11 @@ import SwiftUI
 struct SettlementResultSection: View {
     let hostName: String
     let hostIcon: String
+    let hostPhotoData: Data?
     let partnerName: String
     let partnerIcon: String
+    let partnerPhotoData: Data?
+    let arrowAssetName: String?
     let arrowSystemName: String?
     let amountText: String
     let messageText: String?
@@ -13,34 +16,26 @@ struct SettlementResultSection: View {
     var body: some View {
         SettlementCardSection(title: "精算結果") {
             VStack(spacing: 6) {
-                if let arrowSystemName {
-                    HStack(spacing: 10) {
-                        MemberProfileView(
-                            role: .host,
-                            name: hostName,
-                            iconSystemName: hostIcon,
-                            avatarSize: 56
-                        )
-                        Spacer(minLength: 8)
-                        VStack(spacing: 4) {
-                            Image(systemName: arrowSystemName)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.secondary)
-
-                            Text(amountText)
-                                .font(.system(size: 22, weight: .bold, design: .rounded))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.85)
-                        }
-                        .frame(minWidth: 96)
-                        Spacer(minLength: 8)
-                        MemberProfileView(
-                            role: .partner,
-                            name: partnerName,
-                            iconSystemName: partnerIcon,
-                            avatarSize: 56
-                        )
-                    }
+                if arrowAssetName != nil || arrowSystemName != nil {
+                    SettlementDirectionSummaryRow(
+                        hostName: hostName,
+                        hostIcon: hostIcon,
+                        hostPhotoData: hostPhotoData,
+                        partnerName: partnerName,
+                        partnerIcon: partnerIcon,
+                        partnerPhotoData: partnerPhotoData,
+                        amountText: amountText,
+                        arrowAssetName: arrowAssetName,
+                        arrowSystemName: arrowSystemName,
+                        avatarSize: 72,
+                        amountFont: .system(size: 22, weight: .bold, design: .rounded),
+                        arrowWidth: 70,
+                        arrowHeight: 40,
+                        centerMinWidth: 96,
+                        outerSpacing: 10,
+                        centerSpacing: 4,
+                        spacerMinLength: 8
+                    )
                 } else if let messageText {
                     Text(messageText)
                         .font(.subheadline.weight(.semibold))

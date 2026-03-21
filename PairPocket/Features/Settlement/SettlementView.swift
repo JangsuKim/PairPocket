@@ -5,8 +5,10 @@ struct SettlementView: View {
     @Environment(PocketStore.self) private var pocketStore
     @AppStorage(MemberPreferenceKeys.hostName) private var hostName = MemberRole.host.displayName
     @AppStorage(MemberPreferenceKeys.hostIcon) private var hostIcon = "person.circle.fill"
+    @AppStorage(MemberPreferenceKeys.hostPhotoData) private var hostPhotoData = Data()
     @AppStorage(MemberPreferenceKeys.partnerName) private var partnerName = MemberRole.partner.displayName
     @AppStorage(MemberPreferenceKeys.partnerIcon) private var partnerIcon = "person.circle"
+    @AppStorage(MemberPreferenceKeys.partnerPhotoData) private var partnerPhotoData = Data()
 
     @State private var selectedPocketID: String = "all"
 
@@ -86,16 +88,16 @@ struct SettlementView: View {
     private var settlementResultDisplay: SettlementResultDisplay {
         guard let summary = settlementSummary else {
             return SettlementResultDisplay(
+                arrowAssetName: nil,
                 arrowSystemName: nil,
                 amountText: SettlementDisplayFormatter.yen(0),
                 messageText: "未精算データがありません"
             )
         }
 
-        guard let payer = summary.settlementPayer,
-              let receiver = summary.settlementReceiver,
-              summary.settlementAmount > 0 else {
+        guard let signedAmount = signedSettlementAmount(for: summary) else {
             return SettlementResultDisplay(
+                arrowAssetName: nil,
                 arrowSystemName: nil,
                 amountText: SettlementDisplayFormatter.yen(0),
                 messageText: "精算は不要です"
@@ -103,8 +105,9 @@ struct SettlementView: View {
         }
 
         return SettlementResultDisplay(
-            arrowSystemName: arrowSystemName(payer: payer, receiver: receiver),
-            amountText: SettlementDisplayFormatter.yen(summary.settlementAmount),
+            arrowAssetName: settlementArrowAssetName(for: signedAmount),
+            arrowSystemName: nil,
+            amountText: SettlementDisplayFormatter.yen(abs(signedAmount)),
             messageText: nil
         )
     }
@@ -127,6 +130,15 @@ struct SettlementView: View {
         }
     }
 
+    private func memberPhotoData(for role: MemberRole) -> Data? {
+        switch role {
+        case .host:
+            return hostPhotoData.isEmpty ? nil : hostPhotoData
+        case .partner:
+            return partnerPhotoData.isEmpty ? nil : partnerPhotoData
+        }
+    }
+
     private func arrowSystemName(payer: MemberRole, receiver: MemberRole) -> String {
         if payer == .host && receiver == .partner {
             return "arrow.right"
@@ -135,6 +147,35 @@ struct SettlementView: View {
             return "arrow.left"
         }
         return "arrow.right"
+    }
+
+    private func signedSettlementAmount(for summary: SettlementSummary) -> Int? {
+        if summary.settlementAmount == 0 {
+            return 0
+        }
+
+        guard let payer = summary.settlementPayer,
+              let receiver = summary.settlementReceiver else {
+            return nil
+        }
+
+        if payer == .host && receiver == .partner {
+            return summary.settlementAmount
+        }
+        if payer == .partner && receiver == .host {
+            return -summary.settlementAmount
+        }
+        return nil
+    }
+
+    private func settlementArrowAssetName(for signedAmount: Int) -> String {
+        if signedAmount > 0 {
+            return "SettlementArrowHostToPartner"
+        }
+        if signedAmount < 0 {
+            return "SettlementArrowPartnerToHost"
+        }
+        return "SettlementArrowBidirectional"
     }
 
     var body: some View {
@@ -157,8 +198,11 @@ struct SettlementView: View {
                 SettlementResultSection(
                     hostName: memberDisplayName(for: .host),
                     hostIcon: memberIcon(for: .host),
+                    hostPhotoData: memberPhotoData(for: .host),
                     partnerName: memberDisplayName(for: .partner),
                     partnerIcon: memberIcon(for: .partner),
+                    partnerPhotoData: memberPhotoData(for: .partner),
+                    arrowAssetName: settlementResultDisplay.arrowAssetName,
                     arrowSystemName: settlementResultDisplay.arrowSystemName,
                     amountText: settlementResultDisplay.amountText,
                     messageText: settlementResultDisplay.messageText,
@@ -211,6 +255,7 @@ struct SettlementExpenseSummary: Identifiable {
 }
 
 private struct SettlementResultDisplay {
+    let arrowAssetName: String?
     let arrowSystemName: String?
     let amountText: String
     let messageText: String?

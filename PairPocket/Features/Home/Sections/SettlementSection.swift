@@ -4,8 +4,10 @@ struct SettlementSection: View {
     @Environment(ExpenseStore.self) private var expenseStore
     @AppStorage(MemberPreferenceKeys.hostName) private var hostName = MemberRole.host.displayName
     @AppStorage(MemberPreferenceKeys.hostIcon) private var hostIcon = "person.circle.fill"
+    @AppStorage(MemberPreferenceKeys.hostPhotoData) private var hostPhotoData = Data()
     @AppStorage(MemberPreferenceKeys.partnerName) private var partnerName = MemberRole.partner.displayName
     @AppStorage(MemberPreferenceKeys.partnerIcon) private var partnerIcon = "person.circle"
+    @AppStorage(MemberPreferenceKeys.partnerPhotoData) private var partnerPhotoData = Data()
 
     private let allPocketColor: Color = .secondary
 
@@ -24,23 +26,24 @@ struct SettlementSection: View {
     private var settlementResultDisplay: HomeSettlementResultDisplay {
         guard let summary = settlementSummary else {
             return HomeSettlementResultDisplay(
-                arrowSystemName: "arrow.left.and.right",
+                arrowAssetName: "SettlementArrowBidirectional",
+                arrowSystemName: nil,
                 amountText: formattedYen(0)
             )
         }
 
-        guard let payer = summary.settlementPayer,
-              let receiver = summary.settlementReceiver,
-              summary.settlementAmount > 0 else {
+        guard let signedAmount = signedSettlementAmount(for: summary) else {
             return HomeSettlementResultDisplay(
-                arrowSystemName: "arrow.left.and.right",
+                arrowAssetName: "SettlementArrowBidirectional",
+                arrowSystemName: nil,
                 amountText: formattedYen(0)
             )
         }
 
         return HomeSettlementResultDisplay(
-            arrowSystemName: arrowSystemName(payer: payer, receiver: receiver),
-            amountText: formattedYen(summary.settlementAmount)
+            arrowAssetName: settlementArrowAssetName(for: signedAmount),
+            arrowSystemName: nil,
+            amountText: formattedYen(abs(signedAmount))
         )
     }
 
@@ -81,32 +84,25 @@ struct SettlementSection: View {
 
     private var settlementAmountCard: some View {
         VStack(spacing: 6) {
-            HStack(spacing: 10) {
-                MemberProfileView(
-                    role: .host,
-                    name: memberDisplayName(for: .host),
-                    iconSystemName: memberIcon(for: .host),
-                    avatarSize: 72
-                )
-                Spacer(minLength: 0)
-                VStack(spacing: 4) {
-                    if let arrowSystemName = settlementResultDisplay.arrowSystemName {
-                        Image(systemName: arrowSystemName)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Text(settlementResultDisplay.amountText)
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                }
-                Spacer(minLength: 0)
-                MemberProfileView(
-                    role: .partner,
-                    name: memberDisplayName(for: .partner),
-                    iconSystemName: memberIcon(for: .partner),
-                    avatarSize: 72
-                )
-            }
+            SettlementDirectionSummaryRow(
+                hostName: memberDisplayName(for: .host),
+                hostIcon: memberIcon(for: .host),
+                hostPhotoData: memberPhotoData(for: .host),
+                partnerName: memberDisplayName(for: .partner),
+                partnerIcon: memberIcon(for: .partner),
+                partnerPhotoData: memberPhotoData(for: .partner),
+                amountText: settlementResultDisplay.amountText,
+                arrowAssetName: settlementResultDisplay.arrowAssetName,
+                arrowSystemName: settlementResultDisplay.arrowSystemName,
+                avatarSize: 72,
+                amountFont: .system(size: 20, weight: .bold, design: .rounded),
+                arrowWidth: 70,
+                arrowHeight: 40,
+                centerMinWidth: 96,
+                outerSpacing: 10,
+                centerSpacing: 4,
+                spacerMinLength: 0
+            )
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -133,6 +129,15 @@ struct SettlementSection: View {
         }
     }
 
+    private func memberPhotoData(for role: MemberRole) -> Data? {
+        switch role {
+        case .host:
+            return hostPhotoData.isEmpty ? nil : hostPhotoData
+        case .partner:
+            return partnerPhotoData.isEmpty ? nil : partnerPhotoData
+        }
+    }
+
     private func arrowSystemName(payer: MemberRole, receiver: MemberRole) -> String {
         if payer == .host && receiver == .partner {
             return "arrow.right"
@@ -141,6 +146,35 @@ struct SettlementSection: View {
             return "arrow.left"
         }
         return "arrow.right"
+    }
+
+    private func signedSettlementAmount(for summary: SettlementSummary) -> Int? {
+        if summary.settlementAmount == 0 {
+            return 0
+        }
+
+        guard let payer = summary.settlementPayer,
+              let receiver = summary.settlementReceiver else {
+            return nil
+        }
+
+        if payer == .host && receiver == .partner {
+            return summary.settlementAmount
+        }
+        if payer == .partner && receiver == .host {
+            return -summary.settlementAmount
+        }
+        return nil
+    }
+
+    private func settlementArrowAssetName(for signedAmount: Int) -> String {
+        if signedAmount > 0 {
+            return "SettlementArrowHostToPartner"
+        }
+        if signedAmount < 0 {
+            return "SettlementArrowPartnerToHost"
+        }
+        return "SettlementArrowBidirectional"
     }
 
     private func formattedYen(_ amount: Int) -> String {
@@ -153,6 +187,7 @@ struct SettlementSection: View {
 }
 
 private struct HomeSettlementResultDisplay {
+    let arrowAssetName: String?
     let arrowSystemName: String?
     let amountText: String
 }
