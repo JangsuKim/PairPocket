@@ -202,8 +202,12 @@ struct PocketListView: View {
     }
 
     private func pocketCard(pocket: Pocket, isFrontCard: Bool) -> some View {
-        let pocketExpenses = expenses(for: pocket.id)
-        let total = pocketExpenses.reduce(0) { $0 + $1.amount }
+        let pocketEntries = entries(for: pocket.id)
+        let pocketExpenses = pocketEntries.filter { $0.type == .expense }
+        let totalExpense = pocketExpenses.reduce(0) { $0 + $1.amount }
+        let currentBalance = SettlementEngine.calculate(entries: pocketEntries).currentBalance
+        let displayedAmount = displayedAmount(for: pocket, totalExpense: totalExpense, currentBalance: currentBalance)
+        let amountCaption = amountCaption(for: pocket, currentBalance: currentBalance)
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
@@ -247,10 +251,10 @@ struct PocketListView: View {
 
             if isFrontCard {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("今月")
+                    Text(amountCaption)
                         .font(.caption)
                         .opacity(0.85)
-                    Text(formatYen(total))
+                    Text(formatYen(displayedAmount))
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                 }
 
@@ -263,7 +267,7 @@ struct PocketListView: View {
                 .opacity(0.9)
             } else {
                 HStack {
-                    Text(formatYen(total))
+                    Text(formatYen(displayedAmount))
                         .font(.subheadline.weight(.semibold))
                     Spacer()
                     Text(pocketModeLabel(for: pocket))
@@ -328,6 +332,28 @@ struct PocketListView: View {
         expenseStore.expenses(for: pocketId)
     }
 
+    private func entries(for pocketId: UUID) -> [Transaction] {
+        expenseStore.entries(for: pocketId)
+    }
+
+    private func displayedAmount(for pocket: Pocket, totalExpense: Int, currentBalance: Int) -> Int {
+        switch pocket.mode {
+        case .settlementOnly:
+            return totalExpense
+        case .sharedManagement:
+            return currentBalance > 0 ? currentBalance : totalExpense
+        }
+    }
+
+    private func amountCaption(for pocket: Pocket, currentBalance: Int) -> String {
+        switch pocket.mode {
+        case .settlementOnly:
+            return "支出"
+        case .sharedManagement:
+            return currentBalance > 0 ? "残高" : "支出"
+        }
+    }
+
     private func formatYen(_ amount: Int) -> String {
         let formatter = NumberFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
@@ -337,16 +363,7 @@ struct PocketListView: View {
     }
 
     private func pocketModeLabel(for pocket: Pocket) -> String {
-        switch (pocket.sharedBalanceEnabled, pocket.personalPaymentEnabled) {
-        case (false, true):
-            return "後精算"
-        case (true, true):
-            return "ハイブリッド"
-        case (true, false):
-            return "共有残高"
-        case (false, false):
-            return "制限あり"
-        }
+        pocket.mode.displayName
     }
 
     private func syncSelectedPocket() {

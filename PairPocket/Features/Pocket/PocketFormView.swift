@@ -34,9 +34,8 @@ struct PocketFormView: View {
 
     @State private var name: String
     @State private var colorKey: String
-    @State private var ratioA: Int
-    @State private var sharedBalanceEnabled: Bool
-    @State private var personalPaymentEnabled: Bool
+    @State private var ratioHost: Int
+    @State private var pocketMode: PocketMode
     @State private var isMain: Bool
     @State private var validationMessage: String?
     @State private var isShowingDeleteConfirmation = false
@@ -48,22 +47,20 @@ struct PocketFormView: View {
         case .add:
             _name = State(initialValue: "")
             _colorKey = State(initialValue: PocketColorOption.mint.rawValue)
-            _ratioA = State(initialValue: 50)
-            _sharedBalanceEnabled = State(initialValue: false)
-            _personalPaymentEnabled = State(initialValue: true)
+            _ratioHost = State(initialValue: 50)
+            _pocketMode = State(initialValue: .settlementOnly)
             _isMain = State(initialValue: false)
         case let .edit(pocket):
             _name = State(initialValue: pocket.name)
             _colorKey = State(initialValue: pocket.colorKey)
-            _ratioA = State(initialValue: pocket.ratioA)
-            _sharedBalanceEnabled = State(initialValue: pocket.sharedBalanceEnabled)
-            _personalPaymentEnabled = State(initialValue: pocket.personalPaymentEnabled)
+            _ratioHost = State(initialValue: pocket.ratioHost)
+            _pocketMode = State(initialValue: pocket.mode)
             _isMain = State(initialValue: pocket.isMain)
         }
     }
 
-    private var ratioB: Int {
-        100 - ratioA
+    private var ratioPartner: Int {
+        100 - ratioHost
     }
 
     private var trimmedName: String {
@@ -119,15 +116,18 @@ struct PocketFormView: View {
             }
 
             Section("分担比率") {
-                Stepper("\(MemberRole.host.displayName) \(ratioA)%", value: $ratioA, in: 0...100)
+                Stepper("\(MemberRole.host.displayName) \(ratioHost)%", value: $ratioHost, in: 0...100)
                 LabeledContent(MemberRole.partner.displayName) {
-                    Text("\(ratioB)%")
+                    Text("\(ratioPartner)%")
                 }
             }
 
-            Section("支払い設定") {
-                Toggle("共有残高を有効にする", isOn: $sharedBalanceEnabled)
-                Toggle("個人支払いを有効にする", isOn: $personalPaymentEnabled)
+            Section("ポケットモード") {
+                Picker("モード", selection: $pocketMode) {
+                    Text(PocketMode.settlementOnly.displayName).tag(PocketMode.settlementOnly)
+                    Text(PocketMode.sharedManagement.displayName).tag(PocketMode.sharedManagement)
+                }
+                .pickerStyle(.segmented)
             }
 
             Section("役割") {
@@ -251,7 +251,7 @@ struct PocketFormView: View {
             return
         }
 
-        guard (0...100).contains(ratioA), (0...100).contains(ratioB) else {
+        guard (0...100).contains(ratioHost), (0...100).contains(ratioPartner) else {
             validationMessage = "比率の値が正しくありません。"
             return
         }
@@ -267,10 +267,9 @@ struct PocketFormView: View {
             let pocket = Pocket(
                 name: trimmedName,
                 colorKey: colorKey,
-                ratioA: ratioA,
-                ratioB: ratioB,
-                sharedBalanceEnabled: sharedBalanceEnabled,
-                personalPaymentEnabled: personalPaymentEnabled,
+                ratioHost: ratioHost,
+                ratioPartner: ratioPartner,
+                mode: pocketMode,
                 isMain: shouldBeMain
             )
             do {
@@ -290,10 +289,9 @@ struct PocketFormView: View {
                 name: trimmedName,
                 colorKey: colorKey,
                 icon: existingPocket.icon,
-                ratioA: ratioA,
-                ratioB: ratioB,
-                sharedBalanceEnabled: sharedBalanceEnabled,
-                personalPaymentEnabled: personalPaymentEnabled,
+                ratioHost: ratioHost,
+                ratioPartner: ratioPartner,
+                mode: pocketMode,
                 isMain: isMain,
                 createdAt: existingPocket.createdAt
             )

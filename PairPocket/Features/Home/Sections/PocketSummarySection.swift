@@ -3,6 +3,7 @@ import SwiftUI
 struct PocketSummarySection: View {
     let pockets: [Pocket]
     let selectedPocket: Pocket?
+    let summaryLabel: String
     let totalAmountYen: Int
     let totalCount: Int
     let onSelectPocket: (Pocket) -> Void
@@ -11,11 +12,11 @@ struct PocketSummarySection: View {
         selectedPocket?.displayColor ?? .accentColor
     }
 
-    private var todayLabel: String {
+    private var summaryTitle: String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
         formatter.dateFormat = "M/d"
-        return "\(formatter.string(from: Date())) 現在出費"
+        return "\(formatter.string(from: Date())) \(summaryLabel)"
     }
 
     private var amountText: String {
@@ -42,7 +43,7 @@ struct PocketSummarySection: View {
                             .font(.title3.weight(.bold))
                             .foregroundStyle(.primary)
 
-                        Text(todayLabel)
+                        Text(summaryTitle)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -71,6 +72,7 @@ struct PocketSummarySection: View {
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                 }
+
             }
             .padding(.horizontal, 20)
             .padding(.top, 24)

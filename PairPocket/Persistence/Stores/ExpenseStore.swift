@@ -4,8 +4,16 @@ import SwiftData
 
 @Observable
 final class ExpenseStore {
-    private(set) var expenses: [Expense] = []
+    private(set) var entries: [Transaction] = []
     private var hasLoaded = false
+
+    var expenses: [Expense] {
+        entries.filter { $0.type == .expense }
+    }
+
+    var deposits: [Transaction] {
+        entries.filter { $0.type == .deposit }
+    }
 
     func loadIfNeeded(from modelContext: ModelContext) throws {
         guard hasLoaded == false else {
@@ -20,14 +28,30 @@ final class ExpenseStore {
         let descriptor = FetchDescriptor<ExpenseRecord>(
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
-        expenses = try modelContext.fetch(descriptor).map(\.pocketEntry)
+        entries = try modelContext.fetch(descriptor).map(\.pocketEntry)
+    }
+
+    func addEntry(_ entry: Transaction, in modelContext: ModelContext) throws {
+        let normalizedEntry = ExpenseIdentityPolicy.normalized(entry)
+        modelContext.insert(ExpenseRecord(entry: normalizedEntry))
+        try modelContext.save()
+        try reload(from: modelContext)
     }
 
     func addExpense(_ expense: Expense, in modelContext: ModelContext) throws {
-        let normalizedExpense = ExpenseIdentityPolicy.normalized(expense)
-        modelContext.insert(ExpenseRecord(entry: normalizedExpense))
-        try modelContext.save()
-        try reload(from: modelContext)
+        var normalizedExpense = expense
+        normalizedExpense.type = .expense
+        try addEntry(normalizedExpense, in: modelContext)
+    }
+
+    func addDeposit(_ deposit: Transaction, in modelContext: ModelContext) throws {
+        var normalizedDeposit = deposit
+        normalizedDeposit.type = .deposit
+        try addEntry(normalizedDeposit, in: modelContext)
+    }
+
+    func entries(for pocketId: UUID) -> [Transaction] {
+        entries.filter { $0.pocketId == pocketId }
     }
 
     func backfillIdentityFieldsIfNeeded(in modelContext: ModelContext) throws {
@@ -39,8 +63,20 @@ final class ExpenseStore {
         expenses.filter { $0.pocketId == pocketId }
     }
 
+    func deposits(for pocketId: UUID) -> [Transaction] {
+        deposits.filter { $0.pocketId == pocketId }
+    }
+
+    func currentMonthEntries(referenceDate: Date = Date()) -> [Transaction] {
+        entries.filter { Calendar.current.isDate($0.date, equalTo: referenceDate, toGranularity: .month) }
+    }
+
     func currentMonthExpenses(referenceDate: Date = Date()) -> [Expense] {
         expenses.filter { Calendar.current.isDate($0.date, equalTo: referenceDate, toGranularity: .month) }
+    }
+
+    var unsettledEntries: [Transaction] {
+        entries.filter { $0.isSettled == false }
     }
 
     var unsettledExpenses: [Expense] {

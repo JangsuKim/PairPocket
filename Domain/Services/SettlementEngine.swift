@@ -26,8 +26,8 @@ public enum SettlementEngine {
             // Aggregate proportional shares first and round once at the period level
             // to avoid accumulating per-expense rounding bias.
             if rolePaymentSource == .host || rolePaymentSource == .partner {
-                totalShareNumeratorHost += expense.amount * expense.hostRatio
-                totalShareNumeratorPartner += expense.amount * expense.partnerRatio
+                totalShareNumeratorHost += expense.amount * expense.ratioHost
+                totalShareNumeratorPartner += expense.amount * expense.ratioPartner
             }
 
             switch rolePaymentSource {

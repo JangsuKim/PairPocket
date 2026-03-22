@@ -1,14 +1,15 @@
 import SwiftUI
 
 struct MonthlySummarySection: View {
+    let summaryLabel: String
     let totalAmountYen: Int
     let totalCount: Int
 
-    private var todayLabel: String {
+    private var summaryTitle: String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
         formatter.dateFormat = "M/d"
-        return "\(formatter.string(from: Date())) 現在出費"
+        return "\(formatter.string(from: Date())) \(summaryLabel)"
     }
 
     private var amountText: String {
@@ -21,7 +22,7 @@ struct MonthlySummarySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(todayLabel)
+            Text(summaryTitle)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -42,5 +43,5 @@ struct MonthlySummarySection: View {
 }
 
 #Preview {
-    MonthlySummarySection(totalAmountYen: 0, totalCount: 0)
+    MonthlySummarySection(summaryLabel: "現在支出", totalAmountYen: 0, totalCount: 0)
 }

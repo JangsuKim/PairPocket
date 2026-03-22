@@ -48,6 +48,10 @@ public enum PaymentSource: String, Codable, Hashable {
 public enum PocketEntryType: String, Codable, Hashable {
     case expense
     case deposit
+
+    public static func fromPersistedRawValue(_ rawValue: String) -> PocketEntryType {
+        PocketEntryType(rawValue: rawValue) ?? .expense
+    }
 }
 
 public struct PocketEntry: Identifiable, Codable, Hashable {
@@ -57,8 +61,8 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
     public var categoryId: UUID?
     public var paymentSource: PaymentSource
     public var amount: Int
-    public var ratioA: Int
-    public var ratioB: Int
+    public var ratioHost: Int
+    public var ratioPartner: Int
     public var memo: String?
     public var date: Date
     public var createdAt: Date
@@ -68,21 +72,11 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
     public var createdByUserId: String?
     public var paidByUserId: String?
 
-    public var hostRatio: Int {
-        get { ratioA }
-        set { ratioA = newValue }
-    }
-
-    public var partnerRatio: Int {
-        get { ratioB }
-        set { ratioB = newValue }
-    }
-
     public var paidBy: MemberRole {
         paymentSource.memberRole ?? .host
     }
 
-    // Constraint (not enforced yet): ratioA + ratioB == 100
+    // Constraint (not enforced yet): ratioHost + ratioPartner == 100
     public init(
         id: UUID = UUID(),
         pocketId: UUID,
@@ -90,8 +84,8 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
         categoryId: UUID? = nil,
         paymentSource: PaymentSource,
         amount: Int,
-        ratioA: Int = 0,
-        ratioB: Int = 0,
+        ratioHost: Int = 0,
+        ratioPartner: Int = 0,
         memo: String? = nil,
         date: Date,
         createdAt: Date = Date(),
@@ -107,8 +101,8 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
         self.categoryId = categoryId
         self.paymentSource = paymentSource
         self.amount = amount
-        self.ratioA = ratioA
-        self.ratioB = ratioB
+        self.ratioHost = ratioHost
+        self.ratioPartner = ratioPartner
         self.memo = memo
         self.date = date
         self.createdAt = createdAt
@@ -121,3 +115,5 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
 }
 
 public typealias Expense = PocketEntry
+public typealias Transaction = PocketEntry
+public typealias TransactionType = PocketEntryType
