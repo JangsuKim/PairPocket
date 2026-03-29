@@ -179,6 +179,7 @@ struct HistoryView: View {
                 }
             }
             .padding(.top, 4)
+            .bottomTabBarContentInset()
         }
     }
 
