@@ -28,6 +28,10 @@ enum HistoryCalendar {
         calendar.isDate(lhs, inSameDayAs: rhs)
     }
 
+    static func isSameMonth(_ lhs: Date, _ rhs: Date) -> Bool {
+        calendar.isDate(lhs, equalTo: rhs, toGranularity: .month)
+    }
+
     static func dayNumber(for date: Date) -> Int {
         calendar.component(.day, from: date)
     }

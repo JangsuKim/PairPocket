@@ -20,15 +20,16 @@ struct HistoryView: View {
     var body: some View {
         VStack(spacing: 12) {
             pocketFilterTabs
+            monthNavigationRow
             modeSwitcher
 
             if selectedMode == .calendar {
                 calendarModeContent
             } else {
-                if filteredExpenses.isEmpty {
+                if selectedMonthExpenses.isEmpty {
                     emptyState
                 } else {
-                    expenseTable(expenses: filteredExpenses)
+                    listModeContent
                 }
             }
         }
@@ -64,6 +65,18 @@ struct HistoryView: View {
         case let .pocket(id):
             return expenses.filter { $0.pocketId == id }
         }
+    }
+
+    private var selectedMonthExpenses: [ExpenseRecord] {
+        filteredExpenses.filter { HistoryCalendar.isSameMonth($0.date, displayedMonthStart) }
+    }
+
+    private var unsettledMonthExpenses: [ExpenseRecord] {
+        selectedMonthExpenses.filter { $0.isSettled == false }
+    }
+
+    private var settledMonthExpenses: [ExpenseRecord] {
+        selectedMonthExpenses.filter(\.isSettled)
     }
 
     private var deletedPocketIDs: Set<UUID> {
@@ -121,10 +134,18 @@ struct HistoryView: View {
         .pickerStyle(.segmented)
     }
 
+    private var monthNavigationRow: some View {
+        HistoryMonthHeader(
+            displayedMonthStart: displayedMonthStart,
+            onPreviousMonth: { moveDisplayedMonth(by: -1) },
+            onNextMonth: { moveDisplayedMonth(by: 1) }
+        )
+    }
+
     private var emptyState: some View {
         VStack {
             Spacer(minLength: 36)
-            Text("まだ支出がありません")
+            Text("選択した月の支出はありません")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer()
@@ -133,11 +154,6 @@ struct HistoryView: View {
 
     private var calendarModeContent: some View {
         VStack(spacing: 10) {
-            HistoryMonthHeader(
-                displayedMonthStart: displayedMonthStart,
-                onPreviousMonth: { moveDisplayedMonth(by: -1) },
-                onNextMonth: { moveDisplayedMonth(by: 1) }
-            )
             HistoryMonthWeekdayHeader()
             HistoryMonthGrid(
                 displayedMonthStart: displayedMonthStart,
@@ -157,6 +173,24 @@ struct HistoryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var listModeContent: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                tableHeader
+
+                if unsettledMonthExpenses.isEmpty == false {
+                    expenseSection(title: "未精算", expenses: unsettledMonthExpenses)
+                }
+
+                if settledMonthExpenses.isEmpty == false {
+                    expenseSection(title: "精算済み", expenses: settledMonthExpenses)
+                }
+            }
+            .padding(.top, 4)
+            .bottomTabBarContentInset()
+        }
     }
 
     private func expenseTable(expenses: [ExpenseRecord]) -> some View {
@@ -180,6 +214,30 @@ struct HistoryView: View {
             }
             .padding(.top, 4)
             .bottomTabBarContentInset()
+        }
+    }
+
+    private func expenseSection(title: String, expenses: [ExpenseRecord]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.top, 12)
+                .padding(.bottom, 6)
+
+            ForEach(expenses, id: \.id) { expense in
+                NavigationLink {
+                    HistoryExpenseDetailView(
+                        expense: expense,
+                        pocketName: pocketLabel(for: expense.pocketId),
+                        categoryName: categoryLabel(for: expense.categoryId)
+                    )
+                } label: {
+                    expenseRow(expense)
+                }
+                .buttonStyle(.plain)
+                Divider()
+            }
         }
     }
 
@@ -296,7 +354,20 @@ struct HistoryView: View {
     private func moveDisplayedMonth(by value: Int) {
         let monthStart = HistoryCalendar.monthOffset(from: displayedMonthStart, by: value)
         displayedMonthStart = monthStart
-        selectedDate = monthStart
+        selectedDate = preferredSelectedDate(for: monthStart)
+    }
+
+    private func preferredSelectedDate(for monthStart: Date) -> Date {
+        let latestExpenseDate = filteredExpenses
+            .filter { HistoryCalendar.isSameMonth($0.date, monthStart) }
+            .map(\.date)
+            .max()
+
+        if let latestExpenseDate {
+            return HistoryCalendar.dayStart(for: latestExpenseDate)
+        }
+
+        return monthStart
     }
 }
 
