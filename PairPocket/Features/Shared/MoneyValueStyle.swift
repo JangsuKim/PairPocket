@@ -1,12 +1,15 @@
 import SwiftUI
 
 enum MoneyValueStyle {
+    static let negativeValueColor = Color(red: 0.86, green: 0.48, blue: 0.50)
+    static let positiveValueColor = Color(red: 0.49, green: 0.70, blue: 0.62)
+
     static func color(forSignedAmount amount: Int) -> Color {
         if amount < 0 {
-            return .red
+            return negativeValueColor
         }
         if amount > 0 {
-            return .green
+            return positiveValueColor
         }
         return .primary
     }
@@ -14,14 +17,14 @@ enum MoneyValueStyle {
     static func color(for entryType: PocketEntryType) -> Color {
         switch entryType {
         case .expense:
-            return .red
+            return negativeValueColor
         case .deposit:
-            return .green
+            return positiveValueColor
         }
     }
 
     static func color(forExpenseAmount amount: Int) -> Color {
-        amount > 0 ? .red : .primary
+        amount > 0 ? negativeValueColor : .primary
     }
 
     static func colorForPocketDisplay(mode: PocketMode, displayedAmount: Int, currentBalance: Int) -> Color {

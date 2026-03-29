@@ -243,9 +243,6 @@ struct HistoryView: View {
 
     private var tableHeader: some View {
         HStack(spacing: 0) {
-            Text("区分")
-                .frame(width: 42, alignment: .leading)
-
             Text("日付")
                 .frame(width: 70, alignment: .leading)
 
@@ -259,7 +256,7 @@ struct HistoryView: View {
                 .frame(width: 48, alignment: .center)
 
             Text("金額")
-                .frame(width: 78, alignment: .trailing)
+                .frame(width: 90, alignment: .trailing)
         }
         .font(.caption2.weight(.semibold))
         .foregroundStyle(.secondary)
@@ -268,11 +265,6 @@ struct HistoryView: View {
 
     private func expenseRow(_ expense: ExpenseRecord) -> some View {
         HStack(spacing: 0) {
-            Text(entryTypeLabel(for: expense))
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(entryTypeColor(for: expense))
-                .frame(width: 42, alignment: .leading)
-
             HStack(spacing: 6) {
                 Circle()
                     .fill(pocketColor(for: expense.pocketId))
@@ -300,28 +292,15 @@ struct HistoryView: View {
 
             Text(HistoryFormatters.yen(expense.amount))
                 .fontDesign(.monospaced)
-                .frame(width: 78, alignment: .trailing)
+            .foregroundStyle(entryTypeColor(for: expense))
+            .frame(width: 90, alignment: .trailing)
         }
         .font(.caption)
         .padding(.vertical, 4)
     }
 
-    private func entryTypeLabel(for expense: ExpenseRecord) -> String {
-        switch expense.entryType {
-        case .expense:
-            return "支出"
-        case .deposit:
-            return "入金"
-        }
-    }
-
     private func entryTypeColor(for expense: ExpenseRecord) -> Color {
-        switch expense.entryType {
-        case .expense:
-            return .red
-        case .deposit:
-            return .teal
-        }
+        MoneyValueStyle.color(for: expense.entryType)
     }
 
     private func categoryLabel(for categoryId: UUID?) -> String {
