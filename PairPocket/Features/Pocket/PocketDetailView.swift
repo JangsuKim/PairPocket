@@ -218,6 +218,7 @@ struct PocketDetailView: View {
                         )
                     }
                     .padding(16)
+                    .bottomTabBarContentInset()
                 }
                 .navigationTitle(pocket.name)
                 .toolbar {
