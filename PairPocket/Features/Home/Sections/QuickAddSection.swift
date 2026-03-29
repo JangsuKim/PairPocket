@@ -57,7 +57,7 @@ struct QuickAddSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("クイック追加")
+                Text("クイック支出追加")
                     .font(.headline)
 
                 Spacer()
@@ -97,7 +97,6 @@ struct QuickAddSection: View {
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .task {
-            MemberPreferences.migrateLegacyValues()
             try? categoryStore.loadIfNeeded(from: modelContext)
             syncSelectedCategory()
         }
@@ -174,11 +173,12 @@ struct QuickAddSection: View {
 
         let expense = Expense(
             pocketId: selectedPocket.id,
+            type: .expense,
             categoryId: selectedCategory.id,
             paymentSource: currentPaymentSource,
             amount: amountValue,
-            ratioA: selectedPocket.hostRatio,
-            ratioB: selectedPocket.partnerRatio,
+            ratioHost: selectedPocket.ratioHost,
+            ratioPartner: selectedPocket.ratioPartner,
             memo: nil,
             date: Date(),
             isSettled: false,
@@ -212,10 +212,4 @@ struct QuickAddSection: View {
             }
         )
     }
-}
-
-#Preview {
-    QuickAddSection(
-        selectedPocket: Pocket(name: "Main", colorKey: "green", isMain: true)
-    )
 }

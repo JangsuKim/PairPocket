@@ -78,10 +78,9 @@ final class PocketStore {
         record.name = pocket.name
         record.colorKey = pocket.colorKey
         record.icon = pocket.icon
-        record.ratioA = pocket.ratioA
-        record.ratioB = pocket.ratioB
-        record.sharedBalanceEnabled = pocket.sharedBalanceEnabled
-        record.personalPaymentEnabled = pocket.personalPaymentEnabled
+        record.ratioHost = pocket.ratioHost
+        record.ratioPartner = pocket.ratioPartner
+        record.mode = pocket.mode
         record.isMain = pocket.isMain
         record.createdAt = pocket.createdAt
 
@@ -198,11 +197,10 @@ private extension PocketStore {
         Pocket(
             id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,
             name: "生活費",
-            colorKey: "green",
-            ratioA: 50,
-            ratioB: 50,
-            sharedBalanceEnabled: false,
-            personalPaymentEnabled: true,
+            colorKey: "mint",
+            ratioHost: 50,
+            ratioPartner: 50,
+            mode: .settlementOnly,
             isMain: true
         )
     ]

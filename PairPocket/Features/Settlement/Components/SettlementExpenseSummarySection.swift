@@ -11,7 +11,7 @@ struct SettlementExpenseSummarySection: View {
                     HStack(alignment: .center) {
                         Text(summary.memberName)
                             .font(.subheadline.weight(.semibold))
-                            .frame(width: 120, alignment: .center)
+                            .frame(width: 120, alignment: .leading)
 
                         Spacer()
 
@@ -23,7 +23,7 @@ struct SettlementExpenseSummarySection: View {
                 Divider()
 
                 HStack {
-                    Text("Total")
+                    Text("合計")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 

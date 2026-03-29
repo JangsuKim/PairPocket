@@ -11,6 +11,7 @@ struct AddExpenseView: View {
 
     @State private var selectedPocketID: UUID?
     @State private var selectedDate = Date()
+    @State private var selectedEntryType: PocketEntryType = .expense
     @State private var selectedCategoryID: UUID?
     @State private var selectedPaymentSource: PaymentSource = .host
     @State private var amountText: String = ""
@@ -31,6 +32,14 @@ struct AddExpenseView: View {
 
     private var isAddEnabled: Bool {
         amountValue > 0 && selectedPocket != nil
+    }
+
+    private var isDepositEntry: Bool {
+        selectedEntryType == .deposit
+    }
+
+    private var submitButtonTitle: String {
+        selectedEntryType == .expense ? "支出を追加" : "入金を追加"
     }
 
     private var pockets: [Pocket] {
@@ -66,27 +75,45 @@ struct AddExpenseView: View {
         return selectableCategories.first(where: { $0.id == selectedCategoryID }) ?? selectableCategories.first
     }
 
+    private var selectedCategorySelection: Binding<UUID?> {
+        Binding(
+            get: { selectedCategoryID ?? selectableCategories.first?.id },
+            set: { selectedCategoryID = $0 }
+        )
+    }
+
+    private var availableEntryTypes: [PocketEntryType] {
+        guard let selectedPocket else {
+            return [.expense]
+        }
+
+        switch selectedPocket.mode {
+        case .settlementOnly:
+            return [.expense]
+        case .sharedManagement:
+            return [.expense, .deposit]
+        }
+    }
+
     private var availablePaymentSources: [PaymentSource] {
         guard let selectedPocket else {
             return []
         }
 
-        var sources: [PaymentSource] = []
-
-        if selectedPocket.personalPaymentEnabled {
-            sources.append(.host)
-            sources.append(.partner)
+        if selectedEntryType == .deposit {
+            return [.host, .partner]
         }
 
-        if selectedPocket.sharedBalanceEnabled {
-            sources.append(.pocket)
+        switch selectedPocket.mode {
+        case .settlementOnly:
+            return [.host, .partner]
+        case .sharedManagement:
+            return [.host, .partner, .pocket]
         }
-
-        return sources
     }
 
     private var burdenA: Int {
-        amountValue * (selectedPocket?.ratioA ?? 0) / 100
+        amountValue * (selectedPocket?.ratioHost ?? 0) / 100
     }
 
     private var burdenB: Int {
@@ -116,28 +143,35 @@ struct AddExpenseView: View {
                 submitButton
             }
             .padding()
-            .navigationTitle("支出入力")
+            .navigationTitle(selectedEntryType == .expense ? "支出入力" : "入金入力")
             .onAppear {
                 try? expenseStore.loadIfNeeded(from: modelContext)
                 try? pocketStore.loadIfNeeded(from: modelContext)
                 try? categoryStore.loadIfNeeded(from: modelContext)
                 syncSelectedPocket()
+                syncSelectedEntryType()
                 syncSelectedCategory()
                 syncSelectedPaymentSource()
             }
             .onChange(of: selectedPocketID) { _, _ in
+                syncSelectedEntryType()
                 syncSelectedCategory()
                 syncSelectedPaymentSource()
             }
             .onChange(of: pocketIDs) { _, _ in
                 syncSelectedPocket()
+                syncSelectedEntryType()
+                syncSelectedCategory()
+                syncSelectedPaymentSource()
+            }
+            .onChange(of: selectedEntryType) { _, _ in
                 syncSelectedCategory()
                 syncSelectedPaymentSource()
             }
             .onChange(of: categoryIDs) { _, _ in
                 syncSelectedCategory()
             }
-            .alert("保存に失敗しました", isPresented: saveErrorMessageAlertBinding) {
+            .alert("取引の保存に失敗しました", isPresented: saveErrorMessageAlertBinding) {
                 Button("確認", role: .cancel) {
                     saveErrorMessage = nil
                 }
@@ -158,21 +192,32 @@ struct AddExpenseView: View {
     private var expenseFormContent: some View {
         if selectedPocket != nil {
             VStack(alignment: .leading, spacing: 14) {
+                if availableEntryTypes.count > 1 {
+                    Picker("種別", selection: $selectedEntryType) {
+                        Text("支出").tag(PocketEntryType.expense)
+                        Text("入金").tag(PocketEntryType.deposit)
+                    }
+                    .pickerStyle(.segmented)
+                    .tint(selectedPocketColor)
+                }
+
                 DatePicker("日付", selection: $selectedDate, displayedComponents: .date)
                     .datePickerStyle(.compact)
 
-                if selectableCategories.isEmpty {
-                    Text("このポケットには有効なカテゴリがありません")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Picker("カテゴリ", selection: $selectedCategoryID) {
-                        ForEach(selectableCategories) { category in
-                            Text(category.name).tag(Optional(category.id))
+                if isDepositEntry == false {
+                    if selectableCategories.isEmpty {
+                        Text("このポケットには有効なカテゴリがありません")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker("カテゴリ", selection: selectedCategorySelection) {
+                            ForEach(selectableCategories) { category in
+                                Text(category.name).tag(Optional(category.id))
+                            }
                         }
+                        .pickerStyle(.menu)
+                        .tint(selectedPocketColor)
                     }
-                    .pickerStyle(.menu)
-                    .tint(selectedPocketColor)
                 }
 
                 Picker("支払元", selection: $selectedPaymentSource) {
@@ -196,19 +241,21 @@ struct AddExpenseView: View {
                             amountText = newValue.filter(\.isNumber)
                         }
 
-                    HStack(spacing: 20) {
-                        burdenRow(name: MemberRole.host.displayName, amount: burdenA)
-                        burdenRow(name: MemberRole.partner.displayName, amount: burdenB)
-                    }
+                    if isDepositEntry == false {
+                        HStack(spacing: 20) {
+                            burdenRow(name: MemberRole.host.displayName, amount: burdenA)
+                            burdenRow(name: MemberRole.partner.displayName, amount: burdenB)
+                        }
 
-                    Button {
-                        print("change ratio tapped")
-                    } label: {
-                        Text("比率を変更")
-                            .font(.subheadline)
+                        Button {
+                            print("change ratio tapped")
+                        } label: {
+                            Text("比率を変更")
+                                .font(.subheadline)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
                 }
 
                 TextField("メモ", text: $memoText)
@@ -221,9 +268,9 @@ struct AddExpenseView: View {
 
     private var submitButton: some View {
         Button {
-            saveExpense()
+            saveEntry()
         } label: {
-            Text("追加")
+            Text(submitButtonTitle)
                 .fontWeight(.semibold)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
@@ -290,6 +337,12 @@ struct AddExpenseView: View {
         }
     }
 
+    private func syncSelectedEntryType() {
+        if availableEntryTypes.contains(selectedEntryType) == false {
+            selectedEntryType = availableEntryTypes.first ?? .expense
+        }
+    }
+
     private func syncSelectedPocket() {
         if let selectedPocketID,
            pockets.contains(where: { $0.id == selectedPocketID }) {
@@ -300,6 +353,11 @@ struct AddExpenseView: View {
     }
 
     private func syncSelectedCategory() {
+        if isDepositEntry {
+            selectedCategoryID = nil
+            return
+        }
+
         guard selectableCategories.isEmpty == false else {
             selectedCategoryID = nil
             return
@@ -313,7 +371,7 @@ struct AddExpenseView: View {
         selectedCategoryID = selectableCategories.first?.id
     }
 
-    private func saveExpense() {
+    private func saveEntry() {
         guard let selectedPocket else {
             return
         }
@@ -325,13 +383,14 @@ struct AddExpenseView: View {
             localRole: currentMemberRole
         )
 
-        let expense = Expense(
+        let entry = Expense(
             pocketId: selectedPocket.id,
-            categoryId: selectedCategory?.id,
+            type: selectedEntryType,
+            categoryId: isDepositEntry ? nil : selectedCategory?.id,
             paymentSource: selectedPaymentSource,
             amount: amountValue,
-            ratioA: selectedPocket.hostRatio,
-            ratioB: selectedPocket.partnerRatio,
+            ratioHost: isDepositEntry ? 0 : selectedPocket.ratioHost,
+            ratioPartner: isDepositEntry ? 0 : selectedPocket.ratioPartner,
             memo: memoText,
             date: selectedDate,
             isSettled: false,
@@ -342,7 +401,11 @@ struct AddExpenseView: View {
         )
 
         do {
-            try expenseStore.addExpense(expense, in: modelContext)
+            if selectedEntryType == .deposit {
+                try expenseStore.addDeposit(entry, in: modelContext)
+            } else {
+                try expenseStore.addExpense(entry, in: modelContext)
+            }
             dismiss()
         } catch {
             saveErrorMessage = error.localizedDescription

@@ -11,8 +11,8 @@ final class ExpenseRecord {
     var date: Date
     var memo: String
     var paymentSourceRaw: String
-    var ratioA: Int
-    var ratioB: Int
+    var ratioHost: Int
+    var ratioPartner: Int
     var isSettled: Bool
     var settlementId: UUID?
     var settledAt: Date?
@@ -21,11 +21,7 @@ final class ExpenseRecord {
 
     var entryType: PocketEntryType {
         get {
-            guard let entryType = PocketEntryType(rawValue: entryTypeRaw) else {
-                preconditionFailure("Unsupported entryTypeRaw: \(entryTypeRaw)")
-            }
-
-            return entryType
+            PocketEntryType.fromPersistedRawValue(entryTypeRaw)
         }
         set {
             entryTypeRaw = newValue.rawValue
@@ -50,8 +46,8 @@ final class ExpenseRecord {
         date: Date,
         memo: String = "",
         paymentSourceRaw: String = PaymentSource.host.rawValue,
-        ratioA: Int,
-        ratioB: Int,
+        ratioHost: Int,
+        ratioPartner: Int,
         isSettled: Bool = false,
         settlementId: UUID? = nil,
         settledAt: Date? = nil,
@@ -66,8 +62,8 @@ final class ExpenseRecord {
         self.date = date
         self.memo = memo
         self.paymentSourceRaw = PaymentSource.fromPersistedRawValue(paymentSourceRaw).rawValue
-        self.ratioA = ratioA
-        self.ratioB = ratioB
+        self.ratioHost = ratioHost
+        self.ratioPartner = ratioPartner
         self.isSettled = isSettled
         self.settlementId = settlementId
         self.settledAt = settledAt
@@ -84,8 +80,8 @@ final class ExpenseRecord {
         date: Date,
         memo: String = "",
         paymentSource: PaymentSource,
-        ratioA: Int = 0,
-        ratioB: Int = 0,
+        ratioHost: Int = 0,
+        ratioPartner: Int = 0,
         isSettled: Bool = false,
         settlementId: UUID? = nil,
         settledAt: Date? = nil,
@@ -101,8 +97,8 @@ final class ExpenseRecord {
             date: date,
             memo: memo,
             paymentSourceRaw: paymentSource.rawValue,
-            ratioA: ratioA,
-            ratioB: ratioB,
+            ratioHost: ratioHost,
+            ratioPartner: ratioPartner,
             isSettled: isSettled,
             settlementId: settlementId,
             settledAt: settledAt,
@@ -124,8 +120,8 @@ extension ExpenseRecord {
             date: entry.date,
             memo: entry.memo ?? "",
             paymentSource: entry.paymentSource,
-            ratioA: entry.ratioA,
-            ratioB: entry.ratioB,
+            ratioHost: entry.ratioHost,
+            ratioPartner: entry.ratioPartner,
             isSettled: entry.isSettled,
             settlementId: entry.settlementId,
             settledAt: entry.settledAt,
@@ -142,8 +138,8 @@ extension ExpenseRecord {
             categoryId: categoryId,
             paymentSource: paymentSource,
             amount: amount,
-            ratioA: ratioA,
-            ratioB: ratioB,
+            ratioHost: ratioHost,
+            ratioPartner: ratioPartner,
             memo: memo.isEmpty ? nil : memo,
             date: date,
             createdAt: date,

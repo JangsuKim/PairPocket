@@ -88,26 +88,26 @@ struct SettlementView: View {
     private var settlementResultDisplay: SettlementResultDisplay {
         guard let summary = settlementSummary else {
             return SettlementResultDisplay(
-                arrowAssetName: nil,
+                arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
-                amountText: SettlementDisplayFormatter.yen(0),
-                messageText: "未精算データがありません"
+                amountText: SettlementDisplayFormatter.yenWithSuffix(0),
+                messageText: nil
             )
         }
 
-        guard let signedAmount = signedSettlementAmount(for: summary) else {
+        guard let signedAmount = SettlementResultPresenter.signedAmount(for: summary) else {
             return SettlementResultDisplay(
-                arrowAssetName: nil,
+                arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
-                amountText: SettlementDisplayFormatter.yen(0),
-                messageText: "精算は不要です"
+                amountText: SettlementDisplayFormatter.yenWithSuffix(0),
+                messageText: nil
             )
         }
 
         return SettlementResultDisplay(
-            arrowAssetName: settlementArrowAssetName(for: signedAmount),
+            arrowAssetName: SettlementResultPresenter.arrowAssetName(for: signedAmount),
             arrowSystemName: nil,
-            amountText: SettlementDisplayFormatter.yen(abs(signedAmount)),
+            amountText: SettlementDisplayFormatter.yenWithSuffix(abs(signedAmount)),
             messageText: nil
         )
     }
@@ -137,45 +137,6 @@ struct SettlementView: View {
         case .partner:
             return partnerPhotoData.isEmpty ? nil : partnerPhotoData
         }
-    }
-
-    private func arrowSystemName(payer: MemberRole, receiver: MemberRole) -> String {
-        if payer == .host && receiver == .partner {
-            return "arrow.right"
-        }
-        if payer == .partner && receiver == .host {
-            return "arrow.left"
-        }
-        return "arrow.right"
-    }
-
-    private func signedSettlementAmount(for summary: SettlementSummary) -> Int? {
-        if summary.settlementAmount == 0 {
-            return 0
-        }
-
-        guard let payer = summary.settlementPayer,
-              let receiver = summary.settlementReceiver else {
-            return nil
-        }
-
-        if payer == .host && receiver == .partner {
-            return summary.settlementAmount
-        }
-        if payer == .partner && receiver == .host {
-            return -summary.settlementAmount
-        }
-        return nil
-    }
-
-    private func settlementArrowAssetName(for signedAmount: Int) -> String {
-        if signedAmount > 0 {
-            return "SettlementArrowHostToPartner"
-        }
-        if signedAmount < 0 {
-            return "SettlementArrowPartnerToHost"
-        }
-        return "SettlementArrowBidirectional"
     }
 
     var body: some View {
@@ -236,9 +197,6 @@ struct SettlementView: View {
                 selectedPocketID = "all"
             }
         }
-        .task {
-            MemberPreferences.migrateLegacyValues()
-        }
     }
 }
 
@@ -281,6 +239,11 @@ private enum SettlementDisplayFormatter {
     static func yen(_ amount: Int) -> String {
         let formatted = yenFormatter.string(from: NSNumber(value: amount)) ?? "0"
         return "¥\(formatted)"
+    }
+
+    static func yenWithSuffix(_ amount: Int) -> String {
+        let formatted = yenFormatter.string(from: NSNumber(value: amount)) ?? "0"
+        return "\(formatted)円"
     }
 }
 

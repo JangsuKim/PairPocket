@@ -6,9 +6,23 @@ struct HistoryExpenseDetailView: View {
     let categoryName: String
     private let localUserId = MemberPreferences.ensureLocalUserId()
 
+    private var entryTypeLabel: String {
+        switch expense.entryType {
+        case .expense:
+            return "支出"
+        case .deposit:
+            return "入金"
+        }
+    }
+
+    private var isExpenseEntry: Bool {
+        expense.entryType == .expense
+    }
+
     var body: some View {
         List {
-            Section("支出情報") {
+            Section("取引情報") {
+                detailRow(title: "種別", value: entryTypeLabel)
                 detailRow(title: "日付", value: HistoryDetailFormatters.date.string(from: expense.date))
                 detailRow(title: "ポケット", value: pocketName)
                 detailRow(title: "カテゴリ", value: categoryName)
@@ -28,13 +42,19 @@ struct HistoryExpenseDetailView: View {
                     .font(.body)
             }
 
-            Section("精算時点の情報") {
-                detailRow(title: "比率 A", value: "\(expense.ratioA)%")
-                detailRow(title: "比率 B", value: "\(expense.ratioB)%")
-                detailRow(title: "精算済み", value: expense.isSettled ? "はい" : "いいえ")
+            if isExpenseEntry {
+                Section("精算時点の情報") {
+                    detailRow(title: "\(MemberRole.host.displayName)比率", value: "\(expense.ratioHost)%")
+                    detailRow(title: "\(MemberRole.partner.displayName)比率", value: "\(expense.ratioPartner)%")
+                    detailRow(title: "精算済み", value: expense.isSettled ? "はい" : "いいえ")
+                }
+            } else {
+                Section("精算状態") {
+                    detailRow(title: "精算済み", value: expense.isSettled ? "はい" : "いいえ")
+                }
             }
         }
-        .navigationTitle("支出詳細")
+        .navigationTitle("取引詳細")
         .navigationBarTitleDisplayMode(.inline)
     }
 

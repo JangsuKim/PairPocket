@@ -46,12 +46,23 @@ struct PocketDetailView: View {
             .sorted { $0.date > $1.date }
     }
 
+    private var pocketEntries: [Transaction] {
+        expenseRecords
+            .map(\.pocketEntry)
+            .filter { $0.pocketId == pocketID }
+            .sorted { $0.date > $1.date }
+    }
+
     private var pocketCategories: [Category] {
         categoryStore.categories(for: pocketID)
     }
 
     private var totalAmount: Int {
         pocketExpenses.reduce(0) { $0 + $1.amount }
+    }
+
+    private var currentBalance: Int {
+        SettlementEngine.calculate(entries: pocketEntries).currentBalance
     }
 
     private var paidByA: Int {
@@ -168,9 +179,11 @@ struct PocketDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         PocketDetailSummary(
+                            mode: pocket.mode,
                             paidByA: paidByA,
                             paidByB: paidByB,
                             totalAmount: totalAmount,
+                            currentBalance: currentBalance,
                             formatYen: formatYen
                         )
                         PocketDetailSettlement(

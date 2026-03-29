@@ -34,9 +34,8 @@ struct PocketFormView: View {
 
     @State private var name: String
     @State private var colorKey: String
-    @State private var ratioA: Int
-    @State private var sharedBalanceEnabled: Bool
-    @State private var personalPaymentEnabled: Bool
+    @State private var ratioHost: Int
+    @State private var pocketMode: PocketMode
     @State private var isMain: Bool
     @State private var validationMessage: String?
     @State private var isShowingDeleteConfirmation = false
@@ -47,27 +46,65 @@ struct PocketFormView: View {
         switch mode {
         case .add:
             _name = State(initialValue: "")
-            _colorKey = State(initialValue: PocketColorOption.green.rawValue)
-            _ratioA = State(initialValue: 50)
-            _sharedBalanceEnabled = State(initialValue: false)
-            _personalPaymentEnabled = State(initialValue: true)
+            _colorKey = State(initialValue: PocketColorOption.mint.rawValue)
+            _ratioHost = State(initialValue: 50)
+            _pocketMode = State(initialValue: .settlementOnly)
             _isMain = State(initialValue: false)
         case let .edit(pocket):
             _name = State(initialValue: pocket.name)
             _colorKey = State(initialValue: pocket.colorKey)
-            _ratioA = State(initialValue: pocket.ratioA)
-            _sharedBalanceEnabled = State(initialValue: pocket.sharedBalanceEnabled)
-            _personalPaymentEnabled = State(initialValue: pocket.personalPaymentEnabled)
+            _ratioHost = State(initialValue: pocket.ratioHost)
+            _pocketMode = State(initialValue: pocket.mode)
             _isMain = State(initialValue: pocket.isMain)
         }
     }
 
-    private var ratioB: Int {
-        100 - ratioA
+    private var ratioPartner: Int {
+        100 - ratioHost
     }
 
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var editingPocketID: UUID? {
+        if case let .edit(pocket) = mode {
+            return pocket.id
+        }
+        return nil
+    }
+
+    private var usedColorKeysByOtherActivePockets: Set<String> {
+        Set(
+            pocketStore.pockets
+                .filter { pocket in
+                    pocket.id != editingPocketID
+                }
+                .map { pocket in
+                    normalizedColorKey(pocket.colorKey)
+                }
+        )
+    }
+
+    private var availableColorOptions: [PocketColorOption] {
+        PocketColorOption.allCases.filter { option in
+            isColorUnavailable(option) == false
+        }
+    }
+
+    private var colorSelectionBinding: Binding<String> {
+        Binding(
+            get: { colorKey },
+            set: { newValue in
+                let normalizedNewValue = normalizedColorKey(newValue)
+
+                guard usedColorKeysByOtherActivePockets.contains(normalizedNewValue) == false else {
+                    return
+                }
+
+                colorKey = normalizedNewValue
+            }
+        )
     }
 
     var body: some View {
@@ -79,15 +116,18 @@ struct PocketFormView: View {
             }
 
             Section("分担比率") {
-                Stepper("\(MemberRole.host.displayName) \(ratioA)%", value: $ratioA, in: 0...100)
+                Stepper("\(MemberRole.host.displayName) \(ratioHost)%", value: $ratioHost, in: 0...100)
                 LabeledContent(MemberRole.partner.displayName) {
-                    Text("\(ratioB)%")
+                    Text("\(ratioPartner)%")
                 }
             }
 
-            Section("支払い設定") {
-                Toggle("共有残高を有効にする", isOn: $sharedBalanceEnabled)
-                Toggle("個人支払いを有効にする", isOn: $personalPaymentEnabled)
+            Section("ポケットモード") {
+                Picker("モード", selection: $pocketMode) {
+                    Text(PocketMode.settlementOnly.displayName).tag(PocketMode.settlementOnly)
+                    Text(PocketMode.sharedManagement.displayName).tag(PocketMode.sharedManagement)
+                }
+                .pickerStyle(.segmented)
             }
 
             Section("役割") {
@@ -142,16 +182,66 @@ struct PocketFormView: View {
     }
 
     private var colorSelection: some View {
-        Picker("色", selection: $colorKey) {
-            ForEach(PocketColorOption.allCases) { option in
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(option.color)
-                        .frame(width: 12, height: 12)
-                    Text(option.title)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("色")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5),
+                spacing: 6
+            ) {
+                ForEach(PocketColorOption.allCases) { option in
+                    let unavailable = isColorUnavailable(option)
+                    let isSelected = normalizedColorKey(colorKey) == option.rawValue
+
+                    Button {
+                        colorSelectionBinding.wrappedValue = option.rawValue
+                    } label: {
+                        VStack(spacing: 3) {
+                            Circle()
+                                .fill(unavailable ? Color.gray.opacity(0.55) : option.color)
+                                .frame(width: 10, height: 10)
+
+                            Text(option.title)
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .foregroundStyle(unavailable ? .secondary : .primary)
+
+                            if unavailable {
+                                Text("使用中")
+                                    .font(.caption2)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                                    .foregroundStyle(.secondary)
+                            } else if isSelected {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 6)
+                        .background(Color(.secondarySystemBackground))
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    isSelected ? option.color.opacity(0.9) : Color(.separator).opacity(0.5),
+                                    lineWidth: isSelected ? 1.5 : 1
+                                )
+                        )
+                        .clipShape(Capsule())
+                        .opacity(unavailable ? 0.6 : 1)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(unavailable)
                 }
-                .tag(option.rawValue)
             }
+        }
+        .onAppear {
+            ensureColorSelectionIsAvailable()
         }
     }
 
@@ -161,8 +251,13 @@ struct PocketFormView: View {
             return
         }
 
-        guard (0...100).contains(ratioA), (0...100).contains(ratioB) else {
+        guard (0...100).contains(ratioHost), (0...100).contains(ratioPartner) else {
             validationMessage = "比率の値が正しくありません。"
+            return
+        }
+
+        if usedColorKeysByOtherActivePockets.contains(normalizedColorKey(colorKey)) {
+            validationMessage = "使用中の色は選択できません。"
             return
         }
 
@@ -172,10 +267,9 @@ struct PocketFormView: View {
             let pocket = Pocket(
                 name: trimmedName,
                 colorKey: colorKey,
-                ratioA: ratioA,
-                ratioB: ratioB,
-                sharedBalanceEnabled: sharedBalanceEnabled,
-                personalPaymentEnabled: personalPaymentEnabled,
+                ratioHost: ratioHost,
+                ratioPartner: ratioPartner,
+                mode: pocketMode,
                 isMain: shouldBeMain
             )
             do {
@@ -195,10 +289,9 @@ struct PocketFormView: View {
                 name: trimmedName,
                 colorKey: colorKey,
                 icon: existingPocket.icon,
-                ratioA: ratioA,
-                ratioB: ratioB,
-                sharedBalanceEnabled: sharedBalanceEnabled,
-                personalPaymentEnabled: personalPaymentEnabled,
+                ratioHost: ratioHost,
+                ratioPartner: ratioPartner,
+                mode: pocketMode,
                 isMain: isMain,
                 createdAt: existingPocket.createdAt
             )
@@ -226,6 +319,38 @@ struct PocketFormView: View {
             validationMessage = error.localizedDescription
         }
     }
+
+    private func isColorUnavailable(_ option: PocketColorOption) -> Bool {
+        usedColorKeysByOtherActivePockets.contains(option.rawValue)
+    }
+
+    private func ensureColorSelectionIsAvailable() {
+        let normalizedSelectedColorKey = normalizedColorKey(colorKey)
+
+        if usedColorKeysByOtherActivePockets.contains(normalizedSelectedColorKey) {
+            if let firstAvailableColorOption = availableColorOptions.first {
+                colorKey = firstAvailableColorOption.rawValue
+            }
+        }
+    }
+
+    private func normalizedColorKey(_ colorKey: String) -> String {
+        switch colorKey {
+        case "mint":
+            return PocketColorOption.mint.rawValue
+        case "peach":
+            return PocketColorOption.peach.rawValue
+        case "lavender":
+            return PocketColorOption.lavender.rawValue
+        case "sky":
+            return PocketColorOption.sky.rawValue
+        case "blush":
+            return PocketColorOption.blush.rawValue
+        default:
+            return PocketColorOption.mint.rawValue
+        }
+    }
+
 }
 
 #Preview {

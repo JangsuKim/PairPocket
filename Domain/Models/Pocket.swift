@@ -1,37 +1,63 @@
 import Foundation
 
+public enum PocketMode: String, Codable, Hashable {
+    case settlementOnly
+    case sharedManagement
+
+    public static func fromPersistedRawValue(_ rawValue: String) -> PocketMode {
+        PocketMode(rawValue: rawValue) ?? .settlementOnly
+    }
+
+    public var displayName: String {
+        switch self {
+        case .settlementOnly:
+            return "後精算"
+        case .sharedManagement:
+            return "共有管理"
+        }
+    }
+}
+
 public struct Pocket: Identifiable, Codable, Hashable {
     public var id: UUID
     public var name: String
     public var colorKey: String
     public var icon: String?
-    public var ratioA: Int
-    public var ratioB: Int
-    public var sharedBalanceEnabled: Bool
-    public var personalPaymentEnabled: Bool
+    public var ratioHost: Int
+    public var ratioPartner: Int
+    public var mode: PocketMode
     public var isMain: Bool
     public var createdAt: Date
 
-    public var hostRatio: Int {
-        get { ratioA }
-        set { ratioA = newValue }
+    public var sharedBalanceEnabled: Bool {
+        Self.paymentCapabilities(for: mode).sharedBalanceEnabled
     }
 
-    public var partnerRatio: Int {
-        get { ratioB }
-        set { ratioB = newValue }
+    public var personalPaymentEnabled: Bool {
+        Self.paymentCapabilities(for: mode).personalPaymentEnabled
     }
 
-    // Constraint (not enforced yet): ratioA + ratioB == 100
+    public static func paymentCapabilities(for mode: PocketMode) -> (
+        sharedBalanceEnabled: Bool,
+        personalPaymentEnabled: Bool
+    ) {
+        switch mode {
+        case .settlementOnly:
+            return (sharedBalanceEnabled: false, personalPaymentEnabled: true)
+        case .sharedManagement:
+            return (sharedBalanceEnabled: true, personalPaymentEnabled: true)
+        }
+    }
+
+    // Constraint (not enforced yet): ratioHost + ratioPartner == 100
     public init(
         id: UUID = UUID(),
         name: String,
         colorKey: String,
         icon: String? = nil,
-        ratioA: Int = 50,
-        ratioB: Int = 50,
-        sharedBalanceEnabled: Bool = false,
-        personalPaymentEnabled: Bool = true,
+        ratioHost: Int = 50,
+        ratioPartner: Int = 50,
+        mode: PocketMode = .settlementOnly,
         isMain: Bool = false,
         createdAt: Date = Date()
     ) {
@@ -39,11 +65,11 @@ public struct Pocket: Identifiable, Codable, Hashable {
         self.name = name
         self.colorKey = colorKey
         self.icon = icon
-        self.ratioA = ratioA
-        self.ratioB = ratioB
-        self.sharedBalanceEnabled = sharedBalanceEnabled
-        self.personalPaymentEnabled = personalPaymentEnabled
+        self.ratioHost = ratioHost
+        self.ratioPartner = ratioPartner
+        self.mode = mode
         self.isMain = isMain
         self.createdAt = createdAt
     }
+
 }

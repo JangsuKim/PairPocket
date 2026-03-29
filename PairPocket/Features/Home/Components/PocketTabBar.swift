@@ -89,15 +89,3 @@ private struct PocketTabShape: Shape {
         return path
     }
 }
-
-#Preview {
-    PocketTabBar(
-        pockets: [
-            Pocket(name: "Main", colorKey: "green", icon: "house", isMain: true),
-            Pocket(name: "Travel", colorKey: "orange", icon: "airplane"),
-            Pocket(name: "Rent", colorKey: "blue", icon: "building.2")
-        ],
-        selectedPocket: Pocket(name: "Main", colorKey: "green", icon: "house", isMain: true),
-        onSelect: { _ in }
-    )
-}

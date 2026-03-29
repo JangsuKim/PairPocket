@@ -1,22 +1,28 @@
 import SwiftUI
 
 struct PocketDetailSummary: View {
+    let mode: PocketMode
     let paidByA: Int
     let paidByB: Int
     let totalAmount: Int
+    let currentBalance: Int
     let formatYen: (Int) -> String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("支出サマリー")
+            Text(mode == .sharedManagement ? "残高サマリー" : "支出サマリー")
                 .font(.headline)
 
-            summaryAmountRow(title: MemberRole.host.displayName, amount: paidByA)
-            summaryAmountRow(title: MemberRole.partner.displayName, amount: paidByB)
+            if mode == .sharedManagement {
+                summaryAmountRow(title: "現在残高", amount: currentBalance, emphasized: true)
+            } else {
+                summaryAmountRow(title: MemberRole.host.displayName, amount: paidByA)
+                summaryAmountRow(title: MemberRole.partner.displayName, amount: paidByB)
 
-            Divider()
+                Divider()
 
-            summaryAmountRow(title: "合計", amount: totalAmount, emphasized: true)
+                summaryAmountRow(title: "合計", amount: totalAmount, emphasized: true)
+            }
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)

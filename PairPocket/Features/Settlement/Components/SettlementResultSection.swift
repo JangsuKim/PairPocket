@@ -37,9 +37,13 @@ struct SettlementResultSection: View {
                         spacerMinLength: 8
                     )
                 } else if let messageText {
-                    Text(messageText)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                    VStack(spacing: 4) {
+                        Text(amountText)
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                        Text(messageText)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .padding(.horizontal, 14)

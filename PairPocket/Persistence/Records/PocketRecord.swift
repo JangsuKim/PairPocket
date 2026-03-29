@@ -7,22 +7,29 @@ final class PocketRecord {
     var name: String
     var colorKey: String
     var icon: String?
-    var ratioA: Int
-    var ratioB: Int
-    var sharedBalanceEnabled: Bool
-    var personalPaymentEnabled: Bool
+    var ratioHost: Int
+    var ratioPartner: Int
+    var modeRaw: String
     var isMain: Bool
     var createdAt: Date
+
+    var mode: PocketMode {
+        get {
+            PocketMode.fromPersistedRawValue(modeRaw)
+        }
+        set {
+            modeRaw = newValue.rawValue
+        }
+    }
 
     init(
         id: UUID = UUID(),
         name: String,
         colorKey: String,
         icon: String? = nil,
-        ratioA: Int,
-        ratioB: Int,
-        sharedBalanceEnabled: Bool,
-        personalPaymentEnabled: Bool,
+        ratioHost: Int,
+        ratioPartner: Int,
+        modeRaw: String,
         isMain: Bool,
         createdAt: Date = Date()
     ) {
@@ -30,12 +37,35 @@ final class PocketRecord {
         self.name = name
         self.colorKey = colorKey
         self.icon = icon
-        self.ratioA = ratioA
-        self.ratioB = ratioB
-        self.sharedBalanceEnabled = sharedBalanceEnabled
-        self.personalPaymentEnabled = personalPaymentEnabled
+        self.ratioHost = ratioHost
+        self.ratioPartner = ratioPartner
+        self.modeRaw = PocketMode.fromPersistedRawValue(modeRaw).rawValue
         self.isMain = isMain
         self.createdAt = createdAt
+    }
+
+    convenience init(
+        id: UUID = UUID(),
+        name: String,
+        colorKey: String,
+        icon: String? = nil,
+        ratioHost: Int,
+        ratioPartner: Int,
+        mode: PocketMode,
+        isMain: Bool,
+        createdAt: Date = Date()
+    ) {
+        self.init(
+            id: id,
+            name: name,
+            colorKey: colorKey,
+            icon: icon,
+            ratioHost: ratioHost,
+            ratioPartner: ratioPartner,
+            modeRaw: mode.rawValue,
+            isMain: isMain,
+            createdAt: createdAt
+        )
     }
 }
 
@@ -46,10 +76,9 @@ extension PocketRecord {
             name: pocket.name,
             colorKey: pocket.colorKey,
             icon: pocket.icon,
-            ratioA: pocket.ratioA,
-            ratioB: pocket.ratioB,
-            sharedBalanceEnabled: pocket.sharedBalanceEnabled,
-            personalPaymentEnabled: pocket.personalPaymentEnabled,
+            ratioHost: pocket.ratioHost,
+            ratioPartner: pocket.ratioPartner,
+            mode: pocket.mode,
             isMain: pocket.isMain,
             createdAt: pocket.createdAt
         )
@@ -61,10 +90,9 @@ extension PocketRecord {
             name: name,
             colorKey: colorKey,
             icon: icon,
-            ratioA: ratioA,
-            ratioB: ratioB,
-            sharedBalanceEnabled: sharedBalanceEnabled,
-            personalPaymentEnabled: personalPaymentEnabled,
+            ratioHost: ratioHost,
+            ratioPartner: ratioPartner,
+            mode: mode,
             isMain: isMain,
             createdAt: createdAt
         )

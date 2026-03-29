@@ -3,31 +3,28 @@ import SwiftUI
 extension Pocket {
     var displayColor: Color {
         switch colorKey {
-        case "green":
-            return .green
-        case "orange":
-            return .orange
-        case "purple":
-            return .purple
-        case "blue":
-            return .blue
-        case "pink":
-            return .pink
-        case "red":
-            return .red
+        case "mint":
+            return Color("PocketMint")
+        case "peach":
+            return Color("PocketPeach")
+        case "lavender":
+            return Color("PocketLavender")
+        case "sky":
+            return Color("PocketSky")
+        case "blush":
+            return Color("PocketBlush")
         default:
-            return .gray
+            return Color("PocketMint")
         }
     }
 }
 
 enum PocketColorOption: String, CaseIterable, Identifiable {
-    case green
-    case orange
-    case purple
-    case blue
-    case pink
-    case red
+    case mint
+    case peach
+    case lavender
+    case sky
+    case blush
 
     var id: String { rawValue }
 
@@ -37,18 +34,16 @@ enum PocketColorOption: String, CaseIterable, Identifiable {
 
     var color: Color {
         switch self {
-        case .green:
-            return .green
-        case .orange:
-            return .orange
-        case .purple:
-            return .purple
-        case .blue:
-            return .blue
-        case .pink:
-            return .pink
-        case .red:
-            return .red
+        case .mint:
+            return Color("PocketMint")
+        case .peach:
+            return Color("PocketPeach")
+        case .lavender:
+            return Color("PocketLavender")
+        case .sky:
+            return Color("PocketSky")
+        case .blush:
+            return Color("PocketBlush")
         }
     }
 }

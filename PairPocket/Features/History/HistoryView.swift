@@ -133,9 +133,18 @@ struct HistoryView: View {
 
     private var calendarModeContent: some View {
         VStack(spacing: 10) {
-            monthHeader
-            monthWeekdayHeader
-            monthGrid
+            HistoryMonthHeader(
+                displayedMonthStart: displayedMonthStart,
+                onPreviousMonth: { moveDisplayedMonth(by: -1) },
+                onNextMonth: { moveDisplayedMonth(by: 1) }
+            )
+            HistoryMonthWeekdayHeader()
+            HistoryMonthGrid(
+                displayedMonthStart: displayedMonthStart,
+                datesWithExpenses: calendarDatesWithExpenses,
+                accentColor: overallAccentColor,
+                selectedDate: $selectedDate
+            )
 
             if selectedDateExpenses.isEmpty {
                 Text("選択日の支出はありません")
@@ -148,85 +157,6 @@ struct HistoryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    private var monthHeader: some View {
-        HStack {
-            Button {
-                moveDisplayedMonth(by: -1)
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(width: 28, height: 28)
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-
-            Text(HistoryFormatters.monthTitle.string(from: displayedMonthStart))
-                .font(.subheadline.weight(.semibold))
-
-            Spacer()
-
-            Button {
-                moveDisplayedMonth(by: 1)
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(width: 28, height: 28)
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private var monthWeekdayHeader: some View {
-        let symbols = HistoryCalendar.shortWeekdaySymbols
-
-        return HStack(spacing: 0) {
-            ForEach(symbols, id: \.self) { symbol in
-                Text(symbol)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-            }
-        }
-    }
-
-    private var monthGrid: some View {
-        let cells = HistoryCalendar.monthCells(for: displayedMonthStart)
-
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 4) {
-            ForEach(cells) { cell in
-                if let date = cell.date {
-                    let isSelected = HistoryCalendar.isSameDay(date, selectedDate)
-                    let hasExpense = calendarDatesWithExpenses.contains(HistoryCalendar.dayStart(for: date))
-
-                    Button {
-                        selectedDate = date
-                    } label: {
-                        VStack(spacing: 2) {
-                            Text("\(HistoryCalendar.dayNumber(for: date))")
-                                .font(.caption)
-                                .foregroundStyle(isSelected ? Color.white : Color.primary)
-
-                            Circle()
-                                .fill(hasExpense ? (isSelected ? Color.white : overallAccentColor) : Color.clear)
-                                .frame(width: 4, height: 4)
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 36)
-                        .background(isSelected ? overallAccentColor : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Color.clear
-                        .frame(maxWidth: .infinity, minHeight: 36)
-                }
-            }
-        }
-        .padding(8)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
     private func expenseTable(expenses: [ExpenseRecord]) -> some View {
@@ -254,20 +184,23 @@ struct HistoryView: View {
 
     private var tableHeader: some View {
         HStack(spacing: 0) {
+            Text("区分")
+                .frame(width: 42, alignment: .leading)
+
             Text("日付")
-                .frame(width: 74, alignment: .leading)
+                .frame(width: 70, alignment: .leading)
 
             Text("カテゴリ")
-                .frame(width: 96, alignment: .leading)
+                .frame(width: 72, alignment: .leading)
 
             Text("メモ")
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Text("支払元")
-                .frame(width: 64, alignment: .center)
+                .frame(width: 48, alignment: .center)
 
             Text("金額")
-                .frame(width: 84, alignment: .trailing)
+                .frame(width: 78, alignment: .trailing)
         }
         .font(.caption2.weight(.semibold))
         .foregroundStyle(.secondary)
@@ -276,6 +209,11 @@ struct HistoryView: View {
 
     private func expenseRow(_ expense: ExpenseRecord) -> some View {
         HStack(spacing: 0) {
+            Text(entryTypeLabel(for: expense))
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(entryTypeColor(for: expense))
+                .frame(width: 42, alignment: .leading)
+
             HStack(spacing: 6) {
                 Circle()
                     .fill(pocketColor(for: expense.pocketId))
@@ -283,29 +221,48 @@ struct HistoryView: View {
 
                 Text(HistoryFormatters.rowDate.string(from: expense.date))
             }
-                .frame(width: 74, alignment: .leading)
+                .frame(width: 70, alignment: .leading)
 
             Text(categoryLabel(for: expense.categoryId))
                 .lineLimit(1)
-                .frame(width: 96, alignment: .leading)
+                .frame(width: 72, alignment: .leading)
 
             Text(expense.memo.isEmpty ? "-" : expense.memo)
                 .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .truncationMode(.tail)
+                .frame(minWidth: 44, maxWidth: .infinity, alignment: .leading)
 
             Text(MemberPreferences.payerDisplayName(
                 paymentSource: expense.paymentSource,
                 paidByUserId: expense.paidByUserId,
                 localUserId: localUserId
             ))
-                .frame(width: 64, alignment: .center)
+                .frame(width: 48, alignment: .center)
 
             Text(HistoryFormatters.yen(expense.amount))
                 .fontDesign(.monospaced)
-                .frame(width: 84, alignment: .trailing)
+                .frame(width: 78, alignment: .trailing)
         }
         .font(.caption)
         .padding(.vertical, 4)
+    }
+
+    private func entryTypeLabel(for expense: ExpenseRecord) -> String {
+        switch expense.entryType {
+        case .expense:
+            return "支出"
+        case .deposit:
+            return "入金"
+        }
+    }
+
+    private func entryTypeColor(for expense: ExpenseRecord) -> Color {
+        switch expense.entryType {
+        case .expense:
+            return .red
+        case .deposit:
+            return .teal
+        }
     }
 
     private func categoryLabel(for categoryId: UUID?) -> String {
@@ -356,96 +313,6 @@ private struct PocketOption: Identifiable {
     let id: UUID?
     let name: String
     let color: Color
-}
-
-private struct HistoryFormatters {
-    static let rowDate: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.dateFormat = "MM/dd(EEE)"
-        return formatter
-    }()
-
-    static let monthTitle: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.dateFormat = "yyyy年M月"
-        return formatter
-    }()
-
-    static let yenFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.numberStyle = .decimal
-        return formatter
-    }()
-
-    static func yen(_ amount: Int) -> String {
-        let formatted = yenFormatter.string(from: NSNumber(value: amount)) ?? "0"
-        return "¥\(formatted)"
-    }
-}
-
-private struct HistoryCalendar {
-    private static var calendar: Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.locale = Locale(identifier: "ja_JP")
-        return calendar
-    }
-
-    static var shortWeekdaySymbols: [String] {
-        calendar.veryShortStandaloneWeekdaySymbols
-    }
-
-    static func dayStart(for date: Date) -> Date {
-        calendar.startOfDay(for: date)
-    }
-
-    static func monthStart(for date: Date) -> Date {
-        let components = calendar.dateComponents([.year, .month], from: date)
-        return calendar.date(from: components) ?? date
-    }
-
-    static func monthOffset(from date: Date, by value: Int) -> Date {
-        calendar.date(byAdding: .month, value: value, to: monthStart(for: date)) ?? date
-    }
-
-    static func isSameDay(_ lhs: Date, _ rhs: Date) -> Bool {
-        calendar.isDate(lhs, inSameDayAs: rhs)
-    }
-
-    static func dayNumber(for date: Date) -> Int {
-        calendar.component(.day, from: date)
-    }
-
-    static func monthCells(for monthStart: Date) -> [MonthCell] {
-        guard let dayRange = calendar.range(of: .day, in: .month, for: monthStart) else {
-            return []
-        }
-
-        let firstWeekdayOfMonth = calendar.component(.weekday, from: monthStart)
-        let offset = (firstWeekdayOfMonth - calendar.firstWeekday + 7) % 7
-
-        var cells = Array(repeating: MonthCell(date: nil), count: offset)
-
-        for day in dayRange {
-            if let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart) {
-                cells.append(MonthCell(date: date))
-            }
-        }
-
-        let trailingCount = (7 - (cells.count % 7)) % 7
-        if trailingCount > 0 {
-            cells.append(contentsOf: Array(repeating: MonthCell(date: nil), count: trailingCount))
-        }
-
-        return cells
-    }
-}
-
-private struct MonthCell: Identifiable {
-    let id = UUID()
-    let date: Date?
 }
 
 #Preview {

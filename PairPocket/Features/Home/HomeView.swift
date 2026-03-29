@@ -7,22 +7,50 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var selectedPocket: Pocket?
 
-    private var monthlyTotal: Int {
+    private var currentMonthExpenseTotal: Int {
         currentMonthExpenses.reduce(0) { $0 + $1.amount }
     }
 
-    private var monthlyCount: Int {
+    private var currentMonthExpenseCount: Int {
         currentMonthExpenses.count
     }
 
-    private var currentMonthExpenses: [Expense] {
-        let monthExpenses = expenseStore.currentMonthExpenses()
-
+    private var selectedPocketEntries: [Transaction] {
         guard let selectedPocket else {
-            return monthExpenses
+            return []
         }
 
-        return monthExpenses.filter { $0.pocketId == selectedPocket.id }
+        return expenseStore.entries(for: selectedPocket.id)
+    }
+
+    private var selectedPocketBalance: Int {
+        SettlementEngine.calculate(entries: selectedPocketEntries).currentBalance
+    }
+
+    private var currentMonthEntries: [Transaction] {
+        let monthEntries = expenseStore.currentMonthEntries()
+
+        guard let selectedPocket else {
+            return monthEntries
+        }
+
+        return monthEntries.filter { $0.pocketId == selectedPocket.id }
+    }
+
+    private var currentMonthExpenses: [Expense] {
+        currentMonthEntries.filter { $0.type == .expense }
+    }
+
+    private var pocketSummaryLabel: String {
+        selectedPocket?.mode == .sharedManagement ? "現在残高" : "現在支出"
+    }
+
+    private var pocketSummaryAmount: Int {
+        selectedPocket?.mode == .sharedManagement ? selectedPocketBalance : currentMonthExpenseTotal
+    }
+
+    private var pocketSummaryCount: Int {
+        selectedPocket?.mode == .sharedManagement ? selectedPocketEntries.count : currentMonthExpenseCount
     }
 
     var body: some View {
@@ -35,14 +63,19 @@ struct HomeView: View {
                     PocketSummarySection(
                         pockets: pockets,
                         selectedPocket: selectedPocket,
-                        totalAmountYen: monthlyTotal,
-                        totalCount: monthlyCount,
+                        summaryLabel: pocketSummaryLabel,
+                        totalAmountYen: pocketSummaryAmount,
+                        totalCount: pocketSummaryCount,
                         onSelectPocket: { pocket in
                             selectedPocket = pocket
                         }
                     )
                 } else {
-                    MonthlySummarySection(totalAmountYen: monthlyTotal, totalCount: monthlyCount)
+                    MonthlySummarySection(
+                        summaryLabel: "現在支出",
+                        totalAmountYen: currentMonthExpenseTotal,
+                        totalCount: currentMonthExpenseCount
+                    )
                 }
                 QuickAddSection(selectedPocket: selectedPocket)
                 SettlementSection()
