@@ -1,10 +1,18 @@
 import SwiftUI
+import SwiftData
 
 struct HistoryExpenseDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Environment(ExpenseStore.self) private var expenseStore
+
     let expense: ExpenseRecord
     let pocketName: String
     let categoryName: String
     private let localUserId = MemberPreferences.ensureLocalUserId()
+    @State private var showEditSheet = false
+    @State private var showDeleteConfirmation = false
+    @State private var deleteErrorMessage: String?
 
     private var entryTypeLabel: String {
         switch expense.entryType {
@@ -17,6 +25,14 @@ struct HistoryExpenseDetailView: View {
 
     private var isExpenseEntry: Bool {
         expense.entryType == .expense
+    }
+
+    private var canDeleteExpense: Bool {
+        isExpenseEntry && expense.isSettled == false
+    }
+
+    private var canEditExpense: Bool {
+        isExpenseEntry && expense.isSettled == false
     }
 
     var body: some View {
@@ -48,6 +64,30 @@ struct HistoryExpenseDetailView: View {
                     detailRow(title: "\(MemberRole.partner.displayName)比率", value: "\(expense.ratioPartner)%")
                     detailRow(title: "精算済み", value: expense.isSettled ? "はい" : "いいえ")
                 }
+
+                Section("編集") {
+                    if canEditExpense {
+                        Button("支出を編集") {
+                            showEditSheet = true
+                        }
+                    } else {
+                        Text("Settled expenses cannot be edited.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("削除") {
+                    if canDeleteExpense {
+                        Button("支出を削除", role: .destructive) {
+                            showDeleteConfirmation = true
+                        }
+                    } else {
+                        Text("Settled expenses cannot be deleted.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             } else {
                 Section("精算状態") {
                     detailRow(title: "精算済み", value: expense.isSettled ? "はい" : "いいえ")
@@ -56,6 +96,29 @@ struct HistoryExpenseDetailView: View {
         }
         .navigationTitle("取引詳細")
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+            "Delete this expense?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Expense", role: .destructive) {
+                deleteExpense()
+            }
+            Button("Cancel", role: .cancel) {
+            }
+        } message: {
+            Text("This action cannot be undone.")
+        }
+        .alert("Delete Failed", isPresented: deleteErrorAlertBinding) {
+            Button("OK", role: .cancel) {
+                deleteErrorMessage = nil
+            }
+        } message: {
+            Text(deleteErrorMessage ?? "Unknown error.")
+        }
+        .sheet(isPresented: $showEditSheet) {
+            AddExpenseView(editingExpense: expense.pocketEntry)
+        }
     }
 
     private func detailRow(title: String, value: String) -> some View {
@@ -67,6 +130,26 @@ struct HistoryExpenseDetailView: View {
                 .multilineTextAlignment(.trailing)
         }
         .font(.subheadline)
+    }
+
+    private func deleteExpense() {
+        do {
+            try expenseStore.deleteExpense(id: expense.id, in: modelContext)
+            dismiss()
+        } catch {
+            deleteErrorMessage = error.localizedDescription
+        }
+    }
+
+    private var deleteErrorAlertBinding: Binding<Bool> {
+        Binding(
+            get: { deleteErrorMessage != nil },
+            set: { isPresented in
+                if isPresented == false {
+                    deleteErrorMessage = nil
+                }
+            }
+        )
     }
 
 }

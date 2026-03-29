@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct AddExpenseView: View {
+    let editingExpense: Expense?
+
     @AppStorage(MemberPreferenceKeys.currentMemberRole) private var currentMemberRoleRawValue = MemberRole.host.rawValue
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -17,6 +19,11 @@ struct AddExpenseView: View {
     @State private var amountText: String = ""
     @State private var memoText: String = ""
     @State private var saveErrorMessage: String?
+    @State private var hasInitializedForm = false
+
+    init(editingExpense: Expense? = nil) {
+        self.editingExpense = editingExpense
+    }
 
     private var amountValue: Int {
         Int(amountText) ?? 0
@@ -24,6 +31,10 @@ struct AddExpenseView: View {
 
     private var currentMemberRole: MemberRole {
         MemberRole.fromPersistedRawValue(currentMemberRoleRawValue)
+    }
+
+    private var isEditingExpense: Bool {
+        editingExpense != nil
     }
 
     private var localUserId: String {
@@ -39,7 +50,11 @@ struct AddExpenseView: View {
     }
 
     private var submitButtonTitle: String {
-        selectedEntryType == .expense ? "支出を追加" : "入金を追加"
+        if isEditingExpense {
+            return "支出を保存"
+        }
+
+        return selectedEntryType == .expense ? "支出を追加" : "入金を追加"
     }
 
     private var pockets: [Pocket] {
@@ -47,6 +62,10 @@ struct AddExpenseView: View {
     }
 
     private var selectedPocket: Pocket? {
+        if isEditingExpense, let selectedPocketID {
+            return pockets.first(where: { $0.id == selectedPocketID })
+        }
+
         if let selectedPocketID,
            let matchedPocket = pockets.first(where: { $0.id == selectedPocketID }) {
             return matchedPocket
@@ -143,24 +162,25 @@ struct AddExpenseView: View {
                 submitButton
             }
             .padding()
-            .navigationTitle(selectedEntryType == .expense ? "支出入力" : "入金入力")
+            .navigationTitle(navigationTitle)
             .onAppear {
                 try? expenseStore.loadIfNeeded(from: modelContext)
                 try? pocketStore.loadIfNeeded(from: modelContext)
                 try? categoryStore.loadIfNeeded(from: modelContext)
-                syncSelectedPocket()
-                syncSelectedEntryType()
-                syncSelectedCategory()
-                syncSelectedPaymentSource()
+                initializeFormIfNeeded()
             }
             .onChange(of: selectedPocketID) { _, _ in
-                syncSelectedEntryType()
+                if isEditingExpense == false {
+                    syncSelectedEntryType()
+                }
                 syncSelectedCategory()
                 syncSelectedPaymentSource()
             }
             .onChange(of: pocketIDs) { _, _ in
                 syncSelectedPocket()
-                syncSelectedEntryType()
+                if isEditingExpense == false {
+                    syncSelectedEntryType()
+                }
                 syncSelectedCategory()
                 syncSelectedPaymentSource()
             }
@@ -188,17 +208,27 @@ struct AddExpenseView: View {
         }
     }
 
+    private var navigationTitle: String {
+        if isEditingExpense {
+            return "支出編集"
+        }
+
+        return selectedEntryType == .expense ? "支出入力" : "入金入力"
+    }
+
     @ViewBuilder
     private var expenseFormContent: some View {
         if selectedPocket != nil {
             VStack(alignment: .leading, spacing: 14) {
                 if availableEntryTypes.count > 1 {
-                    Picker("種別", selection: $selectedEntryType) {
-                        Text("支出").tag(PocketEntryType.expense)
-                        Text("入金").tag(PocketEntryType.deposit)
+                    if isEditingExpense == false {
+                        Picker("種別", selection: $selectedEntryType) {
+                            Text("支出").tag(PocketEntryType.expense)
+                            Text("入金").tag(PocketEntryType.deposit)
+                        }
+                        .pickerStyle(.segmented)
+                        .tint(selectedPocketColor)
                     }
-                    .pickerStyle(.segmented)
-                    .tint(selectedPocketColor)
                 }
 
                 DatePicker("日付", selection: $selectedDate, displayedComponents: .date)
@@ -344,6 +374,10 @@ struct AddExpenseView: View {
     }
 
     private func syncSelectedPocket() {
+        if isEditingExpense {
+            return
+        }
+
         if let selectedPocketID,
            pockets.contains(where: { $0.id == selectedPocketID }) {
             return
@@ -371,12 +405,35 @@ struct AddExpenseView: View {
         selectedCategoryID = selectableCategories.first?.id
     }
 
+    private func initializeFormIfNeeded() {
+        guard hasInitializedForm == false else {
+            return
+        }
+
+        if let editingExpense {
+            selectedPocketID = editingExpense.pocketId
+            selectedDate = editingExpense.date
+            selectedEntryType = .expense
+            selectedCategoryID = editingExpense.categoryId
+            selectedPaymentSource = editingExpense.paymentSource
+            amountText = editingExpense.amount > 0 ? String(editingExpense.amount) : ""
+            memoText = editingExpense.memo ?? ""
+        } else {
+            syncSelectedPocket()
+            syncSelectedEntryType()
+            syncSelectedCategory()
+            syncSelectedPaymentSource()
+        }
+
+        hasInitializedForm = true
+    }
+
     private func saveEntry() {
         guard let selectedPocket else {
             return
         }
 
-        let createdByUserId = localUserId
+        let createdByUserId = editingExpense?.createdByUserId ?? localUserId
         let paidByUserId = MemberPreferences.resolvePaidByUserId(
             paymentSource: selectedPaymentSource,
             localUserId: localUserId,
@@ -384,6 +441,7 @@ struct AddExpenseView: View {
         )
 
         let entry = Expense(
+            id: editingExpense?.id ?? UUID(),
             pocketId: selectedPocket.id,
             type: selectedEntryType,
             categoryId: isDepositEntry ? nil : selectedCategory?.id,
@@ -393,6 +451,7 @@ struct AddExpenseView: View {
             ratioPartner: isDepositEntry ? 0 : selectedPocket.ratioPartner,
             memo: memoText,
             date: selectedDate,
+            createdAt: editingExpense?.createdAt ?? Date(),
             isSettled: false,
             settlementId: nil,
             settledAt: nil,
@@ -401,7 +460,15 @@ struct AddExpenseView: View {
         )
 
         do {
-            if selectedEntryType == .deposit {
+            if let editingExpense {
+                var updatedExpense = entry
+                updatedExpense.id = editingExpense.id
+                updatedExpense.createdAt = editingExpense.createdAt
+                updatedExpense.isSettled = editingExpense.isSettled
+                updatedExpense.settlementId = editingExpense.settlementId
+                updatedExpense.settledAt = editingExpense.settledAt
+                try expenseStore.updateExpense(updatedExpense, in: modelContext)
+            } else if selectedEntryType == .deposit {
                 try expenseStore.addDeposit(entry, in: modelContext)
             } else {
                 try expenseStore.addExpense(entry, in: modelContext)
