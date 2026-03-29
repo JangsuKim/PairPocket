@@ -54,6 +54,7 @@ struct HistoryExpenseDetailView: View {
                 }
             }
         }
+        .safeAreaPadding(.bottom, BottomTabBarLayout.scrollContentBottomInset)
         .navigationTitle("取引詳細")
         .navigationBarTitleDisplayMode(.inline)
     }
