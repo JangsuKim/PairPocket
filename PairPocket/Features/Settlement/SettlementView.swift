@@ -176,7 +176,7 @@ struct SettlementView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
-            .padding(.bottom, 116)
+            .bottomTabBarContentInset()
         }
         .background(Color(.systemGroupedBackground))
         .tint(selectedPocketColor)
