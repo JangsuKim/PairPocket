@@ -20,15 +20,16 @@ struct HistoryView: View {
     var body: some View {
         VStack(spacing: 12) {
             pocketFilterTabs
+            monthNavigationRow
             modeSwitcher
 
             if selectedMode == .calendar {
                 calendarModeContent
             } else {
-                if filteredExpenses.isEmpty {
+                if selectedMonthExpenses.isEmpty {
                     emptyState
                 } else {
-                    expenseTable(expenses: filteredExpenses)
+                    listModeContent
                 }
             }
         }
@@ -64,6 +65,18 @@ struct HistoryView: View {
         case let .pocket(id):
             return expenses.filter { $0.pocketId == id }
         }
+    }
+
+    private var selectedMonthExpenses: [ExpenseRecord] {
+        filteredExpenses.filter { HistoryCalendar.isSameMonth($0.date, displayedMonthStart) }
+    }
+
+    private var unsettledMonthExpenses: [ExpenseRecord] {
+        selectedMonthExpenses.filter { $0.isSettled == false }
+    }
+
+    private var settledMonthExpenses: [ExpenseRecord] {
+        selectedMonthExpenses.filter(\.isSettled)
     }
 
     private var deletedPocketIDs: Set<UUID> {
@@ -121,10 +134,18 @@ struct HistoryView: View {
         .pickerStyle(.segmented)
     }
 
+    private var monthNavigationRow: some View {
+        HistoryMonthHeader(
+            displayedMonthStart: displayedMonthStart,
+            onPreviousMonth: { moveDisplayedMonth(by: -1) },
+            onNextMonth: { moveDisplayedMonth(by: 1) }
+        )
+    }
+
     private var emptyState: some View {
         VStack {
             Spacer(minLength: 36)
-            Text("まだ支出がありません")
+            Text("選択した月の支出はありません")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer()
@@ -133,11 +154,6 @@ struct HistoryView: View {
 
     private var calendarModeContent: some View {
         VStack(spacing: 10) {
-            HistoryMonthHeader(
-                displayedMonthStart: displayedMonthStart,
-                onPreviousMonth: { moveDisplayedMonth(by: -1) },
-                onNextMonth: { moveDisplayedMonth(by: 1) }
-            )
             HistoryMonthWeekdayHeader()
             HistoryMonthGrid(
                 displayedMonthStart: displayedMonthStart,
@@ -157,6 +173,24 @@ struct HistoryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var listModeContent: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                tableHeader
+
+                if unsettledMonthExpenses.isEmpty == false {
+                    expenseSection(title: "未精算", expenses: unsettledMonthExpenses)
+                }
+
+                if settledMonthExpenses.isEmpty == false {
+                    expenseSection(title: "精算済み", expenses: settledMonthExpenses)
+                }
+            }
+            .padding(.top, 4)
+            .bottomTabBarContentInset()
+        }
     }
 
     private func expenseTable(expenses: [ExpenseRecord]) -> some View {
@@ -183,11 +217,32 @@ struct HistoryView: View {
         }
     }
 
+    private func expenseSection(title: String, expenses: [ExpenseRecord]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.top, 12)
+                .padding(.bottom, 6)
+
+            ForEach(expenses, id: \.id) { expense in
+                NavigationLink {
+                    HistoryExpenseDetailView(
+                        expense: expense,
+                        pocketName: pocketLabel(for: expense.pocketId),
+                        categoryName: categoryLabel(for: expense.categoryId)
+                    )
+                } label: {
+                    expenseRow(expense)
+                }
+                .buttonStyle(.plain)
+                Divider()
+            }
+        }
+    }
+
     private var tableHeader: some View {
         HStack(spacing: 0) {
-            Text("区分")
-                .frame(width: 42, alignment: .leading)
-
             Text("日付")
                 .frame(width: 70, alignment: .leading)
 
@@ -201,7 +256,7 @@ struct HistoryView: View {
                 .frame(width: 48, alignment: .center)
 
             Text("金額")
-                .frame(width: 78, alignment: .trailing)
+                .frame(width: 90, alignment: .trailing)
         }
         .font(.caption2.weight(.semibold))
         .foregroundStyle(.secondary)
@@ -210,11 +265,6 @@ struct HistoryView: View {
 
     private func expenseRow(_ expense: ExpenseRecord) -> some View {
         HStack(spacing: 0) {
-            Text(entryTypeLabel(for: expense))
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(entryTypeColor(for: expense))
-                .frame(width: 42, alignment: .leading)
-
             HStack(spacing: 6) {
                 Circle()
                     .fill(pocketColor(for: expense.pocketId))
@@ -233,37 +283,28 @@ struct HistoryView: View {
                 .truncationMode(.tail)
                 .frame(minWidth: 44, maxWidth: .infinity, alignment: .leading)
 
-            Text(MemberPreferences.payerDisplayName(
-                paymentSource: expense.paymentSource,
-                paidByUserId: expense.paidByUserId,
-                localUserId: localUserId
-            ))
+            Text(payerLabel(for: expense))
                 .frame(width: 48, alignment: .center)
 
             Text(HistoryFormatters.yen(expense.amount))
                 .fontDesign(.monospaced)
-                .frame(width: 78, alignment: .trailing)
+            .foregroundStyle(entryTypeColor(for: expense))
+            .frame(width: 90, alignment: .trailing)
         }
         .font(.caption)
         .padding(.vertical, 4)
     }
 
-    private func entryTypeLabel(for expense: ExpenseRecord) -> String {
-        switch expense.entryType {
-        case .expense:
-            return "支出"
-        case .deposit:
-            return "入金"
-        }
+    private func entryTypeColor(for expense: ExpenseRecord) -> Color {
+        MoneyValueStyle.color(for: expense.entryType)
     }
 
-    private func entryTypeColor(for expense: ExpenseRecord) -> Color {
-        switch expense.entryType {
-        case .expense:
-            return .red
-        case .deposit:
-            return .teal
-        }
+    private func payerLabel(for expense: ExpenseRecord) -> String {
+        MemberPreferences.payerMemberName(
+            paymentSource: expense.paymentSource,
+            paidByUserId: expense.paidByUserId,
+            localUserId: localUserId
+        )
     }
 
     private func categoryLabel(for categoryId: UUID?) -> String {
@@ -296,7 +337,20 @@ struct HistoryView: View {
     private func moveDisplayedMonth(by value: Int) {
         let monthStart = HistoryCalendar.monthOffset(from: displayedMonthStart, by: value)
         displayedMonthStart = monthStart
-        selectedDate = monthStart
+        selectedDate = preferredSelectedDate(for: monthStart)
+    }
+
+    private func preferredSelectedDate(for monthStart: Date) -> Date {
+        let latestExpenseDate = filteredExpenses
+            .filter { HistoryCalendar.isSameMonth($0.date, monthStart) }
+            .map(\.date)
+            .max()
+
+        if let latestExpenseDate {
+            return HistoryCalendar.dayStart(for: latestExpenseDate)
+        }
+
+        return monthStart
     }
 }
 

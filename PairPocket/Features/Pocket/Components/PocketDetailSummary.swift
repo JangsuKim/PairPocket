@@ -37,6 +37,15 @@ struct PocketDetailSummary: View {
             Spacer()
             Text(formatYen(amount))
                 .font(emphasized ? .title3.weight(.bold) : .title3.weight(.semibold))
+                .foregroundStyle(valueColor(for: amount))
         }
+    }
+
+    private func valueColor(for amount: Int) -> Color {
+        if mode == .sharedManagement {
+            return MoneyValueStyle.color(forSignedAmount: amount)
+        }
+
+        return .red
     }
 }

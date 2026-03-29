@@ -10,6 +10,7 @@ struct SettlementResultSection: View {
     let arrowAssetName: String?
     let arrowSystemName: String?
     let amountText: String
+    let amountColor: Color
     let messageText: String?
     let accentColor: Color
 
@@ -25,6 +26,7 @@ struct SettlementResultSection: View {
                         partnerIcon: partnerIcon,
                         partnerPhotoData: partnerPhotoData,
                         amountText: amountText,
+                        amountColor: amountColor,
                         arrowAssetName: arrowAssetName,
                         arrowSystemName: arrowSystemName,
                         avatarSize: 72,
@@ -40,6 +42,7 @@ struct SettlementResultSection: View {
                     VStack(spacing: 4) {
                         Text(amountText)
                             .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(amountColor)
                         Text(messageText)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.secondary)

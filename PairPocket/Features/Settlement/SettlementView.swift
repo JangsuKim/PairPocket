@@ -52,10 +52,12 @@ struct SettlementView: View {
         return [
             SettlementExpenseSummary(
                 memberName: memberDisplayName(for: .host),
+                amount: summary?.totalPaidByHost ?? 0,
                 amountText: SettlementDisplayFormatter.yen(summary?.totalPaidByHost ?? 0)
             ),
             SettlementExpenseSummary(
                 memberName: memberDisplayName(for: .partner),
+                amount: summary?.totalPaidByPartner ?? 0,
                 amountText: SettlementDisplayFormatter.yen(summary?.totalPaidByPartner ?? 0)
             )
         ]
@@ -91,6 +93,7 @@ struct SettlementView: View {
                 arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
                 amountText: SettlementDisplayFormatter.yenWithSuffix(0),
+                amountColor: .primary,
                 messageText: nil
             )
         }
@@ -100,6 +103,7 @@ struct SettlementView: View {
                 arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
                 amountText: SettlementDisplayFormatter.yenWithSuffix(0),
+                amountColor: .primary,
                 messageText: nil
             )
         }
@@ -108,6 +112,7 @@ struct SettlementView: View {
             arrowAssetName: SettlementResultPresenter.arrowAssetName(for: signedAmount),
             arrowSystemName: nil,
             amountText: SettlementDisplayFormatter.yenWithSuffix(abs(signedAmount)),
+            amountColor: .primary,
             messageText: nil
         )
     }
@@ -166,6 +171,7 @@ struct SettlementView: View {
                     arrowAssetName: settlementResultDisplay.arrowAssetName,
                     arrowSystemName: settlementResultDisplay.arrowSystemName,
                     amountText: settlementResultDisplay.amountText,
+                    amountColor: settlementResultDisplay.amountColor,
                     messageText: settlementResultDisplay.messageText,
                     accentColor: selectedPocketColor
                 )
@@ -209,6 +215,7 @@ struct SettlementPocketOption: Identifiable {
 struct SettlementExpenseSummary: Identifiable {
     let id = UUID()
     let memberName: String
+    let amount: Int
     let amountText: String
 }
 
@@ -216,6 +223,7 @@ private struct SettlementResultDisplay {
     let arrowAssetName: String?
     let arrowSystemName: String?
     let amountText: String
+    let amountColor: Color
     let messageText: String?
 }
 

@@ -27,6 +27,19 @@ struct PocketSummarySection: View {
         return "¥\(formatted)"
     }
 
+    private var amountColor: Color {
+        guard let selectedPocket else {
+            return MoneyValueStyle.color(forExpenseAmount: totalAmountYen)
+        }
+
+        switch selectedPocket.mode {
+        case .settlementOnly:
+            return MoneyValueStyle.color(forExpenseAmount: totalAmountYen)
+        case .sharedManagement:
+            return MoneyValueStyle.color(forSignedAmount: totalAmountYen)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             PocketTabBar(
@@ -63,7 +76,7 @@ struct PocketSummarySection: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text(amountText)
                         .font(.system(size: 34, weight: .bold, design: .rounded))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(amountColor)
                         .contentTransition(.numericText())
 
                     Spacer()

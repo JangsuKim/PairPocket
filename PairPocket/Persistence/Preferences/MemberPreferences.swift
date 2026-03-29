@@ -106,12 +106,49 @@ enum MemberPreferences {
         role.displayName
     }
 
+    static func memberDisplayName(for role: MemberRole, defaults: UserDefaults = .standard) -> String {
+        let key: String
+        switch role {
+        case .host:
+            key = MemberPreferenceKeys.hostName
+        case .partner:
+            key = MemberPreferenceKeys.partnerName
+        }
+
+        let storedName = defaults.string(forKey: key)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return storedName.isEmpty ? fallbackName(for: role) : storedName
+    }
+
     static func payerDisplayName(paymentSource: PaymentSource, paidByUserId: String?, localUserId: String) -> String {
         guard let paidByUserId, paidByUserId.isEmpty == false else {
             return paymentSource.displayName
         }
 
         return paidByUserId == localUserId ? "自分" : "パートナー"
+    }
+
+    static func payerMemberName(
+        paymentSource: PaymentSource,
+        paidByUserId: String?,
+        localUserId: String,
+        defaults: UserDefaults = .standard
+    ) -> String {
+        if let role = paymentSource.memberRole {
+            return memberDisplayName(for: role, defaults: defaults)
+        }
+
+        let currentRole = MemberRole.fromPersistedRawValue(
+            defaults.string(forKey: MemberPreferenceKeys.currentMemberRole) ?? MemberRole.host.rawValue
+        )
+
+        guard let paidByUserId, paidByUserId.isEmpty == false else {
+            return paymentSource.displayName
+        }
+
+        let payerRole: MemberRole = paidByUserId == localUserId
+            ? currentRole
+            : (currentRole == .host ? .partner : .host)
+        return memberDisplayName(for: payerRole, defaults: defaults)
     }
 
     static func relationshipContext(defaults: UserDefaults = .standard) -> RelationshipContext {
