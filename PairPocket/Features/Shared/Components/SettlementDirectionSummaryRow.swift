@@ -8,6 +8,7 @@ struct SettlementDirectionSummaryRow: View {
     let partnerIcon: String
     let partnerPhotoData: Data?
     let amountText: String
+    let amountColor: Color
     let arrowAssetName: String?
     let arrowSystemName: String?
     var avatarSize: CGFloat = 56
@@ -43,6 +44,7 @@ struct SettlementDirectionSummaryRow: View {
 
                 Text(amountText)
                     .font(amountFont)
+                    .foregroundStyle(amountColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }

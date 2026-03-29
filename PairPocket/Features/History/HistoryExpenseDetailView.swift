@@ -27,6 +27,10 @@ struct HistoryExpenseDetailView: View {
         isExpenseEntry && expense.isSettled == false
     }
 
+    private var amountValueColor: Color {
+        MoneyValueStyle.color(for: expense.entryType)
+    }
+
     var body: some View {
         List {
             Section("取引情報") {
@@ -42,7 +46,11 @@ struct HistoryExpenseDetailView: View {
                         localUserId: localUserId
                     )
                 )
-                detailRow(title: "金額", value: HistoryDetailFormatters.yen(expense.amount))
+                detailRow(
+                    title: "金額",
+                    value: HistoryDetailFormatters.yen(expense.amount),
+                    valueColor: amountValueColor
+                )
             }
 
             Section("メモ") {
@@ -71,8 +79,9 @@ struct HistoryExpenseDetailView: View {
                     Button {
                         showEditSheet = true
                     } label: {
-                        Image(systemName: "square.and.pencil")
+                        EditButtonIcon(size: 18)
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -94,12 +103,13 @@ struct HistoryExpenseDetailView: View {
         }
     }
 
-    private func detailRow(title: String, value: String) -> some View {
+    private func detailRow(title: String, value: String, valueColor: Color = .primary) -> some View {
         HStack {
             Text(title)
                 .foregroundStyle(.secondary)
             Spacer()
             Text(value)
+                .foregroundStyle(valueColor)
                 .multilineTextAlignment(.trailing)
         }
         .font(.subheadline)

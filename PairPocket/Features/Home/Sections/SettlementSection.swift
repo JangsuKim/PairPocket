@@ -28,7 +28,8 @@ struct SettlementSection: View {
             return HomeSettlementResultDisplay(
                 arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
-                amountText: formattedYen(0)
+                amountText: formattedYen(0),
+                amountColor: .primary
             )
         }
 
@@ -36,14 +37,16 @@ struct SettlementSection: View {
             return HomeSettlementResultDisplay(
                 arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
-                amountText: formattedYen(0)
+                amountText: formattedYen(0),
+                amountColor: .primary
             )
         }
 
         return HomeSettlementResultDisplay(
             arrowAssetName: SettlementResultPresenter.arrowAssetName(for: signedAmount),
             arrowSystemName: nil,
-            amountText: formattedYen(abs(signedAmount))
+            amountText: formattedYen(abs(signedAmount)),
+            amountColor: .primary
         )
     }
 
@@ -89,6 +92,7 @@ struct SettlementSection: View {
                 partnerIcon: memberIcon(for: .partner),
                 partnerPhotoData: memberPhotoData(for: .partner),
                 amountText: settlementResultDisplay.amountText,
+                amountColor: settlementResultDisplay.amountColor,
                 arrowAssetName: settlementResultDisplay.arrowAssetName,
                 arrowSystemName: settlementResultDisplay.arrowSystemName,
                 avatarSize: 72,
@@ -148,6 +152,7 @@ private struct HomeSettlementResultDisplay {
     let arrowAssetName: String?
     let arrowSystemName: String?
     let amountText: String
+    let amountColor: Color
 }
 
 #Preview {

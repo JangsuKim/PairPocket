@@ -66,7 +66,7 @@ struct MemberSettingsSection: View {
                 Button {
                     editingMember = member
                 } label: {
-                    editButtonIcon(size: 18)
+                    EditButtonIcon(size: 18)
                 }
                 .buttonStyle(.plain)
             }
@@ -108,7 +108,7 @@ struct MemberSettingsSection: View {
                         Button {
                             focusedNameMember = member
                         } label: {
-                            editButtonIcon(size: 20)
+                            EditButtonIcon(size: 20)
                                 .padding(8)
                         }
                         .buttonStyle(.plain)
@@ -329,14 +329,6 @@ struct MemberSettingsSection: View {
         memberPhotoDataBinding(for: member).wrappedValue = encodedData
         MemberPreferences.appendUploadedPhoto(encodedData, for: memberRole(for: member))
         selectedPhotoItem = nil
-    }
-
-    @ViewBuilder
-    private func editButtonIcon(size: CGFloat) -> some View {
-        Image("EditButtonIcon")
-            .resizable()
-            .scaledToFit()
-            .frame(width: size, height: size)
     }
 
     private var linkingArea: some View {

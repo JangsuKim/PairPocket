@@ -208,6 +208,11 @@ struct PocketListView: View {
         let currentBalance = SettlementEngine.calculate(entries: pocketEntries).currentBalance
         let displayedAmount = displayedAmount(for: pocket, totalExpense: totalExpense, currentBalance: currentBalance)
         let amountCaption = amountCaption(for: pocket, currentBalance: currentBalance)
+        let amountColor = MoneyValueStyle.colorForPocketDisplay(
+            mode: pocket.mode,
+            displayedAmount: displayedAmount,
+            currentBalance: currentBalance
+        )
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
@@ -256,6 +261,7 @@ struct PocketListView: View {
                         .opacity(0.85)
                     Text(formatYen(displayedAmount))
                         .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundStyle(amountColor)
                 }
 
                 HStack {
@@ -269,6 +275,7 @@ struct PocketListView: View {
                 HStack {
                     Text(formatYen(displayedAmount))
                         .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(amountColor)
                     Spacer()
                     Text(pocketModeLabel(for: pocket))
                         .font(.caption)

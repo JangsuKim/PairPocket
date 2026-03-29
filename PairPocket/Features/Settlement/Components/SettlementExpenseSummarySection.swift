@@ -17,6 +17,7 @@ struct SettlementExpenseSummarySection: View {
 
                         Text(summary.amountText)
                             .font(.system(.body, design: .rounded, weight: .bold))
+                            .foregroundStyle(MoneyValueStyle.color(forExpenseAmount: summary.amount))
                     }
                 }
 
@@ -31,8 +32,14 @@ struct SettlementExpenseSummarySection: View {
 
                     Text(totalAmountText)
                         .font(.system(.headline, design: .rounded, weight: .bold))
+                        .foregroundStyle(totalAmountColor)
                 }
             }
         }
+    }
+
+    private var totalAmountColor: Color {
+        let totalAmount = expenseSummaries.reduce(0) { $0 + $1.amount }
+        return MoneyValueStyle.color(forExpenseAmount: totalAmount)
     }
 }

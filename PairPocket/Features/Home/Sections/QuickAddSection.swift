@@ -55,17 +55,31 @@ struct QuickAddSection: View {
     }
 
     var body: some View {
+        let accentColor = selectedPocket?.displayColor ?? .accentColor
+
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 Text("クイック支出追加")
                     .font(.headline)
+                    .foregroundStyle(.primary)
 
                 Spacer()
 
                 if let selectedPocket {
-                    Text(selectedPocket.name)
-                        .font(.subheadline)
-                        .foregroundStyle(selectedPocket.displayColor)
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(accentColor)
+                            .frame(width: 8, height: 8)
+
+                        Text(selectedPocket.name)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(accentColor.opacity(0.14))
+                    .clipShape(Capsule())
                 }
             }
 
@@ -75,6 +89,8 @@ struct QuickAddSection: View {
                 TextField("金額", text: $amountText)
                     .keyboardType(.numberPad)
                     .textFieldStyle(.roundedBorder)
+                    .foregroundStyle(.primary)
+                    .tint(accentColor)
                     .onChange(of: amountText) { _, newValue in
                         amountText = newValue.filter(\.isNumber)
                     }
@@ -122,7 +138,7 @@ struct QuickAddSection: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-                .background(Color(.secondarySystemBackground))
+                .background(Color(.tertiarySystemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
         } else {
             Menu {
@@ -134,6 +150,7 @@ struct QuickAddSection: View {
             } label: {
                 HStack(spacing: 8) {
                     Text(selectedCategory?.name ?? "カテゴリ")
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
                     Image(systemName: "chevron.down")
                         .font(.caption.weight(.semibold))
@@ -141,7 +158,7 @@ struct QuickAddSection: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-                .background(Color(.secondarySystemBackground))
+                .background(Color(.tertiarySystemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
         }
