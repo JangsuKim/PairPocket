@@ -6,18 +6,11 @@ struct MonthlySummarySection: View {
     let totalCount: Int
 
     private var summaryTitle: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.dateFormat = "M/d"
-        return "\(formatter.string(from: Date())) \(summaryLabel)"
+        HomeSummaryTextFormatter.summaryTitle(label: summaryLabel)
     }
 
     private var amountText: String {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.numberStyle = .decimal
-        let formatted = formatter.string(from: NSNumber(value: totalAmountYen)) ?? "0"
-        return "¥\(formatted)"
+        HomeSummaryTextFormatter.yenAmountText(totalAmountYen)
     }
 
     var body: some View {
