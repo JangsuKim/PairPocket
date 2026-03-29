@@ -1,10 +1,14 @@
 import SwiftUI
 
 struct HistoryExpenseDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+
     let expense: ExpenseRecord
     let pocketName: String
     let categoryName: String
     private let localUserId = MemberPreferences.ensureLocalUserId()
+    @State private var showEditSheet = false
+    @State private var shouldDismissAfterDelete = false
 
     private var entryTypeLabel: String {
         switch expense.entryType {
@@ -17,6 +21,10 @@ struct HistoryExpenseDetailView: View {
 
     private var isExpenseEntry: Bool {
         expense.entryType == .expense
+    }
+
+    private var canEditExpense: Bool {
+        isExpenseEntry && expense.isSettled == false
     }
 
     var body: some View {
@@ -54,8 +62,36 @@ struct HistoryExpenseDetailView: View {
                 }
             }
         }
+        .safeAreaPadding(.bottom, BottomTabBarLayout.scrollContentBottomInset)
         .navigationTitle("取引詳細")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if canEditExpense {
+                    Button {
+                        showEditSheet = true
+                    } label: {
+                        Image(systemName: "square.and.pencil")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showEditSheet) {
+            AddExpenseView(
+                editingExpense: expense.pocketEntry,
+                onDeleteSuccess: {
+                    shouldDismissAfterDelete = true
+                }
+            )
+        }
+        .onChange(of: showEditSheet) { _, isPresented in
+            guard isPresented == false, shouldDismissAfterDelete else {
+                return
+            }
+
+            shouldDismissAfterDelete = false
+            dismiss()
+        }
     }
 
     private func detailRow(title: String, value: String) -> some View {
@@ -68,7 +104,6 @@ struct HistoryExpenseDetailView: View {
         }
         .font(.subheadline)
     }
-
 }
 
 private struct HistoryDetailFormatters {

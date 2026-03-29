@@ -2,6 +2,23 @@ import Foundation
 import Observation
 import SwiftData
 
+enum ExpenseStoreError: LocalizedError {
+    case expenseNotFound
+    case settledExpenseDeletionBlocked
+    case settledExpenseEditingBlocked
+
+    var errorDescription: String? {
+        switch self {
+        case .expenseNotFound:
+            return "The expense could not be found."
+        case .settledExpenseDeletionBlocked:
+            return "Settled expenses cannot be deleted."
+        case .settledExpenseEditingBlocked:
+            return "Settled expenses cannot be edited."
+        }
+    }
+}
+
 @Observable
 final class ExpenseStore {
     private(set) var entries: [Transaction] = []
@@ -42,6 +59,58 @@ final class ExpenseStore {
         var normalizedExpense = expense
         normalizedExpense.type = .expense
         try addEntry(normalizedExpense, in: modelContext)
+    }
+
+    func updateExpense(_ expense: Expense, in modelContext: ModelContext) throws {
+        let normalizedExpense = ExpenseIdentityPolicy.normalized(expense)
+        let descriptor = FetchDescriptor<ExpenseRecord>(
+            predicate: #Predicate<ExpenseRecord> { record in
+                record.id == normalizedExpense.id
+            }
+        )
+
+        guard let record = try modelContext.fetch(descriptor).first,
+              record.entryType == .expense else {
+            throw ExpenseStoreError.expenseNotFound
+        }
+
+        guard record.isSettled == false else {
+            throw ExpenseStoreError.settledExpenseEditingBlocked
+        }
+
+        record.pocketId = normalizedExpense.pocketId
+        record.categoryId = normalizedExpense.categoryId
+        record.amount = normalizedExpense.amount
+        record.date = normalizedExpense.date
+        record.memo = normalizedExpense.memo ?? ""
+        record.paymentSource = normalizedExpense.paymentSource
+        record.ratioHost = normalizedExpense.ratioHost
+        record.ratioPartner = normalizedExpense.ratioPartner
+        record.paidByUserId = normalizedExpense.paidByUserId
+
+        try modelContext.save()
+        try reload(from: modelContext)
+    }
+
+    func deleteExpense(id: UUID, in modelContext: ModelContext) throws {
+        let descriptor = FetchDescriptor<ExpenseRecord>(
+            predicate: #Predicate<ExpenseRecord> { record in
+                record.id == id
+            }
+        )
+
+        guard let record = try modelContext.fetch(descriptor).first,
+              record.entryType == .expense else {
+            throw ExpenseStoreError.expenseNotFound
+        }
+
+        guard record.isSettled == false else {
+            throw ExpenseStoreError.settledExpenseDeletionBlocked
+        }
+
+        modelContext.delete(record)
+        try modelContext.save()
+        try reload(from: modelContext)
     }
 
     func addDeposit(_ deposit: Transaction, in modelContext: ModelContext) throws {

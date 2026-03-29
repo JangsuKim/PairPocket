@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData
 
 struct AddExpenseView: View {
+    let editingExpense: Expense?
+    let onDeleteSuccess: (() -> Void)?
+
     @AppStorage(MemberPreferenceKeys.currentMemberRole) private var currentMemberRoleRawValue = MemberRole.host.rawValue
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -16,7 +19,14 @@ struct AddExpenseView: View {
     @State private var selectedPaymentSource: PaymentSource = .host
     @State private var amountText: String = ""
     @State private var memoText: String = ""
-    @State private var saveErrorMessage: String?
+    @State private var operationErrorMessage: String?
+    @State private var hasInitializedForm = false
+    @State private var showDeleteConfirmation = false
+
+    init(editingExpense: Expense? = nil, onDeleteSuccess: (() -> Void)? = nil) {
+        self.editingExpense = editingExpense
+        self.onDeleteSuccess = onDeleteSuccess
+    }
 
     private var amountValue: Int {
         Int(amountText) ?? 0
@@ -24,6 +34,10 @@ struct AddExpenseView: View {
 
     private var currentMemberRole: MemberRole {
         MemberRole.fromPersistedRawValue(currentMemberRoleRawValue)
+    }
+
+    private var isEditingExpense: Bool {
+        editingExpense != nil
     }
 
     private var localUserId: String {
@@ -39,7 +53,11 @@ struct AddExpenseView: View {
     }
 
     private var submitButtonTitle: String {
-        selectedEntryType == .expense ? "支出を追加" : "入金を追加"
+        if isEditingExpense {
+            return "支出を保存"
+        }
+
+        return selectedEntryType == .expense ? "支出を追加" : "入金を追加"
     }
 
     private var pockets: [Pocket] {
@@ -47,6 +65,10 @@ struct AddExpenseView: View {
     }
 
     private var selectedPocket: Pocket? {
+        if isEditingExpense, let selectedPocketID {
+            return pockets.first(where: { $0.id == selectedPocketID })
+        }
+
         if let selectedPocketID,
            let matchedPocket = pockets.first(where: { $0.id == selectedPocketID }) {
             return matchedPocket
@@ -135,32 +157,64 @@ struct AddExpenseView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
-                pocketTabs
-                expenseFormContent
+                AddExpensePocketTabs(
+                    pockets: pockets,
+                    selectedPocket: selectedPocket,
+                    onSelectPocket: { selectedPocketID = $0 }
+                )
+                AddExpenseFormSection(
+                    selectedPocket: selectedPocket,
+                    availableEntryTypes: availableEntryTypes,
+                    isEditingExpense: isEditingExpense,
+                    selectedEntryType: $selectedEntryType,
+                    selectedDate: $selectedDate,
+                    isDepositEntry: isDepositEntry,
+                    selectableCategories: selectableCategories,
+                    selectedCategorySelection: selectedCategorySelection,
+                    selectedPocketColor: selectedPocketColor,
+                    availablePaymentSources: availablePaymentSources,
+                    selectedPaymentSource: $selectedPaymentSource,
+                    amountText: $amountText,
+                    burdenA: burdenA,
+                    burdenB: burdenB,
+                    memoText: $memoText
+                )
 
                 Spacer()
 
-                submitButton
+                AddExpensePrimaryButton(
+                    title: submitButtonTitle,
+                    color: selectedPocket?.displayColor ?? .gray,
+                    isEnabled: isAddEnabled,
+                    action: saveEntry
+                )
+
+                if canDeleteEditingExpense {
+                    AddExpenseDeleteButton(action: {
+                        showDeleteConfirmation = true
+                    })
+                }
             }
             .padding()
-            .navigationTitle(selectedEntryType == .expense ? "支出入力" : "入金入力")
+            .navigationTitle(navigationTitle)
             .onAppear {
                 try? expenseStore.loadIfNeeded(from: modelContext)
                 try? pocketStore.loadIfNeeded(from: modelContext)
                 try? categoryStore.loadIfNeeded(from: modelContext)
-                syncSelectedPocket()
-                syncSelectedEntryType()
-                syncSelectedCategory()
-                syncSelectedPaymentSource()
+                initializeFormIfNeeded()
             }
             .onChange(of: selectedPocketID) { _, _ in
-                syncSelectedEntryType()
+                if isEditingExpense == false {
+                    syncSelectedEntryType()
+                }
                 syncSelectedCategory()
                 syncSelectedPaymentSource()
             }
             .onChange(of: pocketIDs) { _, _ in
                 syncSelectedPocket()
-                syncSelectedEntryType()
+                if isEditingExpense == false {
+                    syncSelectedEntryType()
+                }
                 syncSelectedCategory()
                 syncSelectedPaymentSource()
             }
@@ -171,12 +225,25 @@ struct AddExpenseView: View {
             .onChange(of: categoryIDs) { _, _ in
                 syncSelectedCategory()
             }
-            .alert("取引の保存に失敗しました", isPresented: saveErrorMessageAlertBinding) {
+            .alert("取引の操作に失敗しました", isPresented: operationErrorMessageAlertBinding) {
                 Button("確認", role: .cancel) {
-                    saveErrorMessage = nil
+                    operationErrorMessage = nil
                 }
             } message: {
-                Text(saveErrorMessage ?? "不明なエラーが発生しました。")
+                Text(operationErrorMessage ?? "不明なエラーが発生しました。")
+            }
+            .confirmationDialog(
+                "この支出を削除しますか？",
+                isPresented: $showDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("支出を削除", role: .destructive) {
+                    deleteExpense()
+                }
+                Button("キャンセル", role: .cancel) {
+                }
+            } message: {
+                Text("この操作は取り消せません。")
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -188,147 +255,20 @@ struct AddExpenseView: View {
         }
     }
 
-    @ViewBuilder
-    private var expenseFormContent: some View {
-        if selectedPocket != nil {
-            VStack(alignment: .leading, spacing: 14) {
-                if availableEntryTypes.count > 1 {
-                    Picker("種別", selection: $selectedEntryType) {
-                        Text("支出").tag(PocketEntryType.expense)
-                        Text("入金").tag(PocketEntryType.deposit)
-                    }
-                    .pickerStyle(.segmented)
-                    .tint(selectedPocketColor)
-                }
-
-                DatePicker("日付", selection: $selectedDate, displayedComponents: .date)
-                    .datePickerStyle(.compact)
-
-                if isDepositEntry == false {
-                    if selectableCategories.isEmpty {
-                        Text("このポケットには有効なカテゴリがありません")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Picker("カテゴリ", selection: selectedCategorySelection) {
-                            ForEach(selectableCategories) { category in
-                                Text(category.name).tag(Optional(category.id))
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .tint(selectedPocketColor)
-                    }
-                }
-
-                Picker("支払元", selection: $selectedPaymentSource) {
-                    ForEach(availablePaymentSources, id: \.self) { source in
-                        Text(paymentSourceLabel(source)).tag(source)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .tint(selectedPocketColor)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("金額")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    TextField("0", text: $amountText)
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.roundedBorder)
-                        .onChange(of: amountText) { _, newValue in
-                            amountText = newValue.filter(\.isNumber)
-                        }
-
-                    if isDepositEntry == false {
-                        HStack(spacing: 20) {
-                            burdenRow(name: MemberRole.host.displayName, amount: burdenA)
-                            burdenRow(name: MemberRole.partner.displayName, amount: burdenB)
-                        }
-
-                        Button {
-                            print("change ratio tapped")
-                        } label: {
-                            Text("比率を変更")
-                                .font(.subheadline)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.secondary)
-                    }
-                }
-
-                TextField("メモ", text: $memoText)
-                    .textFieldStyle(.roundedBorder)
-            }
-        } else {
-            ContentUnavailableView("ポケットがありません", systemImage: "wallet.pass")
+    private var navigationTitle: String {
+        if isEditingExpense {
+            return "支出編集"
         }
+
+        return selectedEntryType == .expense ? "支出入力" : "入金入力"
     }
 
-    private var submitButton: some View {
-        Button {
-            saveEntry()
-        } label: {
-            Text(submitButtonTitle)
-                .fontWeight(.semibold)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
+    private var canDeleteEditingExpense: Bool {
+        if let editingExpense {
+            return editingExpense.isSettled == false
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(.white)
-        .background(selectedPocket?.displayColor ?? .gray)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .opacity(isAddEnabled ? 1 : 0.45)
-        .disabled(!isAddEnabled)
-    }
 
-    private var pocketTabs: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(pockets) { pocket in
-                    Button {
-                        selectedPocketID = pocket.id
-                    } label: {
-                        Text(pocket.name)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 12)
-                            .background(
-                                Capsule().fill(
-                                    selectedPocket?.id == pocket.id ? pocket.displayColor.opacity(0.2) : Color.clear
-                                )
-                            )
-                            .foregroundStyle(selectedPocket?.id == pocket.id ? pocket.displayColor : .primary)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.vertical, 2)
-        }
-    }
-
-    private func burdenRow(name: String, amount: Int) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: "person.fill")
-            Text(name)
-            Text(formattedYen(amount))
-        }
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-    }
-
-    private func formattedYen(_ amount: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.numberStyle = .decimal
-        let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
-        return "¥\(formatted)"
-    }
-
-    private func paymentSourceLabel(_ source: PaymentSource) -> String {
-        source.displayName
+        return false
     }
 
     private func syncSelectedPaymentSource() {
@@ -344,6 +284,10 @@ struct AddExpenseView: View {
     }
 
     private func syncSelectedPocket() {
+        if isEditingExpense {
+            return
+        }
+
         if let selectedPocketID,
            pockets.contains(where: { $0.id == selectedPocketID }) {
             return
@@ -371,12 +315,35 @@ struct AddExpenseView: View {
         selectedCategoryID = selectableCategories.first?.id
     }
 
+    private func initializeFormIfNeeded() {
+        guard hasInitializedForm == false else {
+            return
+        }
+
+        if let editingExpense {
+            selectedPocketID = editingExpense.pocketId
+            selectedDate = editingExpense.date
+            selectedEntryType = .expense
+            selectedCategoryID = editingExpense.categoryId
+            selectedPaymentSource = editingExpense.paymentSource
+            amountText = editingExpense.amount > 0 ? String(editingExpense.amount) : ""
+            memoText = editingExpense.memo ?? ""
+        } else {
+            syncSelectedPocket()
+            syncSelectedEntryType()
+            syncSelectedCategory()
+            syncSelectedPaymentSource()
+        }
+
+        hasInitializedForm = true
+    }
+
     private func saveEntry() {
         guard let selectedPocket else {
             return
         }
 
-        let createdByUserId = localUserId
+        let createdByUserId = editingExpense?.createdByUserId ?? localUserId
         let paidByUserId = MemberPreferences.resolvePaidByUserId(
             paymentSource: selectedPaymentSource,
             localUserId: localUserId,
@@ -384,6 +351,7 @@ struct AddExpenseView: View {
         )
 
         let entry = Expense(
+            id: editingExpense?.id ?? UUID(),
             pocketId: selectedPocket.id,
             type: selectedEntryType,
             categoryId: isDepositEntry ? nil : selectedCategory?.id,
@@ -393,6 +361,7 @@ struct AddExpenseView: View {
             ratioPartner: isDepositEntry ? 0 : selectedPocket.ratioPartner,
             memo: memoText,
             date: selectedDate,
+            createdAt: editingExpense?.createdAt ?? Date(),
             isSettled: false,
             settlementId: nil,
             settledAt: nil,
@@ -401,23 +370,45 @@ struct AddExpenseView: View {
         )
 
         do {
-            if selectedEntryType == .deposit {
+            if let editingExpense {
+                var updatedExpense = entry
+                updatedExpense.id = editingExpense.id
+                updatedExpense.createdAt = editingExpense.createdAt
+                updatedExpense.isSettled = editingExpense.isSettled
+                updatedExpense.settlementId = editingExpense.settlementId
+                updatedExpense.settledAt = editingExpense.settledAt
+                try expenseStore.updateExpense(updatedExpense, in: modelContext)
+            } else if selectedEntryType == .deposit {
                 try expenseStore.addDeposit(entry, in: modelContext)
             } else {
                 try expenseStore.addExpense(entry, in: modelContext)
             }
             dismiss()
         } catch {
-            saveErrorMessage = error.localizedDescription
+            operationErrorMessage = error.localizedDescription
         }
     }
 
-    private var saveErrorMessageAlertBinding: Binding<Bool> {
+    private func deleteExpense() {
+        guard let editingExpense else {
+            return
+        }
+
+        do {
+            try expenseStore.deleteExpense(id: editingExpense.id, in: modelContext)
+            onDeleteSuccess?()
+            dismiss()
+        } catch {
+            operationErrorMessage = error.localizedDescription
+        }
+    }
+
+    private var operationErrorMessageAlertBinding: Binding<Bool> {
         Binding(
-            get: { saveErrorMessage != nil },
+            get: { operationErrorMessage != nil },
             set: { isPresented in
                 if isPresented == false {
-                    saveErrorMessage = nil
+                    operationErrorMessage = nil
                 }
             }
         )
