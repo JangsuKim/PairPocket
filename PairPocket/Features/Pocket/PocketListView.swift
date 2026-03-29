@@ -78,6 +78,9 @@ struct PocketListView: View {
         }
     }
 
+    private let pocketCardPrimaryForeground = Color(red: 0.24, green: 0.25, blue: 0.28)
+    private let pocketCardSecondaryForeground = Color(red: 0.35, green: 0.36, blue: 0.40)
+
     private var activePockets: [Pocket] {
         pocketStore.pockets
     }
@@ -108,22 +111,20 @@ struct PocketListView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    if stackedPockets.isEmpty {
-                        emptyMainPocketCard
-                    } else {
-                        pocketWalletStack
-                    }
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 20) {
+                if stackedPockets.isEmpty {
+                    emptyMainPocketCard
+                } else {
+                    pocketWalletStack
                 }
-                .frame(maxWidth: .infinity, alignment: .top)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-            pocketManagementSection
-                .padding(.bottom, 88)
+                pocketManagementSection
+            }
+            .frame(maxWidth: .infinity, alignment: .top)
+            .bottomTabBarContentInset()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.horizontal, 16)
         .tint(mainPocket?.displayColor ?? .accentColor)
         .navigationBarTitleDisplayMode(.inline)
@@ -242,14 +243,14 @@ struct PocketListView: View {
                             Image(systemName: "pencil")
                                 .font(.subheadline.weight(.semibold))
                                 .padding(10)
-                                .background(.white.opacity(0.18))
+                                .background(pocketCardPrimaryForeground.opacity(0.08))
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
 
                         Image(systemName: "wallet.pass.fill")
                             .font(.headline)
-                            .opacity(0.9)
+                            .foregroundStyle(pocketCardSecondaryForeground)
                     }
                 }
             }
@@ -258,7 +259,7 @@ struct PocketListView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(amountCaption)
                         .font(.caption)
-                        .opacity(0.85)
+                        .foregroundStyle(pocketCardSecondaryForeground)
                     Text(formatYen(displayedAmount))
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(amountColor)
@@ -270,7 +271,7 @@ struct PocketListView: View {
                     Text(pocketModeLabel(for: pocket))
                 }
                 .font(.subheadline)
-                .opacity(0.9)
+                .foregroundStyle(pocketCardSecondaryForeground)
             } else {
                 HStack {
                     Text(formatYen(displayedAmount))
@@ -279,11 +280,11 @@ struct PocketListView: View {
                     Spacer()
                     Text(pocketModeLabel(for: pocket))
                         .font(.caption)
-                        .opacity(0.9)
+                        .foregroundStyle(pocketCardSecondaryForeground)
                 }
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(pocketCardPrimaryForeground)
         .padding(20)
         .frame(maxWidth: .infinity, minHeight: cardHeight, alignment: .topLeading)
         .background(pocket.displayColor)
@@ -294,9 +295,10 @@ struct PocketListView: View {
     private func cardBadge(title: String) -> some View {
         Text(title)
             .font(.caption.weight(.medium))
+            .foregroundStyle(pocketCardSecondaryForeground)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(.white.opacity(0.18))
+            .background(pocketCardPrimaryForeground.opacity(0.08))
             .clipShape(Capsule())
     }
 

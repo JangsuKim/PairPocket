@@ -2,7 +2,7 @@ import SwiftUI
 
 enum MoneyValueStyle {
     static let negativeValueColor = Color(red: 0.86, green: 0.48, blue: 0.50)
-    static let positiveValueColor = Color(red: 0.49, green: 0.70, blue: 0.62)
+    static let positiveValueColor = Color(red: 0.38, green: 0.76, blue: 0.64)
 
     static func color(forSignedAmount amount: Int) -> Color {
         if amount < 0 {

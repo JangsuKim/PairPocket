@@ -13,7 +13,7 @@ public enum PocketMode: String, Codable, Hashable {
         case .settlementOnly:
             return "後精算"
         case .sharedManagement:
-            return "共有管理"
+            return "両方管理"
         }
     }
 }

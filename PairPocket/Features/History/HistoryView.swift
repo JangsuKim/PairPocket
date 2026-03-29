@@ -283,11 +283,7 @@ struct HistoryView: View {
                 .truncationMode(.tail)
                 .frame(minWidth: 44, maxWidth: .infinity, alignment: .leading)
 
-            Text(MemberPreferences.payerDisplayName(
-                paymentSource: expense.paymentSource,
-                paidByUserId: expense.paidByUserId,
-                localUserId: localUserId
-            ))
+            Text(payerLabel(for: expense))
                 .frame(width: 48, alignment: .center)
 
             Text(HistoryFormatters.yen(expense.amount))
@@ -301,6 +297,14 @@ struct HistoryView: View {
 
     private func entryTypeColor(for expense: ExpenseRecord) -> Color {
         MoneyValueStyle.color(for: expense.entryType)
+    }
+
+    private func payerLabel(for expense: ExpenseRecord) -> String {
+        MemberPreferences.payerMemberName(
+            paymentSource: expense.paymentSource,
+            paidByUserId: expense.paidByUserId,
+            localUserId: localUserId
+        )
     }
 
     private func categoryLabel(for categoryId: UUID?) -> String {

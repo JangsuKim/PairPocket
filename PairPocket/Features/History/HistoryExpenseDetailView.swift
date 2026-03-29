@@ -40,7 +40,7 @@ struct HistoryExpenseDetailView: View {
                 detailRow(title: "カテゴリ", value: categoryName)
                 detailRow(
                     title: "支払元",
-                    value: MemberPreferences.payerDisplayName(
+                    value: MemberPreferences.payerMemberName(
                         paymentSource: expense.paymentSource,
                         paidByUserId: expense.paidByUserId,
                         localUserId: localUserId
