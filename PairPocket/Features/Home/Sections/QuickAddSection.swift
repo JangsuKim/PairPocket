@@ -85,6 +85,7 @@ struct QuickAddSection: View {
 
             HStack(spacing: 12) {
                 categoryMenu
+                    .tint(accentColor)
 
                 TextField("金額", text: $amountText)
                     .keyboardType(.numberPad)
@@ -122,13 +123,7 @@ struct QuickAddSection: View {
         .onChange(of: categories.map(\.id)) { _, _ in
             syncSelectedCategory()
         }
-        .alert("保存に失敗しました", isPresented: saveErrorAlertBinding) {
-            Button("確認", role: .cancel) {
-                saveErrorMessage = nil
-            }
-        } message: {
-            Text(saveErrorMessage ?? "不明なエラーが発生しました")
-        }
+        .background(saveErrorAlertHost)
     }
 
     @ViewBuilder
@@ -228,5 +223,18 @@ struct QuickAddSection: View {
                 }
             }
         )
+    }
+
+    @ViewBuilder
+    private var saveErrorAlertHost: some View {
+        Color.clear
+            .tint(.blue)
+            .alert("保存に失敗しました", isPresented: saveErrorAlertBinding) {
+                Button("確認", role: .cancel) {
+                    saveErrorMessage = nil
+                }
+            } message: {
+                Text(saveErrorMessage ?? "不明なエラーが発生しました")
+            }
     }
 }

@@ -99,7 +99,15 @@ struct AddExpenseView: View {
 
     private var selectedCategorySelection: Binding<UUID?> {
         Binding(
-            get: { selectedCategoryID ?? selectableCategories.first?.id },
+            get: {
+                guard let selectedCategoryID else {
+                    return selectableCategories.first?.id
+                }
+
+                return selectableCategories.contains(where: { $0.id == selectedCategoryID })
+                    ? selectedCategoryID
+                    : selectableCategories.first?.id
+            },
             set: { selectedCategoryID = $0 }
         )
     }

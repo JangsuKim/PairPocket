@@ -84,7 +84,6 @@ struct HomeView: View {
             .padding(.top, 8)
             .bottomTabBarContentInset()
         }
-        .tint(pocketColor)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -98,6 +97,7 @@ struct HomeView: View {
                 } label: {
                     Image(systemName: "gearshape")
                 }
+                .tint(pocketColor)
                 .buttonStyle(.plain)
                 .accessibilityLabel("設定")
             }

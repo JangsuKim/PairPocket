@@ -119,6 +119,41 @@ final class ExpenseStore {
         try addEntry(normalizedDeposit, in: modelContext)
     }
 
+    func settleExpenses(
+        _ expenses: [Expense],
+        settlementId: UUID = UUID(),
+        settledAt: Date = Date(),
+        in modelContext: ModelContext
+    ) throws {
+        let unsettledExpenseIDs = Set(expenses.filter { $0.isSettled == false }.map(\.id))
+        let settledExpenses = SettlementExecutor.markExpensesSettled(
+            expenses: expenses,
+            settlementId: settlementId,
+            settledAt: settledAt
+        )
+
+        for expense in settledExpenses where unsettledExpenseIDs.contains(expense.id) {
+            let descriptor = FetchDescriptor<ExpenseRecord>(
+                predicate: #Predicate<ExpenseRecord> { record in
+                    record.id == expense.id
+                }
+            )
+
+            guard let record = try modelContext.fetch(descriptor).first,
+                  record.entryType == .expense,
+                  record.isSettled == false else {
+                continue
+            }
+
+            record.isSettled = expense.isSettled
+            record.settlementId = expense.settlementId
+            record.settledAt = expense.settledAt
+        }
+
+        try modelContext.save()
+        try reload(from: modelContext)
+    }
+
     func entries(for pocketId: UUID) -> [Transaction] {
         entries.filter { $0.pocketId == pocketId }
     }
