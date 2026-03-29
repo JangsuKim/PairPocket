@@ -3,9 +3,11 @@ import SwiftUI
 struct SettlementActionSection: View {
     let buttonTitle: String
     let tintColor: Color
+    let action: () -> Void
 
     var body: some View {
         Button {
+            action()
         } label: {
             Text(buttonTitle)
                 .frame(maxWidth: .infinity)

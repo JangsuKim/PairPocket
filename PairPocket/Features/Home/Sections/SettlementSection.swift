@@ -1,13 +1,17 @@
+import SwiftData
 import SwiftUI
 
 struct SettlementSection: View {
     @Environment(ExpenseStore.self) private var expenseStore
+    @Environment(\.modelContext) private var modelContext
     @AppStorage(MemberPreferenceKeys.hostName) private var hostName = MemberRole.host.displayName
     @AppStorage(MemberPreferenceKeys.hostIcon) private var hostIcon = "person.circle.fill"
     @AppStorage(MemberPreferenceKeys.hostPhotoData) private var hostPhotoData = Data()
     @AppStorage(MemberPreferenceKeys.partnerName) private var partnerName = MemberRole.partner.displayName
     @AppStorage(MemberPreferenceKeys.partnerIcon) private var partnerIcon = "person.circle"
     @AppStorage(MemberPreferenceKeys.partnerPhotoData) private var partnerPhotoData = Data()
+    @State private var isShowingSettlementConfirmation = false
+    @State private var isShowingZeroSettlementAlert = false
 
     private let allPocketColor: Color = .secondary
 
@@ -67,10 +71,10 @@ struct SettlementSection: View {
 
                 settlementAmountCard
 
-                NavigationLink {
-                    SettlementView()
+                Button {
+                    handleSettlementButtonTap()
                 } label: {
-                    Text("精算画面へ")
+                    Text("すべて精算する")
                         .frame(maxWidth: .infinity)
                         .frame(width: 140, height: 24)
                 }
@@ -80,6 +84,7 @@ struct SettlementSection: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         }
+        .background(settlementAlertHost)
     }
 
     private var settlementAmountCard: some View {
@@ -145,6 +150,54 @@ struct SettlementSection: View {
         formatter.numberStyle = .decimal
         let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
         return "\(formatted)円"
+    }
+
+    private func executeFullSettlement() {
+        guard unsettledExpenses.isEmpty == false else {
+            return
+        }
+
+        let settlementId = UUID()
+        let settledAt = Date()
+
+        try? expenseStore.settleExpenses(
+            unsettledExpenses,
+            settlementId: settlementId,
+            settledAt: settledAt,
+            in: modelContext
+        )
+    }
+
+    private func handleSettlementButtonTap() {
+        let settlementAmount = settlementSummary?.settlementAmount ?? 0
+
+        switch SettlementAlertContent.kind(for: settlementAmount) {
+        case .confirmation:
+            isShowingSettlementConfirmation = true
+        case .zeroAmount:
+            isShowingZeroSettlementAlert = true
+        }
+    }
+
+    @ViewBuilder
+    private var settlementAlertHost: some View {
+        Color.clear
+            .tint(.blue)
+            .alert(SettlementAlertContent.confirmationTitle, isPresented: $isShowingSettlementConfirmation) {
+                Button(SettlementAlertContent.cancelButtonTitle, role: .cancel) {
+                }
+                Button(SettlementAlertContent.confirmButtonTitle) {
+                    executeFullSettlement()
+                }
+            } message: {
+                Text(SettlementAlertContent.confirmationMessage)
+            }
+            .alert(SettlementAlertContent.zeroAmountTitle, isPresented: $isShowingZeroSettlementAlert) {
+                Button(SettlementAlertContent.okButtonTitle, role: .cancel) {
+                }
+            } message: {
+                Text(SettlementAlertContent.zeroAmountMessage)
+            }
     }
 }
 

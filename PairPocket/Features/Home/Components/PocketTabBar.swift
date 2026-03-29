@@ -34,7 +34,7 @@ struct PocketTabBar: View {
                     .font(.footnote.weight(.semibold))
                     .lineLimit(1)
             }
-            .foregroundStyle(isSelected ? pocketColor : Color.secondary)
+            .foregroundStyle(isSelected ? pocketColor : pocketColor.opacity(0.7))
             .padding(.horizontal, 14)
             .padding(.top, 10)
             .padding(.bottom, 12)
