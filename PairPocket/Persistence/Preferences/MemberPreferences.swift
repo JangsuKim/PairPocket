@@ -37,10 +37,6 @@ enum MemberPreferences {
         Set([defaultMemberIconAssetName] + selectableDefaultIconAssetNames)
     }
 
-    static func defaultIconAssetName(for role: MemberRole) -> String {
-        defaultMemberIconAssetName
-    }
-
     static func resolvedIconSource(storedIconName: String, for role: MemberRole) -> MemberIconSource {
         let trimmed = storedIconName.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty || trimmed == legacySystemIconName(for: role) {
@@ -117,14 +113,6 @@ enum MemberPreferences {
 
         let storedName = defaults.string(forKey: key)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return storedName.isEmpty ? fallbackName(for: role) : storedName
-    }
-
-    static func payerDisplayName(paymentSource: PaymentSource, paidByUserId: String?, localUserId: String) -> String {
-        guard let paidByUserId, paidByUserId.isEmpty == false else {
-            return paymentSource.displayName
-        }
-
-        return paidByUserId == localUserId ? "自分" : "パートナー"
     }
 
     static func payerMemberName(
