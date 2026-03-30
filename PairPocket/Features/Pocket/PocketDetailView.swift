@@ -1,4 +1,3 @@
-import Charts
 import SwiftData
 import SwiftUI
 
