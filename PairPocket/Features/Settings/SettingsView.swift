@@ -41,6 +41,9 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
 
                 Button("iCloudを開始する") {
+                    if localOnlyBootstrapMode {
+                        localOnlyBootstrapMode = false
+                    }
                 }
                 .buttonStyle(.borderedProminent)
             } else {
