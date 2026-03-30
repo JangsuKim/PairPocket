@@ -76,7 +76,6 @@ struct AddExpenseFormSection: View {
                         }
 
                         Button {
-                            print("change ratio tapped")
                         } label: {
                             Text("比率を変更")
                                 .font(.subheadline)

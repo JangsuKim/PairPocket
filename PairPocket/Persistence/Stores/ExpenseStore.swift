@@ -175,14 +175,6 @@ final class ExpenseStore {
         entries.filter { Calendar.current.isDate($0.date, equalTo: referenceDate, toGranularity: .month) }
     }
 
-    func currentMonthExpenses(referenceDate: Date = Date()) -> [Expense] {
-        expenses.filter { Calendar.current.isDate($0.date, equalTo: referenceDate, toGranularity: .month) }
-    }
-
-    var unsettledEntries: [Transaction] {
-        entries.filter { $0.isSettled == false }
-    }
-
     var unsettledExpenses: [Expense] {
         expenses.filter { $0.isSettled == false }
     }

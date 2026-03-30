@@ -233,26 +233,15 @@ struct AddExpenseView: View {
             .onChange(of: categoryIDs) { _, _ in
                 syncSelectedCategory()
             }
-            .alert("取引の操作に失敗しました", isPresented: operationErrorMessageAlertBinding) {
-                Button("確認", role: .cancel) {
-                    operationErrorMessage = nil
-                }
-            } message: {
-                Text(operationErrorMessage ?? "不明なエラーが発生しました。")
-            }
-            .confirmationDialog(
-                "この支出を削除しますか？",
-                isPresented: $showDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("支出を削除", role: .destructive) {
-                    deleteExpense()
-                }
-                Button("キャンセル", role: .cancel) {
-                }
-            } message: {
-                Text("この操作は取り消せません。")
-            }
+            .modifier(
+                AddExpenseDialogPresentationModifier(
+                    operationErrorMessageAlertBinding: operationErrorMessageAlertBinding,
+                    operationErrorMessage: operationErrorMessage,
+                    showDeleteConfirmation: $showDeleteConfirmation,
+                    onConfirmDelete: deleteExpense,
+                    onDismissErrorAlert: { operationErrorMessage = nil }
+                )
+            )
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("閉じる") {
@@ -420,6 +409,38 @@ struct AddExpenseView: View {
                 }
             }
         )
+    }
+}
+
+private struct AddExpenseDialogPresentationModifier: ViewModifier {
+    let operationErrorMessageAlertBinding: Binding<Bool>
+    let operationErrorMessage: String?
+    @Binding var showDeleteConfirmation: Bool
+    let onConfirmDelete: () -> Void
+    let onDismissErrorAlert: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .alert("取引の操作に失敗しました", isPresented: operationErrorMessageAlertBinding) {
+                Button("確認", role: .cancel) {
+                    onDismissErrorAlert()
+                }
+            } message: {
+                Text(operationErrorMessage ?? "不明なエラーが発生しました。")
+            }
+            .confirmationDialog(
+                "この支出を削除しますか？",
+                isPresented: $showDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("支出を削除", role: .destructive) {
+                    onConfirmDelete()
+                }
+                Button("キャンセル", role: .cancel) {
+                }
+            } message: {
+                Text("この操作は取り消せません。")
+            }
     }
 }
 

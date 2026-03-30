@@ -1,5 +1,3 @@
-import Foundation
-
 enum SettlementResultPresenter {
     static func signedAmount(for summary: SettlementSummary) -> Int? {
         if summary.settlementAmount == 0 {

@@ -337,10 +337,6 @@ struct PocketListView: View {
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
 
-    private func expenses(for pocketId: UUID) -> [Expense] {
-        expenseStore.expenses(for: pocketId)
-    }
-
     private func entries(for pocketId: UUID) -> [Transaction] {
         expenseStore.entries(for: pocketId)
     }

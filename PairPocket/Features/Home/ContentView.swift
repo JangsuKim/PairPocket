@@ -15,7 +15,6 @@ struct ContentView: View {
 
     @State private var showAddExpense = false
     @State private var selectedTab: ContentTab = .home
-    @State private var previousTab: ContentTab = .home
     @State private var pocketNavigationPath = NavigationPath()
 
     var body: some View {
@@ -51,7 +50,6 @@ struct ContentView: View {
             if oldValue == .pocket, newValue != .pocket {
                 pocketNavigationPath = NavigationPath()
             }
-            previousTab = newValue
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(
