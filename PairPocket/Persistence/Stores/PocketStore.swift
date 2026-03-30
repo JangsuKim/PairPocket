@@ -99,10 +99,28 @@ final class PocketStore {
             throw PocketStoreError.mainPocketDeletionNotAllowed
         }
 
+        record.colorKey = Self.archivedPocketColorKey
+
         if try deletedPocketRecord(id: id, from: modelContext) == nil {
             modelContext.insert(DeletedPocketRecord(pocketId: id))
         }
 
+        try persistMainPocket(preferredMainID: nil, in: modelContext)
+    }
+
+    func reactivatePocket(id: UUID, in modelContext: ModelContext) throws {
+        guard pockets.count < Self.maximumPocketCount else {
+            throw PocketStoreError.pocketLimitExceeded(maximum: Self.maximumPocketCount)
+        }
+
+        let record = try fetchPocketRecord(id: id, from: modelContext)
+        guard let deletedRecord = try deletedPocketRecord(id: id, from: modelContext) else {
+            throw PocketStoreError.pocketNotFound
+        }
+
+        let activeColorKeys = Set(pockets.map { Self.normalizedPocketColorKey($0.colorKey) })
+        record.colorKey = Self.firstAvailableActivePocketColorKey(excluding: activeColorKeys)
+        modelContext.delete(deletedRecord)
         try persistMainPocket(preferredMainID: nil, in: modelContext)
     }
 
@@ -198,6 +216,34 @@ enum PocketStoreError: LocalizedError {
 }
 
 private extension PocketStore {
+    static let archivedPocketColorKey = "gray"
+    static let availableActivePocketColorKeys: [String] = PocketColorOption.allCases.map(\.rawValue)
+
+    static func firstAvailableActivePocketColorKey(excluding activeColorKeys: Set<String>) -> String {
+        if let availableColorKey = availableActivePocketColorKeys.first(where: { activeColorKeys.contains($0) == false }) {
+            return availableColorKey
+        }
+
+        return PocketColorOption.mint.rawValue
+    }
+
+    static func normalizedPocketColorKey(_ colorKey: String) -> String {
+        switch colorKey {
+        case "mint":
+            return PocketColorOption.mint.rawValue
+        case "peach":
+            return PocketColorOption.peach.rawValue
+        case "lavender":
+            return PocketColorOption.lavender.rawValue
+        case "sky":
+            return PocketColorOption.sky.rawValue
+        case "blush":
+            return PocketColorOption.blush.rawValue
+        default:
+            return PocketColorOption.mint.rawValue
+        }
+    }
+
     static let defaultPockets: [Pocket] = [
         Pocket(
             id: UUID(uuidString: "8D5ECF10-76C4-4F6A-9F65-ED104FB43311")!,

@@ -56,6 +56,7 @@ struct PocketListView: View {
     @State private var editingPocket: Pocket?
     @State private var selectedPocketID: UUID?
     @State private var isShowingPocketLimitAlert = false
+    @State private var isShowingPocketRestoreLimitAlert = false
 
     private var cardHeight: CGFloat {
         190
@@ -156,6 +157,11 @@ struct PocketListView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("ポケットは最大\(PocketStore.maximumPocketCount)個まで作成できます。")
+        }
+        .alert("ポケットを復元できません", isPresented: $isShowingPocketRestoreLimitAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("アクティブなポケットが最大\(PocketStore.maximumPocketCount)個のため、復元できません。")
         }
         .task {
             try? expenseStore.loadIfNeeded(from: modelContext)
@@ -371,6 +377,12 @@ struct PocketListView: View {
             Text(pocket.mode.displayName)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            Button("復元") {
+                reactivatePocket(pocket)
+            }
+            .buttonStyle(.bordered)
+            .font(.caption.weight(.semibold))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -438,6 +450,17 @@ struct PocketListView: View {
         }
 
         selectedPocketID = mainPocket?.id ?? activePockets.first?.id
+    }
+
+    private func reactivatePocket(_ pocket: Pocket) {
+        do {
+            try pocketStore.reactivatePocket(id: pocket.id, in: modelContext)
+        } catch let error as PocketStoreError {
+            if case .pocketLimitExceeded = error {
+                isShowingPocketRestoreLimitAlert = true
+            }
+        } catch {
+        }
     }
 }
 
