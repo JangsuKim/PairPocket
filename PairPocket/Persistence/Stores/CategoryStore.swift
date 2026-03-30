@@ -30,7 +30,7 @@ final class CategoryStore {
     func reload(from modelContext: ModelContext) throws {
         let records = try fetchCategoryRecords(from: modelContext)
 
-        if records.isEmpty {
+        if records.isEmpty && MemberPreferences.isLocalOnlyBootstrapMode() {
             for category in Self.defaultCategories {
                 modelContext.insert(CategoryRecord(category: category))
             }

@@ -31,7 +31,7 @@ final class PocketStore {
     func reload(from modelContext: ModelContext) throws {
         let records = try fetchPocketRecords(from: modelContext)
 
-        if records.isEmpty {
+        if records.isEmpty && MemberPreferences.isLocalOnlyBootstrapMode() {
             for pocket in Self.defaultPockets {
                 modelContext.insert(PocketRecord(pocket: pocket))
             }
