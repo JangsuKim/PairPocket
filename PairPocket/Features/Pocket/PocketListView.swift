@@ -85,6 +85,10 @@ struct PocketListView: View {
         pocketStore.pockets
     }
 
+    private var archivedPockets: [Pocket] {
+        pocketStore.archivedPockets
+    }
+
     private var mainPocket: Pocket? {
         activePockets.first(where: \.isMain)
     }
@@ -120,6 +124,10 @@ struct PocketListView: View {
                 }
 
                 pocketManagementSection
+
+                if archivedPockets.isEmpty == false {
+                    archivedPocketSection
+                }
             }
             .frame(maxWidth: .infinity, alignment: .top)
             .bottomTabBarContentInset()
@@ -321,6 +329,53 @@ struct PocketListView: View {
                 .foregroundStyle(.tertiary)
         )
         .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var archivedPocketSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("終了したポケット")
+                    .font(.headline)
+                Spacer()
+                Text("\(archivedPockets.count)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 8) {
+                ForEach(archivedPockets) { pocket in
+                    archivedPocketRow(for: pocket)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func archivedPocketRow(for pocket: Pocket) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(pocket.displayColor.opacity(0.75))
+                .frame(width: 9, height: 9)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(pocket.name)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                Text("アーカイブ済み")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Text(pocket.mode.displayName)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var emptyMainPocketCard: some View {

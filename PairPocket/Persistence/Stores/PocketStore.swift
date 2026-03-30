@@ -14,6 +14,11 @@ final class PocketStore {
         pockets.first(where: \.isMain)
     }
 
+    var archivedPockets: [Pocket] {
+        let activeIDs = Set(pockets.map(\.id))
+        return allPockets.filter { activeIDs.contains($0.id) == false }
+    }
+
     func loadIfNeeded(from modelContext: ModelContext) throws {
         guard hasLoaded == false else {
             return

@@ -155,6 +155,7 @@ final class ExpenseStore {
 
             guard let record = try modelContext.fetch(descriptor).first,
                   record.entryType == .expense,
+                  record.isDeleted == false,
                   record.isSettled == false else {
                 continue
             }
