@@ -69,6 +69,8 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
     public var isSettled: Bool
     public var settlementId: UUID?
     public var settledAt: Date?
+    public var isDeleted: Bool
+    public var deletedAt: Date?
     public var createdByUserId: String?
     public var paidByUserId: String?
 
@@ -92,6 +94,8 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
         isSettled: Bool = false,
         settlementId: UUID? = nil,
         settledAt: Date? = nil,
+        isDeleted: Bool = false,
+        deletedAt: Date? = nil,
         createdByUserId: String? = nil,
         paidByUserId: String? = nil
     ) {
@@ -109,6 +113,8 @@ public struct PocketEntry: Identifiable, Codable, Hashable {
         self.isSettled = isSettled
         self.settlementId = settlementId
         self.settledAt = settledAt
+        self.isDeleted = isDeleted
+        self.deletedAt = deletedAt
         self.createdByUserId = createdByUserId
         self.paidByUserId = paidByUserId
     }
