@@ -59,11 +59,13 @@ struct HistoryView: View {
     }
 
     private var filteredExpenses: [ExpenseRecord] {
+        let activeExpenses = expenses.filter { $0.isDeleted == false }
+
         switch selectedFilter {
         case .total:
-            return expenses
+            return activeExpenses
         case let .pocket(id):
-            return expenses.filter { $0.pocketId == id }
+            return activeExpenses.filter { $0.pocketId == id }
         }
     }
 

@@ -16,6 +16,8 @@ final class ExpenseRecord {
     var isSettled: Bool
     var settlementId: UUID?
     var settledAt: Date?
+    var isDeleted: Bool
+    var deletedAt: Date?
     var createdByUserId: String?
     var paidByUserId: String?
 
@@ -51,6 +53,8 @@ final class ExpenseRecord {
         isSettled: Bool = false,
         settlementId: UUID? = nil,
         settledAt: Date? = nil,
+        isDeleted: Bool = false,
+        deletedAt: Date? = nil,
         createdByUserId: String? = nil,
         paidByUserId: String? = nil
     ) {
@@ -67,6 +71,8 @@ final class ExpenseRecord {
         self.isSettled = isSettled
         self.settlementId = settlementId
         self.settledAt = settledAt
+        self.isDeleted = isDeleted
+        self.deletedAt = deletedAt
         self.createdByUserId = createdByUserId
         self.paidByUserId = paidByUserId
     }
@@ -85,6 +91,8 @@ final class ExpenseRecord {
         isSettled: Bool = false,
         settlementId: UUID? = nil,
         settledAt: Date? = nil,
+        isDeleted: Bool = false,
+        deletedAt: Date? = nil,
         createdByUserId: String? = nil,
         paidByUserId: String? = nil
     ) {
@@ -102,6 +110,8 @@ final class ExpenseRecord {
             isSettled: isSettled,
             settlementId: settlementId,
             settledAt: settledAt,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
             createdByUserId: createdByUserId,
             paidByUserId: paidByUserId
         )
@@ -125,6 +135,8 @@ extension ExpenseRecord {
             isSettled: entry.isSettled,
             settlementId: entry.settlementId,
             settledAt: entry.settledAt,
+            isDeleted: entry.isDeleted,
+            deletedAt: entry.deletedAt,
             createdByUserId: entry.createdByUserId,
             paidByUserId: entry.paidByUserId
         )
@@ -146,6 +158,8 @@ extension ExpenseRecord {
             isSettled: isSettled,
             settlementId: settlementId,
             settledAt: settledAt,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
             createdByUserId: createdByUserId,
             paidByUserId: paidByUserId
         )

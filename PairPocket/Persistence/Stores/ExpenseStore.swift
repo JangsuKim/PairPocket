@@ -6,6 +6,7 @@ enum ExpenseStoreError: LocalizedError {
     case expenseNotFound
     case settledExpenseDeletionBlocked
     case settledExpenseEditingBlocked
+    case deletedExpenseEditingBlocked
 
     var errorDescription: String? {
         switch self {
@@ -15,6 +16,8 @@ enum ExpenseStoreError: LocalizedError {
             return "Settled expenses cannot be deleted."
         case .settledExpenseEditingBlocked:
             return "Settled expenses cannot be edited."
+        case .deletedExpenseEditingBlocked:
+            return "Deleted expenses cannot be edited."
         }
     }
 }
@@ -45,7 +48,9 @@ final class ExpenseStore {
         let descriptor = FetchDescriptor<ExpenseRecord>(
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
-        entries = try modelContext.fetch(descriptor).map(\.pocketEntry)
+        entries = try modelContext.fetch(descriptor)
+            .filter { $0.isDeleted == false }
+            .map(\.pocketEntry)
     }
 
     func addEntry(_ entry: Transaction, in modelContext: ModelContext) throws {
@@ -76,6 +81,9 @@ final class ExpenseStore {
 
         guard record.isSettled == false else {
             throw ExpenseStoreError.settledExpenseEditingBlocked
+        }
+        guard record.isDeleted == false else {
+            throw ExpenseStoreError.deletedExpenseEditingBlocked
         }
 
         record.pocketId = normalizedExpense.pocketId
@@ -108,7 +116,13 @@ final class ExpenseStore {
             throw ExpenseStoreError.settledExpenseDeletionBlocked
         }
 
-        modelContext.delete(record)
+        if record.isDeleted {
+            try reload(from: modelContext)
+            return
+        }
+
+        record.isDeleted = true
+        record.deletedAt = Date()
         try modelContext.save()
         try reload(from: modelContext)
     }
@@ -141,6 +155,7 @@ final class ExpenseStore {
 
             guard let record = try modelContext.fetch(descriptor).first,
                   record.entryType == .expense,
+                  record.isDeleted == false,
                   record.isSettled == false else {
                 continue
             }

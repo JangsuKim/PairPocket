@@ -13,6 +13,29 @@ struct PairPocketApp: App {
     @State private var expenseStore = ExpenseStore()
     @State private var pocketStore = PocketStore()
     @State private var categoryStore = CategoryStore()
+    private let sharedModelContainer: ModelContainer = {
+        #if targetEnvironment(simulator)
+        let configuration = ModelConfiguration()
+        #else
+        let configuration = ModelConfiguration(cloudKitDatabase: .automatic)
+        #endif
+
+        do {
+            return try ModelContainer(
+                for: ExpenseRecord.self,
+                PocketRecord.self,
+                DeletedPocketRecord.self,
+                CategoryRecord.self,
+                configurations: configuration
+            )
+        } catch {
+            #if targetEnvironment(simulator)
+            fatalError("Failed to initialize local model container: \(error)")
+            #else
+            fatalError("Failed to initialize CloudKit-backed model container: \(error)")
+            #endif
+        }
+    }()
 
     var body: some Scene {
         WindowGroup {
@@ -27,6 +50,6 @@ struct PairPocketApp: App {
                 }
         }
         // SwiftData schema changed. 개발 중에는 시뮬레이터에서 앱 삭제 후 재설치해 저장소를 재생성하세요.
-        .modelContainer(for: [ExpenseRecord.self, PocketRecord.self, DeletedPocketRecord.self, CategoryRecord.self])
+        .modelContainer(sharedModelContainer)
     }
 }

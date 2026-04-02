@@ -23,6 +23,7 @@ enum MemberPreferenceKeys {
     static let relationshipCoupleId = "relationship.coupleId"
     static let relationshipHostUserId = "relationship.hostUserId"
     static let relationshipPartnerUserId = "relationship.partnerUserId"
+    static let bootstrapIsLocalOnlyMode = "bootstrap.isLocalOnlyMode"
 }
 
 enum MemberPreferences {
@@ -195,6 +196,17 @@ enum MemberPreferences {
         let generated = UUID().uuidString
         defaults.set(generated, forKey: MemberPreferenceKeys.localUserId)
         return generated
+    }
+
+    static func isLocalOnlyBootstrapMode(defaults: UserDefaults = .standard) -> Bool {
+        if defaults.object(forKey: MemberPreferenceKeys.bootstrapIsLocalOnlyMode) == nil {
+            return true
+        }
+        return defaults.bool(forKey: MemberPreferenceKeys.bootstrapIsLocalOnlyMode)
+    }
+
+    static func setLocalOnlyBootstrapMode(_ isLocalOnly: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(isLocalOnly, forKey: MemberPreferenceKeys.bootstrapIsLocalOnlyMode)
     }
 
     // Reserved hook for future invite/link migrations.

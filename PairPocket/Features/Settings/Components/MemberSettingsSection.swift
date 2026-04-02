@@ -15,6 +15,8 @@ struct MemberSettingsSection: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @FocusState private var focusedNameMember: EditableMember?
     @State private var pendingUploadedPhotoDeletion: PendingUploadedPhotoDeletion?
+    let isLocalOnlyMode: Bool
+    let currentMemberRole: MemberRole
 
     var body: some View {
         relationshipCard
@@ -38,15 +40,17 @@ struct MemberSettingsSection: View {
                 memberArea(
                     member: .host,
                     name: $hostName,
-                    icon: $hostIcon
+                    icon: $hostIcon,
+                    canEdit: canEdit(member: .host)
                 )
 
-                linkingArea
+                relationshipArea
 
                 memberArea(
                     member: .partner,
                     name: $partnerName,
-                    icon: $partnerIcon
+                    icon: $partnerIcon,
+                    canEdit: canEdit(member: .partner)
                 )
             }
         }
@@ -58,17 +62,24 @@ struct MemberSettingsSection: View {
     private func memberArea(
         member: EditableMember,
         name: Binding<String>,
-        icon: Binding<String>
+        icon: Binding<String>,
+        canEdit: Bool
     ) -> some View {
         VStack(spacing: 10) {
             HStack {
                 Spacer()
-                Button {
-                    editingMember = member
-                } label: {
-                    EditButtonIcon(size: 18)
+                if canEdit {
+                    Button {
+                        editingMember = member
+                    } label: {
+                        EditButtonIcon(size: 18)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
             }
 
             MemberProfileView(
@@ -79,6 +90,12 @@ struct MemberSettingsSection: View {
                 avatarSize: 76,
                 showsRoleText: true
             )
+
+            if canEdit == false {
+                Text("同期表示")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .frame(maxWidth: .infinity)
     }
@@ -331,19 +348,26 @@ struct MemberSettingsSection: View {
         selectedPhotoItem = nil
     }
 
-    private var linkingArea: some View {
+    private var relationshipArea: some View {
         VStack(spacing: 8) {
-            Image(systemName: "link.badge.plus")
+            Image(systemName: "link")
                 .font(.title3)
                 .foregroundStyle(.secondary)
-            Text("未連携")
+            Text("プロフィール")
                 .font(.footnote.weight(.semibold))
-            Text("iCloud sync state")
+            Text(isLocalOnlyMode ? "ローカル" : "同期モード")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func canEdit(member: EditableMember) -> Bool {
+        if isLocalOnlyMode {
+            return true
+        }
+        return memberRole(for: member) == currentMemberRole
     }
 
     private func uploadedPhotoHistory(for member: EditableMember) -> [Data] {
@@ -435,5 +459,8 @@ private enum MemberSettingsHistoryHelper {
 }
 
 #Preview {
-    MemberSettingsSection()
+    MemberSettingsSection(
+        isLocalOnlyMode: true,
+        currentMemberRole: .host
+    )
 }

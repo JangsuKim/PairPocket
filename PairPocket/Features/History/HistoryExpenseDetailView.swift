@@ -24,7 +24,7 @@ struct HistoryExpenseDetailView: View {
     }
 
     private var canEditExpense: Bool {
-        isExpenseEntry && expense.isSettled == false
+        isExpenseEntry && expense.isSettled == false && expense.isDeleted == false
     }
 
     private var amountValueColor: Color {
