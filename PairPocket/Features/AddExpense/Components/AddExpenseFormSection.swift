@@ -11,6 +11,9 @@ struct AddExpenseFormSection: View {
     let selectedCategorySelection: Binding<UUID?>
     let selectedPocketColor: Color
     let availablePaymentSources: [PaymentSource]
+    let paymentSourceDisplayName: (PaymentSource) -> String
+    let hostDisplayName: String
+    let partnerDisplayName: String
     @Binding var selectedPaymentSource: PaymentSource
     @Binding var amountText: String
     let burdenA: Int
@@ -50,7 +53,7 @@ struct AddExpenseFormSection: View {
 
                 Picker("支払元", selection: $selectedPaymentSource) {
                     ForEach(availablePaymentSources, id: \.self) { source in
-                        Text(source.displayName).tag(source)
+                        Text(paymentSourceDisplayName(source)).tag(source)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -71,13 +74,13 @@ struct AddExpenseFormSection: View {
 
                     if isDepositEntry == false {
                         HStack(spacing: 20) {
-                            burdenRow(name: MemberRole.host.displayName, amount: burdenA)
-                            burdenRow(name: MemberRole.partner.displayName, amount: burdenB)
+                            burdenRow(name: hostDisplayName, amount: burdenA)
+                            burdenRow(name: partnerDisplayName, amount: burdenB)
                         }
 
                         Button {
                         } label: {
-                            Text("比率を変更")
+                            Text("比率変更")
                                 .font(.subheadline)
                         }
                         .buttonStyle(.plain)

@@ -154,6 +154,14 @@ struct AddExpenseView: View {
         selectedPocket?.displayColor ?? .accentColor
     }
 
+    private var hostDisplayName: String {
+        MemberPreferences.memberDisplayName(for: .host)
+    }
+
+    private var partnerDisplayName: String {
+        MemberPreferences.memberDisplayName(for: .partner)
+    }
+
     private var pocketIDs: [UUID] {
         pocketStore.pockets.map(\.id)
     }
@@ -181,6 +189,9 @@ struct AddExpenseView: View {
                     selectedCategorySelection: selectedCategorySelection,
                     selectedPocketColor: selectedPocketColor,
                     availablePaymentSources: availablePaymentSources,
+                    paymentSourceDisplayName: paymentSourceDisplayName,
+                    hostDisplayName: hostDisplayName,
+                    partnerDisplayName: partnerDisplayName,
                     selectedPaymentSource: $selectedPaymentSource,
                     amountText: $amountText,
                     burdenA: burdenA,
@@ -271,6 +282,17 @@ struct AddExpenseView: View {
     private func syncSelectedPaymentSource() {
         if availablePaymentSources.contains(selectedPaymentSource) == false {
             selectedPaymentSource = availablePaymentSources.first ?? .host
+        }
+    }
+
+    private func paymentSourceDisplayName(_ source: PaymentSource) -> String {
+        switch source {
+        case .host:
+            return hostDisplayName
+        case .partner:
+            return partnerDisplayName
+        case .pocket:
+            return source.displayName
         }
     }
 
