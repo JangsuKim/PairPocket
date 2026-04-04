@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct KeyboardDismissToolbarButton: View {
     let action: () -> Void
@@ -18,5 +17,5 @@ struct KeyboardDismissToolbarButton: View {
         }
         return "chevron.down.circle"
     }
-}
 
+}

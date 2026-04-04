@@ -1,6 +1,11 @@
 import SwiftUI
 
 struct AddExpenseFormSection: View {
+    enum FocusField: Hashable {
+        case amount
+        case memo
+    }
+
     let selectedPocket: Pocket?
     let availableEntryTypes: [PocketEntryType]
     let isEditingExpense: Bool
@@ -16,7 +21,7 @@ struct AddExpenseFormSection: View {
     let partnerDisplayName: String
     @Binding var selectedPaymentSource: PaymentSource
     @Binding var amountText: String
-    let isAmountFieldFocused: FocusState<Bool>.Binding
+    let focusedField: FocusState<FocusField?>.Binding
     let burdenA: Int
     let burdenB: Int
     @Binding var memoText: String
@@ -68,7 +73,7 @@ struct AddExpenseFormSection: View {
                     TextField("0", text: $amountText)
                         .font(.system(size: 36, weight: .bold, design: .rounded))
                         .keyboardType(.numberPad)
-                        .focused(isAmountFieldFocused)
+                        .focused(focusedField, equals: .amount)
                         .textFieldStyle(.roundedBorder)
                         .onChange(of: amountText) { _, newValue in
                             amountText = newValue.filter(\.isNumber)
@@ -91,13 +96,14 @@ struct AddExpenseFormSection: View {
                 }
 
                 TextField("メモ", text: $memoText)
+                    .focused(focusedField, equals: .memo)
                     .textFieldStyle(.roundedBorder)
             }
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     KeyboardDismissToolbarButton {
-                        isAmountFieldFocused.wrappedValue = false
+                        focusedField.wrappedValue = nil
                     }
                 }
             }

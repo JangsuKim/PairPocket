@@ -22,7 +22,7 @@ struct AddExpenseView: View {
     @State private var operationErrorMessage: String?
     @State private var hasInitializedForm = false
     @State private var showDeleteConfirmation = false
-    @FocusState private var isAmountFieldFocused: Bool
+    @FocusState private var focusedField: AddExpenseFormSection.FocusField?
 
     init(editingExpense: Expense? = nil, onDeleteSuccess: (() -> Void)? = nil) {
         self.editingExpense = editingExpense
@@ -195,7 +195,7 @@ struct AddExpenseView: View {
                     partnerDisplayName: partnerDisplayName,
                     selectedPaymentSource: $selectedPaymentSource,
                     amountText: $amountText,
-                    isAmountFieldFocused: $isAmountFieldFocused,
+                    focusedField: $focusedField,
                     burdenA: burdenA,
                     burdenB: burdenB,
                     memoText: $memoText
@@ -208,7 +208,7 @@ struct AddExpenseView: View {
                     color: selectedPocket?.displayColor ?? .gray,
                     isEnabled: isAddEnabled,
                     action: {
-                        isAmountFieldFocused = false
+                        focusedField = nil
                         saveEntry()
                     }
                 )
