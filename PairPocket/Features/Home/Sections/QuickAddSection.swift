@@ -14,6 +14,7 @@ struct QuickAddSection: View {
     @State private var saveErrorMessage: String?
     @State private var isShowingSaveSuccessAlert = false
     @State private var saveSuccessSummaryMessage = ""
+    @FocusState private var isAmountFieldFocused: Bool
 
     private var amountValue: Int {
         Int(amountText) ?? 0
@@ -91,6 +92,7 @@ struct QuickAddSection: View {
 
                 TextField("金額", text: $amountText)
                     .keyboardType(.numberPad)
+                    .focused($isAmountFieldFocused)
                     .textFieldStyle(.roundedBorder)
                     .foregroundStyle(.primary)
                     .tint(accentColor)
@@ -100,6 +102,7 @@ struct QuickAddSection: View {
             }
 
             Button {
+                isAmountFieldFocused = false
                 saveExpense()
             } label: {
                 Text("追加")
@@ -124,6 +127,14 @@ struct QuickAddSection: View {
         }
         .onChange(of: categories.map(\.id)) { _, _ in
             syncSelectedCategory()
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                KeyboardDismissToolbarButton {
+                    isAmountFieldFocused = false
+                }
+            }
         }
         .background(saveErrorAlertHost)
         .background(saveSuccessAlertHost)

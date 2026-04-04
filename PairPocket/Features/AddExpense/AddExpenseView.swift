@@ -22,6 +22,7 @@ struct AddExpenseView: View {
     @State private var operationErrorMessage: String?
     @State private var hasInitializedForm = false
     @State private var showDeleteConfirmation = false
+    @FocusState private var isAmountFieldFocused: Bool
 
     init(editingExpense: Expense? = nil, onDeleteSuccess: (() -> Void)? = nil) {
         self.editingExpense = editingExpense
@@ -194,6 +195,7 @@ struct AddExpenseView: View {
                     partnerDisplayName: partnerDisplayName,
                     selectedPaymentSource: $selectedPaymentSource,
                     amountText: $amountText,
+                    isAmountFieldFocused: $isAmountFieldFocused,
                     burdenA: burdenA,
                     burdenB: burdenB,
                     memoText: $memoText
@@ -205,7 +207,10 @@ struct AddExpenseView: View {
                     title: submitButtonTitle,
                     color: selectedPocket?.displayColor ?? .gray,
                     isEnabled: isAddEnabled,
-                    action: saveEntry
+                    action: {
+                        isAmountFieldFocused = false
+                        saveEntry()
+                    }
                 )
 
                 if canDeleteEditingExpense {
@@ -253,11 +258,12 @@ struct AddExpenseView: View {
                     onDismissErrorAlert: { operationErrorMessage = nil }
                 )
             )
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("閉じる") {
-                        dismiss()
-                    }
+        }
+        .tapToDismissKeyboard()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("閉じる") {
+                    dismiss()
                 }
             }
         }

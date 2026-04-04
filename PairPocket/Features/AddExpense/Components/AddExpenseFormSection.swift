@@ -16,6 +16,7 @@ struct AddExpenseFormSection: View {
     let partnerDisplayName: String
     @Binding var selectedPaymentSource: PaymentSource
     @Binding var amountText: String
+    let isAmountFieldFocused: FocusState<Bool>.Binding
     let burdenA: Int
     let burdenB: Int
     @Binding var memoText: String
@@ -67,6 +68,7 @@ struct AddExpenseFormSection: View {
                     TextField("0", text: $amountText)
                         .font(.system(size: 36, weight: .bold, design: .rounded))
                         .keyboardType(.numberPad)
+                        .focused(isAmountFieldFocused)
                         .textFieldStyle(.roundedBorder)
                         .onChange(of: amountText) { _, newValue in
                             amountText = newValue.filter(\.isNumber)
@@ -90,6 +92,14 @@ struct AddExpenseFormSection: View {
 
                 TextField("メモ", text: $memoText)
                     .textFieldStyle(.roundedBorder)
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    KeyboardDismissToolbarButton {
+                        isAmountFieldFocused.wrappedValue = false
+                    }
+                }
             }
         } else {
             ContentUnavailableView("ポケットがありません", systemImage: "wallet.pass")

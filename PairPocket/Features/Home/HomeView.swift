@@ -84,6 +84,7 @@ struct HomeView: View {
             .padding(.top, 8)
             .bottomTabBarContentInset()
         }
+        .tapToDismissKeyboard()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
