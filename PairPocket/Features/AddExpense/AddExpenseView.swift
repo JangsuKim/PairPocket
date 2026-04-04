@@ -262,7 +262,7 @@ struct AddExpenseView: View {
 
     private var canDeleteEditingExpense: Bool {
         if let editingExpense {
-            return editingExpense.isSettled == false && editingExpense.isDeleted == false
+            return editingExpense.isSettled == false && editingExpense.deletedAt == nil
         }
 
         return false
@@ -336,7 +336,7 @@ struct AddExpenseView: View {
     }
 
     private func saveEntry() {
-        if let editingExpense, editingExpense.isDeleted {
+        if let editingExpense, editingExpense.deletedAt != nil {
             operationErrorMessage = "Deleted expenses cannot be edited."
             return
         }
@@ -398,7 +398,7 @@ struct AddExpenseView: View {
             return
         }
 
-        guard editingExpense.isDeleted == false else {
+        guard editingExpense.deletedAt == nil else {
             operationErrorMessage = "Deleted expenses cannot be deleted."
             return
         }

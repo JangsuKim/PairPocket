@@ -59,7 +59,7 @@ struct HistoryView: View {
     }
 
     private var filteredExpenses: [ExpenseRecord] {
-        let activeExpenses = expenses.filter { $0.isDeleted == false }
+        let activeExpenses = expenses.filter { $0.deletedAt == nil }
 
         switch selectedFilter {
         case .total:
