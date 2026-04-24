@@ -40,7 +40,7 @@ struct PocketDetailView: View {
 
     private var pocketExpenses: [Expense] {
         expenseRecords
-            .filter { $0.isDeleted == false }
+            .filter { $0.deletedAt == nil }
             .map(\.pocketEntry)
             .filter { $0.pocketId == pocketID && $0.type == .expense }
             .sorted { $0.date > $1.date }
@@ -48,7 +48,7 @@ struct PocketDetailView: View {
 
     private var pocketEntries: [Transaction] {
         expenseRecords
-            .filter { $0.isDeleted == false }
+            .filter { $0.deletedAt == nil }
             .map(\.pocketEntry)
             .filter { $0.pocketId == pocketID }
             .sorted { $0.date > $1.date }

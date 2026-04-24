@@ -4,7 +4,7 @@ enum HistoryFormatters {
     static let rowDate: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
-        formatter.dateFormat = "MM/dd(EEE)"
+        formatter.dateFormat = "MM/dd"
         return formatter
     }()
 

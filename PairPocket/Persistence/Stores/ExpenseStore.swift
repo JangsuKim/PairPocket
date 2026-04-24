@@ -49,7 +49,7 @@ final class ExpenseStore {
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
         entries = try modelContext.fetch(descriptor)
-            .filter { $0.isDeleted == false }
+            .filter { $0.deletedAt == nil }
             .map(\.pocketEntry)
     }
 
@@ -82,7 +82,7 @@ final class ExpenseStore {
         guard record.isSettled == false else {
             throw ExpenseStoreError.settledExpenseEditingBlocked
         }
-        guard record.isDeleted == false else {
+        guard record.deletedAt == nil else {
             throw ExpenseStoreError.deletedExpenseEditingBlocked
         }
 
@@ -116,12 +116,11 @@ final class ExpenseStore {
             throw ExpenseStoreError.settledExpenseDeletionBlocked
         }
 
-        if record.isDeleted {
+        if record.deletedAt != nil {
             try reload(from: modelContext)
             return
         }
 
-        record.isDeleted = true
         record.deletedAt = Date()
         try modelContext.save()
         try reload(from: modelContext)
@@ -155,7 +154,7 @@ final class ExpenseStore {
 
             guard let record = try modelContext.fetch(descriptor).first,
                   record.entryType == .expense,
-                  record.isDeleted == false,
+                  record.deletedAt == nil,
                   record.isSettled == false else {
                 continue
             }

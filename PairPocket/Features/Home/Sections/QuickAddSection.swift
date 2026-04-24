@@ -12,6 +12,9 @@ struct QuickAddSection: View {
     @State private var amountText: String = ""
     @State private var selectedCategoryID: UUID?
     @State private var saveErrorMessage: String?
+    @State private var isShowingSaveSuccessAlert = false
+    @State private var saveSuccessSummaryMessage = ""
+    @FocusState private var isAmountFieldFocused: Bool
 
     private var amountValue: Int {
         Int(amountText) ?? 0
@@ -89,6 +92,7 @@ struct QuickAddSection: View {
 
                 TextField("金額", text: $amountText)
                     .keyboardType(.numberPad)
+                    .focused($isAmountFieldFocused)
                     .textFieldStyle(.roundedBorder)
                     .foregroundStyle(.primary)
                     .tint(accentColor)
@@ -98,6 +102,7 @@ struct QuickAddSection: View {
             }
 
             Button {
+                isAmountFieldFocused = false
                 saveExpense()
             } label: {
                 Text("追加")
@@ -123,7 +128,16 @@ struct QuickAddSection: View {
         .onChange(of: categories.map(\.id)) { _, _ in
             syncSelectedCategory()
         }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                KeyboardDismissToolbarButton {
+                    isAmountFieldFocused = false
+                }
+            }
+        }
         .background(saveErrorAlertHost)
+        .background(saveSuccessAlertHost)
     }
 
     @ViewBuilder
@@ -206,9 +220,15 @@ struct QuickAddSection: View {
 
         do {
             try expenseStore.addExpense(expense, in: modelContext)
+            saveSuccessSummaryMessage = quickAddSuccessSummary(
+                categoryName: selectedCategory.name,
+                amount: amountValue,
+                paymentSource: currentPaymentSource
+            )
             amountText = ""
             selectedCategoryID = categories.first?.id
             saveErrorMessage = nil
+            isShowingSaveSuccessAlert = true
         } catch {
             saveErrorMessage = error.localizedDescription
         }
@@ -236,5 +256,41 @@ struct QuickAddSection: View {
             } message: {
                 Text(saveErrorMessage ?? "不明なエラーが発生しました")
             }
+    }
+
+    @ViewBuilder
+    private var saveSuccessAlertHost: some View {
+        Color.clear
+            .tint(.blue)
+            .alert("支出を追加しました", isPresented: $isShowingSaveSuccessAlert) {
+                Button("確認", role: .cancel) {
+                    isShowingSaveSuccessAlert = false
+                }
+            } message: {
+                Text(saveSuccessSummaryMessage)
+            }
+    }
+
+    private func quickAddSuccessSummary(categoryName: String, amount: Int, paymentSource: PaymentSource) -> String {
+        let payerName: String
+        if let role = paymentSource.memberRole {
+            payerName = MemberPreferences.memberDisplayName(for: role)
+        } else {
+            payerName = paymentSource.displayName
+        }
+
+        return """
+        カテゴリ: \(categoryName)
+        支払者: \(payerName)
+        金額: \(formattedYen(amount))
+        """
+    }
+
+    private func formattedYen(_ amount: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.numberStyle = .decimal
+        let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
+        return "¥\(formatted)"
     }
 }

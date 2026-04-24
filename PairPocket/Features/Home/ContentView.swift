@@ -16,6 +16,9 @@ struct ContentView: View {
     @State private var showAddExpense = false
     @State private var selectedTab: ContentTab = .home
     @State private var pocketNavigationPath = NavigationPath()
+    @State private var homeNavigationResetToken = 0
+    @State private var historyNavigationResetToken = 0
+    @State private var settlementNavigationResetToken = 0
 
     var body: some View {
         ZStack {
@@ -23,6 +26,7 @@ struct ContentView: View {
                 NavigationStack {
                     HomeView()
                 }
+                .id(homeNavigationResetToken)
             }
 
             tabContainer(for: .pocket) {
@@ -38,17 +42,31 @@ struct ContentView: View {
                 NavigationStack {
                     HistoryView()
                 }
+                .id(historyNavigationResetToken)
             }
 
             tabContainer(for: .settlement) {
                 NavigationStack {
                     SettlementView()
                 }
+                .id(settlementNavigationResetToken)
             }
         }
         .onChange(of: selectedTab) { oldValue, newValue in
+            if oldValue == .home, newValue != .home {
+                homeNavigationResetToken += 1
+            }
+
             if oldValue == .pocket, newValue != .pocket {
                 pocketNavigationPath = NavigationPath()
+            }
+
+            if oldValue == .history, newValue != .history {
+                historyNavigationResetToken += 1
+            }
+
+            if oldValue == .settlement, newValue != .settlement {
+                settlementNavigationResetToken += 1
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {

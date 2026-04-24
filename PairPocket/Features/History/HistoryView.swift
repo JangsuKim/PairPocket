@@ -16,6 +16,7 @@ struct HistoryView: View {
 
     private let overallAccentColor: Color = .secondary
     private let localUserId = MemberPreferences.ensureLocalUserId()
+    private let rowLayout = HistoryRowLayout.self
 
     var body: some View {
         VStack(spacing: 12) {
@@ -59,7 +60,7 @@ struct HistoryView: View {
     }
 
     private var filteredExpenses: [ExpenseRecord] {
-        let activeExpenses = expenses.filter { $0.isDeleted == false }
+        let activeExpenses = expenses.filter { $0.deletedAt == nil }
 
         switch selectedFilter {
         case .total:
@@ -244,57 +245,54 @@ struct HistoryView: View {
     }
 
     private var tableHeader: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: rowLayout.columnSpacing) {
             Text("日付")
-                .frame(width: 70, alignment: .leading)
+                .frame(width: rowLayout.dateWidth, alignment: .center)
 
             Text("カテゴリ")
-                .frame(width: 72, alignment: .leading)
-
-            Text("メモ")
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(width: rowLayout.categoryWidth, alignment: .center)
 
             Text("支払元")
-                .frame(width: 48, alignment: .center)
+                .frame(width: rowLayout.payerWidth, alignment: .trailing)
 
             Text("金額")
-                .frame(width: 90, alignment: .trailing)
+                .frame(width: rowLayout.amountWidth, alignment: .trailing)
         }
-        .font(.caption2.weight(.semibold))
+        .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
     }
 
     private func expenseRow(_ expense: ExpenseRecord) -> some View {
-        HStack(spacing: 0) {
-            HStack(spacing: 6) {
+        HStack(spacing: rowLayout.columnSpacing) {
+            HStack(spacing: 8) {
                 Circle()
                     .fill(pocketColor(for: expense.pocketId))
-                    .frame(width: 7, height: 7)
+                    .frame(width: 8, height: 8)
 
                 Text(HistoryFormatters.rowDate.string(from: expense.date))
             }
-                .frame(width: 70, alignment: .leading)
+            .frame(width: rowLayout.dateWidth, alignment: .leading)
 
             Text(categoryLabel(for: expense.categoryId))
+                .font(.subheadline)
                 .lineLimit(1)
-                .frame(width: 72, alignment: .leading)
-
-            Text(expense.memo.isEmpty ? "-" : expense.memo)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(minWidth: 44, maxWidth: .infinity, alignment: .leading)
+                .minimumScaleFactor(0.95)
+                .frame(width: rowLayout.categoryWidth, alignment: .leading)
 
             Text(payerLabel(for: expense))
-                .frame(width: 48, alignment: .center)
+                .lineLimit(1)
+                .frame(width: rowLayout.payerWidth, alignment: .trailing)
 
             Text(HistoryFormatters.yen(expense.amount))
-                .fontDesign(.monospaced)
-            .foregroundStyle(entryTypeColor(for: expense))
-            .frame(width: 90, alignment: .trailing)
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(entryTypeColor(for: expense))
+                .frame(width: rowLayout.amountWidth, alignment: .trailing)
         }
-        .font(.caption)
-        .padding(.vertical, 4)
+        .font(.callout)
+        .padding(.vertical, 8)
+        .frame(minHeight: rowLayout.minHeight)
     }
 
     private func entryTypeColor(for expense: ExpenseRecord) -> Color {
@@ -354,6 +352,15 @@ struct HistoryView: View {
 
         return monthStart
     }
+}
+
+private enum HistoryRowLayout {
+    static let dateWidth: CGFloat = 68
+    static let categoryWidth: CGFloat = 104
+    static let payerWidth: CGFloat = 50
+    static let amountWidth: CGFloat = 100
+    static let columnSpacing: CGFloat = 8
+    static let minHeight: CGFloat = 44
 }
 
 private enum ViewMode {

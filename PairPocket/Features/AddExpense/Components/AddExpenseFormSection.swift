@@ -1,6 +1,11 @@
 import SwiftUI
 
 struct AddExpenseFormSection: View {
+    enum FocusField: Hashable {
+        case amount
+        case memo
+    }
+
     let selectedPocket: Pocket?
     let availableEntryTypes: [PocketEntryType]
     let isEditingExpense: Bool
@@ -11,8 +16,12 @@ struct AddExpenseFormSection: View {
     let selectedCategorySelection: Binding<UUID?>
     let selectedPocketColor: Color
     let availablePaymentSources: [PaymentSource]
+    let paymentSourceDisplayName: (PaymentSource) -> String
+    let hostDisplayName: String
+    let partnerDisplayName: String
     @Binding var selectedPaymentSource: PaymentSource
     @Binding var amountText: String
+    let focusedField: FocusState<FocusField?>.Binding
     let burdenA: Int
     let burdenB: Int
     @Binding var memoText: String
@@ -50,7 +59,7 @@ struct AddExpenseFormSection: View {
 
                 Picker("支払元", selection: $selectedPaymentSource) {
                     ForEach(availablePaymentSources, id: \.self) { source in
-                        Text(source.displayName).tag(source)
+                        Text(paymentSourceDisplayName(source)).tag(source)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -64,6 +73,7 @@ struct AddExpenseFormSection: View {
                     TextField("0", text: $amountText)
                         .font(.system(size: 36, weight: .bold, design: .rounded))
                         .keyboardType(.numberPad)
+                        .focused(focusedField, equals: .amount)
                         .textFieldStyle(.roundedBorder)
                         .onChange(of: amountText) { _, newValue in
                             amountText = newValue.filter(\.isNumber)
@@ -71,13 +81,13 @@ struct AddExpenseFormSection: View {
 
                     if isDepositEntry == false {
                         HStack(spacing: 20) {
-                            burdenRow(name: MemberRole.host.displayName, amount: burdenA)
-                            burdenRow(name: MemberRole.partner.displayName, amount: burdenB)
+                            burdenRow(name: hostDisplayName, amount: burdenA)
+                            burdenRow(name: partnerDisplayName, amount: burdenB)
                         }
 
                         Button {
                         } label: {
-                            Text("比率を変更")
+                            Text("比率変更")
                                 .font(.subheadline)
                         }
                         .buttonStyle(.plain)
@@ -86,7 +96,16 @@ struct AddExpenseFormSection: View {
                 }
 
                 TextField("メモ", text: $memoText)
+                    .focused(focusedField, equals: .memo)
                     .textFieldStyle(.roundedBorder)
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    KeyboardDismissToolbarButton {
+                        focusedField.wrappedValue = nil
+                    }
+                }
             }
         } else {
             ContentUnavailableView("ポケットがありません", systemImage: "wallet.pass")

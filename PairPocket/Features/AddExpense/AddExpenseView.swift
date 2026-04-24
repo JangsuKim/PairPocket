@@ -22,6 +22,7 @@ struct AddExpenseView: View {
     @State private var operationErrorMessage: String?
     @State private var hasInitializedForm = false
     @State private var showDeleteConfirmation = false
+    @FocusState private var focusedField: AddExpenseFormSection.FocusField?
 
     init(editingExpense: Expense? = nil, onDeleteSuccess: (() -> Void)? = nil) {
         self.editingExpense = editingExpense
@@ -154,6 +155,14 @@ struct AddExpenseView: View {
         selectedPocket?.displayColor ?? .accentColor
     }
 
+    private var hostDisplayName: String {
+        MemberPreferences.memberDisplayName(for: .host)
+    }
+
+    private var partnerDisplayName: String {
+        MemberPreferences.memberDisplayName(for: .partner)
+    }
+
     private var pocketIDs: [UUID] {
         pocketStore.pockets.map(\.id)
     }
@@ -181,8 +190,12 @@ struct AddExpenseView: View {
                     selectedCategorySelection: selectedCategorySelection,
                     selectedPocketColor: selectedPocketColor,
                     availablePaymentSources: availablePaymentSources,
+                    paymentSourceDisplayName: paymentSourceDisplayName,
+                    hostDisplayName: hostDisplayName,
+                    partnerDisplayName: partnerDisplayName,
                     selectedPaymentSource: $selectedPaymentSource,
                     amountText: $amountText,
+                    focusedField: $focusedField,
                     burdenA: burdenA,
                     burdenB: burdenB,
                     memoText: $memoText
@@ -194,7 +207,10 @@ struct AddExpenseView: View {
                     title: submitButtonTitle,
                     color: selectedPocket?.displayColor ?? .gray,
                     isEnabled: isAddEnabled,
-                    action: saveEntry
+                    action: {
+                        focusedField = nil
+                        saveEntry()
+                    }
                 )
 
                 if canDeleteEditingExpense {
@@ -242,11 +258,12 @@ struct AddExpenseView: View {
                     onDismissErrorAlert: { operationErrorMessage = nil }
                 )
             )
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("閉じる") {
-                        dismiss()
-                    }
+        }
+        .tapToDismissKeyboard()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("閉じる") {
+                    dismiss()
                 }
             }
         }
@@ -262,7 +279,7 @@ struct AddExpenseView: View {
 
     private var canDeleteEditingExpense: Bool {
         if let editingExpense {
-            return editingExpense.isSettled == false && editingExpense.isDeleted == false
+            return editingExpense.isSettled == false && editingExpense.deletedAt == nil
         }
 
         return false
@@ -271,6 +288,17 @@ struct AddExpenseView: View {
     private func syncSelectedPaymentSource() {
         if availablePaymentSources.contains(selectedPaymentSource) == false {
             selectedPaymentSource = availablePaymentSources.first ?? .host
+        }
+    }
+
+    private func paymentSourceDisplayName(_ source: PaymentSource) -> String {
+        switch source {
+        case .host:
+            return hostDisplayName
+        case .partner:
+            return partnerDisplayName
+        case .pocket:
+            return source.displayName
         }
     }
 
@@ -336,7 +364,7 @@ struct AddExpenseView: View {
     }
 
     private func saveEntry() {
-        if let editingExpense, editingExpense.isDeleted {
+        if let editingExpense, editingExpense.deletedAt != nil {
             operationErrorMessage = "Deleted expenses cannot be edited."
             return
         }
@@ -398,7 +426,7 @@ struct AddExpenseView: View {
             return
         }
 
-        guard editingExpense.isDeleted == false else {
+        guard editingExpense.deletedAt == nil else {
             operationErrorMessage = "Deleted expenses cannot be deleted."
             return
         }
