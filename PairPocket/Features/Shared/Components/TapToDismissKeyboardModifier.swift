@@ -3,8 +3,9 @@ import UIKit
 
 struct TapToDismissKeyboardModifier: ViewModifier {
     func body(content: Content) -> some View {
-        content.simultaneousGesture(
-            TapGesture().onEnded {
+        content
+            .contentShape(Rectangle())
+            .onTapGesture {
                 UIApplication.shared.sendAction(
                     #selector(UIResponder.resignFirstResponder),
                     to: nil,
@@ -12,7 +13,6 @@ struct TapToDismissKeyboardModifier: ViewModifier {
                     for: nil
                 )
             }
-        )
     }
 }
 
