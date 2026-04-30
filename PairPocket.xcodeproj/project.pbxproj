@@ -22,11 +22,22 @@
 		7A0D00062F60000100AA0001 /* SettlementCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599F069A2F581AC300CC930E /* SettlementCalculator.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		59714C4F2F9B4DAA005927EC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 596D66032F55887F00A15A0F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 596D660A2F55887F00A15A0F;
+			remoteInfo = PairPocket;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		5963CF9F2F66A23B007F7520 /* SettlementSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementSummary.swift; sourceTree = "<group>"; };
 		5963D0492F66A529007F7520 /* SettlementEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementEngine.swift; sourceTree = "<group>"; };
 		5963D04B2F66ADD5007F7520 /* SettlementExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementExecutor.swift; sourceTree = "<group>"; };
 		596D660B2F55887F00A15A0F /* PairPocket.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PairPocket.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		59714C4B2F9B4DAA005927EC /* PairPocketTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PairPocketTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		599F06942F58144D00CC930E /* Member.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Member.swift; sourceTree = "<group>"; };
 		599F06952F58144D00CC930E /* Pocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pocket.swift; sourceTree = "<group>"; };
 		599F06962F58144D00CC930E /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
@@ -58,10 +69,22 @@
 			path = PairPocket;
 			sourceTree = "<group>";
 		};
+		59714C4C2F9B4DAA005927EC /* PairPocketTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PairPocketTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		596D66082F55887F00A15A0F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		59714C482F9B4DAA005927EC /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -75,6 +98,7 @@
 			isa = PBXGroup;
 			children = (
 				596D660D2F55887F00A15A0F /* PairPocket */,
+				59714C4C2F9B4DAA005927EC /* PairPocketTests */,
 				596D660C2F55887F00A15A0F /* Products */,
 				599F06922F58142D00CC930E /* Domain */,
 			);
@@ -84,6 +108,7 @@
 			isa = PBXGroup;
 			children = (
 				596D660B2F55887F00A15A0F /* PairPocket.app */,
+				59714C4B2F9B4DAA005927EC /* PairPocketTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -149,6 +174,29 @@
 			productReference = 596D660B2F55887F00A15A0F /* PairPocket.app */;
 			productType = "com.apple.product-type.application";
 		};
+		59714C4A2F9B4DAA005927EC /* PairPocketTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 59714C532F9B4DAA005927EC /* Build configuration list for PBXNativeTarget "PairPocketTests" */;
+			buildPhases = (
+				59714C472F9B4DAA005927EC /* Sources */,
+				59714C482F9B4DAA005927EC /* Frameworks */,
+				59714C492F9B4DAA005927EC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				59714C502F9B4DAA005927EC /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				59714C4C2F9B4DAA005927EC /* PairPocketTests */,
+			);
+			name = PairPocketTests;
+			packageProductDependencies = (
+			);
+			productName = PairPocketTests;
+			productReference = 59714C4B2F9B4DAA005927EC /* PairPocketTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -156,11 +204,15 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2630;
+				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					596D660A2F55887F00A15A0F = {
 						CreatedOnToolsVersion = 26.3;
+					};
+					59714C4A2F9B4DAA005927EC = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 596D660A2F55887F00A15A0F;
 					};
 				};
 			};
@@ -179,12 +231,20 @@
 			projectRoot = "";
 			targets = (
 				596D660A2F55887F00A15A0F /* PairPocket */,
+				59714C4A2F9B4DAA005927EC /* PairPocketTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		596D66092F55887F00A15A0F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		59714C492F9B4DAA005927EC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -214,7 +274,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		59714C472F9B4DAA005927EC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		59714C502F9B4DAA005927EC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 596D660A2F55887F00A15A0F /* PairPocket */;
+			targetProxy = 59714C4F2F9B4DAA005927EC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		596D66142F55888000A15A0F /* Debug */ = {
@@ -406,6 +481,50 @@
 			};
 			name = Release;
 		};
+		59714C512F9B4DAA005927EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SJM2NZY8A8;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jangsoo.PairPocketTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PairPocket.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PairPocket";
+			};
+			name = Debug;
+		};
+		59714C522F9B4DAA005927EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SJM2NZY8A8;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jangsoo.PairPocketTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PairPocket.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PairPocket";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -423,6 +542,15 @@
 			buildConfigurations = (
 				596D66172F55888000A15A0F /* Debug */,
 				596D66182F55888000A15A0F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		59714C532F9B4DAA005927EC /* Build configuration list for PBXNativeTarget "PairPocketTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				59714C512F9B4DAA005927EC /* Debug */,
+				59714C522F9B4DAA005927EC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -95,6 +95,11 @@ public enum SettlementEngine {
             return baseShare
         }
 
+        // Both numerators divide exactly — shares already sum to totalSpent, no adjustment needed.
+        if remainder == 0 {
+            return baseShare
+        }
+
         if totalPaid < otherTotalPaid {
             return baseShare + 1
         }
