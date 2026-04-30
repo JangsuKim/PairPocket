@@ -274,7 +274,7 @@ struct PocketListView: View {
                     Text(amountCaption)
                         .font(.caption)
                         .foregroundStyle(pocketCardSecondaryForeground)
-                    Text(formatYen(displayedAmount))
+                    Text(YenFormatter.yen(displayedAmount))
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(amountColor)
                 }
@@ -288,7 +288,7 @@ struct PocketListView: View {
                 .foregroundStyle(pocketCardSecondaryForeground)
             } else {
                 HStack {
-                    Text(formatYen(displayedAmount))
+                    Text(YenFormatter.yen(displayedAmount))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(amountColor)
                     Spacer()
@@ -424,14 +424,6 @@ struct PocketListView: View {
         case .sharedManagement:
             return currentBalance > 0 ? "残高" : "支出"
         }
-    }
-
-    private func formatYen(_ amount: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.numberStyle = .decimal
-        let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
-        return "¥\(formatted)"
     }
 
     private func pocketModeLabel(for pocket: Pocket) -> String {

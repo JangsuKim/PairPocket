@@ -184,14 +184,12 @@ struct PocketDetailView: View {
                             paidByA: paidByA,
                             paidByB: paidByB,
                             totalAmount: totalAmount,
-                            currentBalance: currentBalance,
-                            formatYen: formatYen
+                            currentBalance: currentBalance
                         )
                         PocketDetailSettlement(
                             payerName: settlementSummary.settlementPayer.map(memberName(for:)),
                             receiverName: settlementSummary.settlementReceiver.map(memberName(for:)),
-                            settlementAmount: settlementSummary.settlementAmount,
-                            formatYen: formatYen
+                            settlementAmount: settlementSummary.settlementAmount
                         )
                         PocketDetailCategorySection(
                             pocketColor: pocket.displayColor,
@@ -201,7 +199,6 @@ struct PocketDetailView: View {
                             totalAmount: totalAmount,
                             categoryCount: pocketCategories.count,
                             summaryText: categorySectionSummaryText,
-                            formatYen: formatYen,
                             percentageText: percentageText(for:),
                             categoryColor: categoryColor(for:),
                             onToggle: toggleCategorySection,
@@ -213,7 +210,6 @@ struct PocketDetailView: View {
                             isEmpty: pocketExpenses.isEmpty,
                             chartYear: chartYear,
                             summaryText: monthlySectionSummaryText,
-                            formatYen: formatYen,
                             monthlyBarWidth: monthlyBarWidth(amount:availableWidth:),
                             onToggle: toggleMonthlySection
                         )
@@ -281,14 +277,6 @@ struct PocketDetailView: View {
 
         let ratio = Double(amount) / Double(totalAmount)
         return "\(Int((ratio * 100).rounded()))%"
-    }
-
-    private func formatYen(_ amount: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.numberStyle = .decimal
-        let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
-        return "¥\(formatted)"
     }
 
     private var categorySectionSummaryText: String {

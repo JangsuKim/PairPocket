@@ -8,7 +8,5 @@ public enum SettlementInterpretationBoundary {
         expense.paymentSource
     }
 
-    public static func payerIdentity(for expense: Expense) -> String? {
-        expense.paidByUserId
-    }
+
 }

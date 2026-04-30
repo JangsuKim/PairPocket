@@ -4,7 +4,6 @@ struct PocketDetailSettlement: View {
     let payerName: String?
     let receiverName: String?
     let settlementAmount: Int
-    let formatYen: (Int) -> String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -23,7 +22,7 @@ struct PocketDetailSettlement: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
 
-                    Text(formatYen(settlementAmount))
+                    Text(YenFormatter.yen(settlementAmount))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                 }
             } else {

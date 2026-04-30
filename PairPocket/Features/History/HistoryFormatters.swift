@@ -15,15 +15,4 @@ enum HistoryFormatters {
         return formatter
     }()
 
-    static let yenFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.numberStyle = .decimal
-        return formatter
-    }()
-
-    static func yen(_ amount: Int) -> String {
-        let formatted = yenFormatter.string(from: NSNumber(value: amount)) ?? "0"
-        return "¥\(formatted)"
-    }
 }
