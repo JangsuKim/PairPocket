@@ -130,7 +130,7 @@ struct SettlementEngineTests {
         let entries = [
             makeEntry(amount: 5000, ratioHost: 60, ratioPartner: 40),
             makeEntry(paymentSource: .partner, amount: 3000, ratioHost: 60, ratioPartner: 40),
-            makeEntry(amount: 2000, ratioHost: 60, ratioPartner: 40),
+            makeEntry(amount: 2000, ratioHost: 60, ratioPartner: 40)
         ]
         // Total = 10000
         // Host paid: 7000, Partner paid: 3000
@@ -324,7 +324,7 @@ struct SettlementEngineTests {
             makeEntry(amount: 4500, ratioHost: 55, ratioPartner: 45),
             makeEntry(paymentSource: .partner, amount: 2800, ratioHost: 55, ratioPartner: 45),
             makeEntry(amount: 1200, ratioHost: 55, ratioPartner: 45),
-            makeEntry(paymentSource: .partner, amount: 3500, ratioHost: 55, ratioPartner: 45),
+            makeEntry(paymentSource: .partner, amount: 3500, ratioHost: 55, ratioPartner: 45)
         ]
         // Total = 12000
         // Host paid: 4500 + 1200 = 5700
@@ -348,7 +348,7 @@ struct SettlementEngineTests {
             makeEntry(type: .deposit, amount: 10000),
             makeEntry(paymentSource: .pocket, amount: 4000),
             makeEntry(amount: 3000),
-            makeEntry(paymentSource: .partner, amount: 2000),
+            makeEntry(paymentSource: .partner, amount: 2000)
         ]
         // Deposits: 10000
         // Pocket expense: 4000, balance = 10000 - 4000 = 6000

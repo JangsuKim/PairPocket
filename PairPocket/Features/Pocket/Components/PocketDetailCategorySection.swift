@@ -118,4 +118,3 @@ struct PocketDetailCategorySection: View {
         .tint(pocketColor)
     }
 }
-

@@ -79,9 +79,9 @@ struct SettlementExecutorTests {
 
     @Test func mixedSettledAndUnsettled_onlyUnsettledAreUpdated() {
         let already = { () -> Expense in
-            var e = self.makeExpense(isSettled: true)
-            e.settlementId = UUID()
-            return e
+            var exp = self.makeExpense(isSettled: true)
+            exp.settlementId = UUID()
+            return exp
         }()
         let pending = makeExpense(isSettled: false)
 

@@ -290,7 +290,6 @@ private enum SettlementDateFormatter {
     }()
 }
 
-
 #Preview {
     NavigationStack {
         SettlementView()

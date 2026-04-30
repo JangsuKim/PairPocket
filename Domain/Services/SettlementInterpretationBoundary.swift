@@ -7,6 +7,4 @@ public enum SettlementInterpretationBoundary {
     public static func rolePaymentSource(for expense: Expense) -> PaymentSource {
         expense.paymentSource
     }
-
-
 }

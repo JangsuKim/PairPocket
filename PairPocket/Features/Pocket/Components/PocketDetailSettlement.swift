@@ -36,4 +36,3 @@ struct PocketDetailSettlement: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }
-

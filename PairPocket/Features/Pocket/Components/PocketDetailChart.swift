@@ -79,4 +79,3 @@ struct PocketDetailChart: View {
         }
     }
 }
-
