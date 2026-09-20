@@ -3,18 +3,22 @@ import SwiftUI
 struct PocketTabBar: View {
     let pockets: [Pocket]
     let selectedPocket: Pocket?
+    let layout: PocketTabLayout
     let onSelect: (Pocket) -> Void
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .bottom, spacing: 6) {
-                ForEach(pockets) { pocket in
-                    pocketButton(for: pocket)
-                }
+        ZStack(alignment: .topLeading) {
+            ForEach(pockets) { pocket in
+                pocketButton(for: pocket)
+                    .frame(width: layout.width(for: pocket.id), height: layout.tabHeight)
+                    .offset(
+                        x: layout.xPosition(for: pocket.id),
+                        y: selectedPocket?.id == pocket.id ? 0 : 4
+                    )
+                    .zIndex(selectedPocket?.id == pocket.id ? 1 : 0)
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 6)
         }
+        .frame(maxWidth: .infinity, maxHeight: layout.tabHeight, alignment: .leading)
     }
 
     private func pocketButton(for pocket: Pocket) -> some View {
@@ -22,70 +26,96 @@ struct PocketTabBar: View {
         let pocketColor = pocket.displayColor
 
         return Button {
-            onSelect(pocket)
+            withAnimation(.easeInOut(duration: 0.22)) {
+                onSelect(pocket)
+            }
         } label: {
-            HStack(spacing: 6) {
-                if let icon = pocket.icon, icon.isEmpty == false {
-                    Image(systemName: icon)
-                        .font(.caption.weight(.semibold))
+            Text(pocket.name)
+                .font(.system(size: isSelected ? 15 : 11.5, weight: isSelected ? .semibold : .medium))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .truncationMode(.tail)
+                .foregroundStyle(isSelected ? pocketColor : pocketColor.opacity(0.9))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, isSelected ? 10 : 6)
+                .contentShape(Rectangle())
+                .background {
+                    if isSelected == false {
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .fill(pocketColor.opacity(0.11))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                    .stroke(pocketColor.opacity(0.17), lineWidth: 0.8)
+                            }
+                    }
                 }
-
-                Text(pocket.name)
-                    .font(.footnote.weight(.semibold))
-                    .lineLimit(1)
-            }
-            .foregroundStyle(isSelected ? pocketColor : pocketColor.opacity(0.7))
-            .padding(.horizontal, 14)
-            .padding(.top, 10)
-            .padding(.bottom, 12)
-            .background {
-                PocketTabShape()
-                    .fill(isSelected ? Color.white : Color(.systemGray6).opacity(0.92))
-            }
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(isSelected ? Color.white : Color(.systemGray6).opacity(0.92))
-                    .frame(height: isSelected ? 18 : 10)
-                    .offset(y: isSelected ? 8 : 5)
-                    .padding(.horizontal, isSelected ? 2 : 6)
-            }
-            .overlay {
-                PocketTabShape()
-                    .stroke(isSelected ? pocketColor.opacity(0.9) : Color(.separator).opacity(0.7), lineWidth: 1)
-            }
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(isSelected ? Color.white : .clear)
-                    .frame(height: 3)
-                    .offset(y: 1)
-            }
-            .shadow(color: isSelected ? pocketColor.opacity(0.12) : .clear, radius: 10, x: 0, y: 4)
-            .offset(y: isSelected ? 0 : 10)
-            .zIndex(isSelected ? 1 : 0)
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
-private struct PocketTabShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        let radius: CGFloat = 14
-        var path = Path()
+struct PocketTabLayout {
+    let frames: [UUID: CGRect]
+    let tabHeight: CGFloat
 
-        path.move(to: CGPoint(x: 0, y: rect.maxY))
-        path.addLine(to: CGPoint(x: 0, y: radius))
-        path.addQuadCurve(
-            to: CGPoint(x: radius, y: 0),
-            control: CGPoint(x: 0, y: 0)
-        )
-        path.addLine(to: CGPoint(x: rect.maxX - radius, y: 0))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: radius),
-            control: CGPoint(x: rect.maxX, y: 0)
-        )
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.closeSubpath()
+    func frame(for pocketID: UUID?) -> CGRect? {
+        guard let pocketID else {
+            return nil
+        }
 
-        return path
+        return frames[pocketID]
+    }
+
+    func width(for pocketID: UUID) -> CGFloat {
+        frames[pocketID]?.width ?? 0
+    }
+
+    func xPosition(for pocketID: UUID) -> CGFloat {
+        frames[pocketID]?.minX ?? 0
+    }
+
+    static func make(
+        pockets: [Pocket],
+        selectedPocketID: UUID?,
+        availableWidth: CGFloat
+    ) -> PocketTabLayout {
+        let tabHeight: CGFloat = 42
+        let leadingInset: CGFloat = 22
+        let trailingInset: CGFloat = 22
+        let spacing: CGFloat = 4
+        let count = pockets.count
+        let usableWidth = max(availableWidth - leadingInset - trailingInset - (spacing * CGFloat(max(count - 1, 0))), 0)
+        let preferredWidths = preferredWidths(for: count)
+        let preferredTotal = preferredWidths.selected + (preferredWidths.inactive * CGFloat(max(count - 1, 0)))
+        let scale = preferredTotal > usableWidth && preferredTotal > 0 ? usableWidth / preferredTotal : 1
+        let selectedWidth = preferredWidths.selected * scale
+        let inactiveWidth = preferredWidths.inactive * scale
+
+        var currentX = leadingInset
+        var frames: [UUID: CGRect] = [:]
+
+        for pocket in pockets {
+            let width = pocket.id == selectedPocketID ? selectedWidth : inactiveWidth
+            frames[pocket.id] = CGRect(x: currentX, y: 0, width: width, height: tabHeight)
+            currentX += width + spacing
+        }
+
+        return PocketTabLayout(frames: frames, tabHeight: tabHeight)
+    }
+
+    private static func preferredWidths(for count: Int) -> (selected: CGFloat, inactive: CGFloat) {
+        switch count {
+        case 1:
+            return (136, 0)
+        case 2:
+            return (132, 110)
+        case 3:
+            return (124, 76)
+        case 4:
+            return (114, 64)
+        default:
+            return (106, 52)
+        }
     }
 }
