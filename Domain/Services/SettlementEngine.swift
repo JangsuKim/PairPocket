@@ -1,8 +1,16 @@
 import Foundation
 
 public enum SettlementEngine {
+    /// Settlement status does not change money remaining in the shared pot.
+    public static func currentPocketBalance(entries: [PocketEntry]) -> Int {
+        entries.filter { !$0.isDeleted && $0.deletedAt == nil }.reduce(0) { balance, entry in
+            if entry.type == .deposit { return balance + entry.amount }
+            return entry.paymentSource == .pocket ? balance - entry.amount : balance
+        }
+    }
+
     public static func calculate(entries: [PocketEntry]) -> SettlementSummary {
-        let unsettledEntries = entries.filter { !$0.isSettled }
+        let unsettledEntries = entries.filter { !$0.isSettled && !$0.isDeleted && $0.deletedAt == nil }
         let unsettledExpenses = unsettledEntries.filter { $0.type == .expense }
         let unsettledDeposits = unsettledEntries.filter { $0.type == .deposit }
 
@@ -92,6 +100,11 @@ public enum SettlementEngine {
         }
 
         if remainder < otherRemainder {
+            return baseShare
+        }
+
+        // Both numerators divide exactly — shares already sum to totalSpent, no adjustment needed.
+        if remainder == 0 {
             return baseShare
         }
 

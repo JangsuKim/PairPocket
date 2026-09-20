@@ -111,11 +111,4 @@ public enum SettlementCalculator {
         )
     }
 
-    public static func calculate(entries: [PocketEntry]) -> SettlementSummary {
-        SettlementEngine.calculate(entries: entries)
-    }
-
-    public static func calculate(expenses: [Expense]) -> SettlementSummary {
-        SettlementEngine.calculate(expenses: expenses)
-    }
 }

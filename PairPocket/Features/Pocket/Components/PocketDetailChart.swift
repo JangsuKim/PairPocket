@@ -6,7 +6,6 @@ struct PocketDetailChart: View {
     let isEmpty: Bool
     let chartYear: Int
     let summaryText: String
-    let formatYen: (Int) -> String
     let monthlyBarWidth: (Int, CGFloat) -> CGFloat
     let onToggle: () -> Void
 
@@ -73,11 +72,10 @@ struct PocketDetailChart: View {
             }
             .frame(height: 20)
 
-            Text(formatYen(summary.amount))
+            Text(YenFormatter.yen(summary.amount))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .frame(width: 64, alignment: .trailing)
         }
     }
 }
-

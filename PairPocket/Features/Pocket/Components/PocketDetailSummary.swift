@@ -6,7 +6,6 @@ struct PocketDetailSummary: View {
     let paidByB: Int
     let totalAmount: Int
     let currentBalance: Int
-    let formatYen: (Int) -> String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -35,7 +34,7 @@ struct PocketDetailSummary: View {
             Text(title)
                 .fontWeight(emphasized ? .semibold : .regular)
             Spacer()
-            Text(formatYen(amount))
+            Text(YenFormatter.yen(amount))
                 .font(emphasized ? .title3.weight(.bold) : .title3.weight(.semibold))
                 .foregroundStyle(valueColor(for: amount))
         }

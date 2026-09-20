@@ -284,7 +284,7 @@ struct HistoryView: View {
                 .lineLimit(1)
                 .frame(width: rowLayout.payerWidth, alignment: .trailing)
 
-            Text(HistoryFormatters.yen(expense.amount))
+            Text(YenFormatter.yen(expense.amount))
                 .font(.subheadline.weight(.semibold))
                 .monospacedDigit()
                 .foregroundStyle(entryTypeColor(for: expense))

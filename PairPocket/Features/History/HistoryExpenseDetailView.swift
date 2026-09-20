@@ -48,7 +48,7 @@ struct HistoryExpenseDetailView: View {
                 )
                 detailRow(
                     title: "金額",
-                    value: HistoryDetailFormatters.yen(expense.amount),
+                    value: YenFormatter.yen(expense.amount),
                     valueColor: amountValueColor
                 )
             }
@@ -124,15 +124,4 @@ private struct HistoryDetailFormatters {
         return formatter
     }()
 
-    static let yenFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.numberStyle = .decimal
-        return formatter
-    }()
-
-    static func yen(_ amount: Int) -> String {
-        let formatted = yenFormatter.string(from: NSNumber(value: amount)) ?? "0"
-        return "¥\(formatted)"
-    }
 }

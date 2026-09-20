@@ -116,7 +116,8 @@ final class CategoryStore {
             reorderedRecords.remove(at: sourceIndex)
         }
 
-        let destinationIndex = min(max(toOffset, 0), reorderedRecords.count)
+        let removedBeforeDestination = fromOffsets.filter { $0 < toOffset }.count
+        let destinationIndex = min(max(toOffset - removedBeforeDestination, 0), reorderedRecords.count)
         reorderedRecords.insert(contentsOf: movingRecords, at: destinationIndex)
 
         for (index, reorderedRecord) in reorderedRecords.enumerated() {
@@ -127,13 +128,6 @@ final class CategoryStore {
         try reload(from: modelContext)
     }
 
-    func deleteCategory(id: UUID, in modelContext: ModelContext) throws {
-        guard let record = try fetchCategoryRecord(id: id, from: modelContext) else { return }
-
-        modelContext.delete(record)
-        try modelContext.save()
-        try reload(from: modelContext)
-    }
 }
 
 private extension CategoryStore {

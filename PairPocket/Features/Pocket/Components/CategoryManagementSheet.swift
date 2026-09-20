@@ -3,7 +3,6 @@ import SwiftUI
 
 struct CategoryManagementSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.editMode) private var editMode
     @Environment(\.modelContext) private var modelContext
     @Environment(CategoryStore.self) private var categoryStore
 
@@ -100,7 +99,6 @@ struct CategoryManagementSheet: View {
                             withAnimation {
                                 isReordering.toggle()
                                 editingCategoryID = nil
-                                editMode?.wrappedValue = isReordering ? .inactive : .active
                             }
                         }
                     }
@@ -265,4 +263,3 @@ private struct ReorderableCategoryRow: View {
         .padding(.vertical, 2)
     }
 }
-

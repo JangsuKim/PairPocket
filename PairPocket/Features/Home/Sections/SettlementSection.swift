@@ -12,6 +12,7 @@ struct SettlementSection: View {
     @AppStorage(MemberPreferenceKeys.partnerPhotoData) private var partnerPhotoData = Data()
     @State private var isShowingSettlementConfirmation = false
     @State private var isShowingZeroSettlementAlert = false
+    @State private var saveErrorMessage: String?
 
     private let allPocketColor: Color = .secondary
 
@@ -32,7 +33,7 @@ struct SettlementSection: View {
             return HomeSettlementResultDisplay(
                 arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
-                amountText: formattedYen(0),
+                amountText: YenFormatter.yenWithSuffix(0),
                 amountColor: .primary
             )
         }
@@ -41,7 +42,7 @@ struct SettlementSection: View {
             return HomeSettlementResultDisplay(
                 arrowAssetName: "SettlementArrowBidirectional",
                 arrowSystemName: nil,
-                amountText: formattedYen(0),
+                amountText: YenFormatter.yenWithSuffix(0),
                 amountColor: .primary
             )
         }
@@ -49,7 +50,7 @@ struct SettlementSection: View {
         return HomeSettlementResultDisplay(
             arrowAssetName: SettlementResultPresenter.arrowAssetName(for: signedAmount),
             arrowSystemName: nil,
-            amountText: formattedYen(abs(signedAmount)),
+            amountText: YenFormatter.yenWithSuffix(abs(signedAmount)),
             amountColor: .primary
         )
     }
@@ -85,6 +86,7 @@ struct SettlementSection: View {
             }
         }
         .background(settlementAlertHost)
+        .saveErrorAlert(message: $saveErrorMessage)
     }
 
     private var settlementAmountCard: some View {
@@ -144,14 +146,6 @@ struct SettlementSection: View {
         }
     }
 
-    private func formattedYen(_ amount: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.numberStyle = .decimal
-        let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
-        return "\(formatted)円"
-    }
-
     private func executeFullSettlement() {
         guard unsettledExpenses.isEmpty == false else {
             return
@@ -160,12 +154,17 @@ struct SettlementSection: View {
         let settlementId = UUID()
         let settledAt = Date()
 
-        try? expenseStore.settleExpenses(
-            unsettledExpenses,
-            settlementId: settlementId,
-            settledAt: settledAt,
-            in: modelContext
-        )
+        do {
+            try expenseStore.settleExpenses(
+                unsettledExpenses,
+                settlementId: settlementId,
+                settledAt: settledAt,
+                in: modelContext
+            )
+        } catch {
+            modelContext.rollback()
+            saveErrorMessage = error.localizedDescription
+        }
     }
 
     private func handleSettlementButtonTap() {

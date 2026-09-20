@@ -72,7 +72,9 @@ final class ExpenseRecord {
         self.settlementId = settlementId
         self.settledAt = settledAt
         self.isDeleted = isDeleted
-        self.deletedAt = deletedAt
+        // SwiftData also exposes isDeleted for physical deletion. Use the timestamp
+        // as the durable soft-delete marker, including for flag-only domain input.
+        self.deletedAt = deletedAt ?? (isDeleted ? Date() : nil)
         self.createdByUserId = createdByUserId
         self.paidByUserId = paidByUserId
     }
@@ -158,7 +160,7 @@ extension ExpenseRecord {
             isSettled: isSettled,
             settlementId: settlementId,
             settledAt: settledAt,
-            isDeleted: isDeleted,
+            isDeleted: deletedAt != nil,
             deletedAt: deletedAt,
             createdByUserId: createdByUserId,
             paidByUserId: paidByUserId

@@ -172,11 +172,6 @@ final class ExpenseStore {
         entries.filter { $0.pocketId == pocketId }
     }
 
-    func backfillIdentityFieldsIfNeeded(in modelContext: ModelContext) throws {
-        // Reserved for a future migration when invite/link is implemented.
-        _ = modelContext
-    }
-
     func expenses(for pocketId: UUID) -> [Expense] {
         expenses.filter { $0.pocketId == pocketId }
     }

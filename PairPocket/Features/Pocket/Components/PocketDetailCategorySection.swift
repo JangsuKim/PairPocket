@@ -9,7 +9,6 @@ struct PocketDetailCategorySection: View {
     let totalAmount: Int
     let categoryCount: Int
     let summaryText: String
-    let formatYen: (Int) -> String
     let percentageText: (Int) -> String
     let categoryColor: (CategorySpendingSummary) -> Color
     let onToggle: () -> Void
@@ -60,7 +59,7 @@ struct PocketDetailCategorySection: View {
                                 Text("合計")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                Text(formatYen(totalAmount))
+                                Text(YenFormatter.yen(totalAmount))
                                     .font(.title3.weight(.bold))
                             }
                             .position(x: plotFrame.midX, y: plotFrame.midY)
@@ -86,7 +85,7 @@ struct PocketDetailCategorySection: View {
                                 Spacer()
 
                                 VStack(alignment: .trailing, spacing: 2) {
-                                    Text(formatYen(summary.amount))
+                                    Text(YenFormatter.yen(summary.amount))
                                         .font(.subheadline.weight(.semibold))
                                     Text(percentageText(summary.amount))
                                         .font(.caption)
@@ -119,4 +118,3 @@ struct PocketDetailCategorySection: View {
         .tint(pocketColor)
     }
 }
-

@@ -220,7 +220,7 @@ struct PocketListView: View {
         let pocketEntries = entries(for: pocket.id)
         let pocketExpenses = pocketEntries.filter { $0.type == .expense }
         let totalExpense = pocketExpenses.reduce(0) { $0 + $1.amount }
-        let currentBalance = SettlementEngine.calculate(entries: pocketEntries).currentBalance
+        let currentBalance = SettlementEngine.currentPocketBalance(entries: pocketEntries)
         let displayedAmount = displayedAmount(for: pocket, totalExpense: totalExpense, currentBalance: currentBalance)
         let amountCaption = amountCaption(for: pocket, currentBalance: currentBalance)
         let amountColor = MoneyValueStyle.colorForPocketDisplay(
@@ -274,7 +274,7 @@ struct PocketListView: View {
                     Text(amountCaption)
                         .font(.caption)
                         .foregroundStyle(pocketCardSecondaryForeground)
-                    Text(formatYen(displayedAmount))
+                    Text(YenFormatter.yen(displayedAmount))
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(amountColor)
                 }
@@ -288,7 +288,7 @@ struct PocketListView: View {
                 .foregroundStyle(pocketCardSecondaryForeground)
             } else {
                 HStack {
-                    Text(formatYen(displayedAmount))
+                    Text(YenFormatter.yen(displayedAmount))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(amountColor)
                     Spacer()
@@ -424,14 +424,6 @@ struct PocketListView: View {
         case .sharedManagement:
             return currentBalance > 0 ? "残高" : "支出"
         }
-    }
-
-    private func formatYen(_ amount: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.numberStyle = .decimal
-        let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0"
-        return "¥\(formatted)"
     }
 
     private func pocketModeLabel(for pocket: Pocket) -> String {
