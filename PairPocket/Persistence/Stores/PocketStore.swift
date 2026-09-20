@@ -43,15 +43,6 @@ final class PocketStore {
         syncState(from: refreshedRecords.map(\.pocket), deletedPocketIDs: deletedIDs)
     }
 
-    func addPocket(_ pocket: Pocket, in modelContext: ModelContext) throws {
-        guard pockets.count < Self.maximumPocketCount else {
-            throw PocketStoreError.pocketLimitExceeded(maximum: Self.maximumPocketCount)
-        }
-
-        modelContext.insert(PocketRecord(pocket: pocket))
-        try persistMainPocket(preferredMainID: pocket.isMain ? pocket.id : nil, in: modelContext)
-    }
-
     func addPocket(
         _ pocket: Pocket,
         defaultCategoryName: String,
@@ -122,10 +113,6 @@ final class PocketStore {
         record.colorKey = Self.firstAvailableActivePocketColorKey(excluding: activeColorKeys)
         modelContext.delete(deletedRecord)
         try persistMainPocket(preferredMainID: nil, in: modelContext)
-    }
-
-    func setMainPocket(id: UUID, in modelContext: ModelContext) throws {
-        try persistMainPocket(preferredMainID: id, in: modelContext)
     }
 
     func pocket(for id: UUID, includeDeleted: Bool = false) -> Pocket? {

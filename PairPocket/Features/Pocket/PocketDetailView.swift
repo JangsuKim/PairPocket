@@ -63,7 +63,7 @@ struct PocketDetailView: View {
     }
 
     private var currentBalance: Int {
-        SettlementEngine.calculate(entries: pocketEntries).currentBalance
+        SettlementEngine.currentPocketBalance(entries: pocketEntries)
     }
 
     private var paidByA: Int {

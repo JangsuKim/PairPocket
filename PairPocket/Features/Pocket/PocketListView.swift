@@ -220,7 +220,7 @@ struct PocketListView: View {
         let pocketEntries = entries(for: pocket.id)
         let pocketExpenses = pocketEntries.filter { $0.type == .expense }
         let totalExpense = pocketExpenses.reduce(0) { $0 + $1.amount }
-        let currentBalance = SettlementEngine.calculate(entries: pocketEntries).currentBalance
+        let currentBalance = SettlementEngine.currentPocketBalance(entries: pocketEntries)
         let displayedAmount = displayedAmount(for: pocket, totalExpense: totalExpense, currentBalance: currentBalance)
         let amountCaption = amountCaption(for: pocket, currentBalance: currentBalance)
         let amountColor = MoneyValueStyle.colorForPocketDisplay(

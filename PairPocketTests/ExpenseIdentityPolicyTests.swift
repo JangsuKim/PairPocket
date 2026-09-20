@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import PairPocket
 
+@MainActor
 struct ExpenseIdentityPolicyTests {
 
     private let pocketId = UUID()

@@ -4,6 +4,19 @@ import Testing
 
 struct SettlementExecutorTests {
 
+    @Test func deletedExpensesAndDepositsAreNotSettled() {
+        var deleted = makeExpense()
+        deleted.isDeleted = true
+        var timestampDeleted = makeExpense()
+        timestampDeleted.deletedAt = Date()
+        var deposit = makeExpense()
+        deposit.type = .deposit
+        let result = SettlementExecutor.markExpensesSettled(
+            expenses: [deleted, timestampDeleted, deposit], settlementId: settlementId, settledAt: settledAt
+        )
+        #expect(result.allSatisfy { !$0.isSettled && $0.settlementId == nil && $0.settledAt == nil })
+    }
+
     private let pocketId = UUID()
     private let settlementId = UUID()
     private let settledAt = Date(timeIntervalSince1970: 9999)

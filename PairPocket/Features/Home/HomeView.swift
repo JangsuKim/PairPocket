@@ -24,7 +24,7 @@ struct HomeView: View {
     }
 
     private var selectedPocketBalance: Int {
-        SettlementEngine.calculate(entries: selectedPocketEntries).currentBalance
+        SettlementEngine.currentPocketBalance(entries: selectedPocketEntries)
     }
 
     private var currentMonthEntries: [Transaction] {

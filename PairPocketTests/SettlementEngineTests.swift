@@ -4,6 +4,37 @@ import Testing
 
 struct SettlementEngineTests {
 
+    @Test func sharedBalanceDoesNotChangeAfterSettlement() {
+        let deposit = makeEntry(type: .deposit, amount: 5000)
+        let expense = makeEntry(paymentSource: .pocket, amount: 1200)
+        let settled = SettlementExecutor.markExpensesSettled(
+            expenses: [expense], settlementId: UUID(), settledAt: Date()
+        )
+        #expect(SettlementEngine.currentPocketBalance(entries: [deposit, expense]) == 3800)
+        #expect(SettlementEngine.currentPocketBalance(entries: [deposit] + settled) == 3800)
+    }
+
+    @Test func sharedBalanceExcludesDeletedAndPersonalPayments() {
+        var deleted = makeEntry(type: .deposit, amount: 2000)
+        deleted.isDeleted = true
+        var deletedExpense = makeEntry(paymentSource: .pocket, amount: 500)
+        deletedExpense.deletedAt = Date()
+        let entries = [makeEntry(type: .deposit, amount: 1000), makeEntry(amount: 300), deleted, deletedExpense]
+        #expect(SettlementEngine.currentPocketBalance(entries: entries) == 1000)
+    }
+
+    @Test func deletedEntriesDoNotAffectSettlement() {
+        var deletedExpense = makeEntry(amount: 1000)
+        deletedExpense.isDeleted = true
+        var deletedDeposit = makeEntry(type: .deposit, amount: 2000)
+        deletedDeposit.deletedAt = Date()
+        let result = SettlementEngine.calculate(entries: [deletedExpense, deletedDeposit])
+        #expect(result.totalSpent == 0)
+        #expect(result.totalDeposited == 0)
+        #expect(result.expenseCount == 0)
+        #expect(result.settlementAmount == 0)
+    }
+
     private let testPocketId = UUID()
 
     private func makeEntry(

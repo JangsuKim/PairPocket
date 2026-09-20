@@ -15,6 +15,7 @@ struct SettlementView: View {
     @State private var selectedPocketID: String = "all"
     @State private var isShowingSettlementConfirmation = false
     @State private var isShowingZeroSettlementAlert = false
+    @State private var saveErrorMessage: String?
 
     private var pocketOptions: [SettlementPocketOption] {
         [SettlementPocketOption(id: "all", title: "全体", color: .secondary)] + pocketStore.pockets.map {
@@ -209,6 +210,7 @@ struct SettlementView: View {
             }
         }
         .background(settlementAlertHost)
+        .saveErrorAlert(message: $saveErrorMessage)
     }
 
     private func executeSettlement() {
@@ -219,12 +221,17 @@ struct SettlementView: View {
         let settlementId = UUID()
         let settledAt = Date()
 
-        try? expenseStore.settleExpenses(
-            selectedExpenses,
-            settlementId: settlementId,
-            settledAt: settledAt,
-            in: modelContext
-        )
+        do {
+            try expenseStore.settleExpenses(
+                selectedExpenses,
+                settlementId: settlementId,
+                settledAt: settledAt,
+                in: modelContext
+            )
+        } catch {
+            modelContext.rollback()
+            saveErrorMessage = error.localizedDescription
+        }
     }
 
     private func handleSettlementButtonTap() {

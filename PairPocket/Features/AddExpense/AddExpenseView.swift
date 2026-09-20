@@ -143,8 +143,15 @@ struct AddExpenseView: View {
         }
     }
 
+    private var entryRatio: (host: Int, partner: Int) {
+        if let editingExpense, editingExpense.pocketId == selectedPocket?.id {
+            return (editingExpense.ratioHost, editingExpense.ratioPartner)
+        }
+        return (selectedPocket?.ratioHost ?? 0, selectedPocket?.ratioPartner ?? 0)
+    }
+
     private var burdenA: Int {
-        amountValue * (selectedPocket?.ratioHost ?? 0) / 100
+        amountValue * entryRatio.host / 100
     }
 
     private var burdenB: Int {
@@ -387,8 +394,8 @@ struct AddExpenseView: View {
             categoryId: isDepositEntry ? nil : selectedCategory?.id,
             paymentSource: selectedPaymentSource,
             amount: amountValue,
-            ratioHost: isDepositEntry ? 0 : selectedPocket.ratioHost,
-            ratioPartner: isDepositEntry ? 0 : selectedPocket.ratioPartner,
+            ratioHost: isDepositEntry ? 0 : entryRatio.host,
+            ratioPartner: isDepositEntry ? 0 : entryRatio.partner,
             memo: memoText,
             date: selectedDate,
             createdAt: editingExpense?.createdAt ?? Date(),
