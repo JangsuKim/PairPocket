@@ -34,6 +34,7 @@ struct PocketFormView: View {
 
     @State private var name: String
     @State private var colorKey: String
+    @State private var artwork: PocketArtwork
     @State private var ratioHost: Int
     @State private var pocketMode: PocketMode
     @State private var isMain: Bool
@@ -47,12 +48,14 @@ struct PocketFormView: View {
         case .add:
             _name = State(initialValue: "")
             _colorKey = State(initialValue: PocketColorOption.mint.rawValue)
+            _artwork = State(initialValue: .home)
             _ratioHost = State(initialValue: 50)
             _pocketMode = State(initialValue: .settlementOnly)
             _isMain = State(initialValue: false)
         case let .edit(pocket):
             _name = State(initialValue: pocket.name)
             _colorKey = State(initialValue: pocket.colorKey)
+            _artwork = State(initialValue: pocket.artwork)
             _ratioHost = State(initialValue: pocket.ratioHost)
             _pocketMode = State(initialValue: pocket.mode)
             _isMain = State(initialValue: pocket.isMain)
@@ -115,6 +118,10 @@ struct PocketFormView: View {
                 colorSelection
             }
 
+            Section("カードイラスト") {
+                artworkSelection
+            }
+
             Section("分担比率") {
                 Stepper("\(MemberRole.host.displayName) \(ratioHost)%", value: $ratioHost, in: 0...100)
                 LabeledContent(MemberRole.partner.displayName) {
@@ -134,14 +141,6 @@ struct PocketFormView: View {
                 Toggle("メインポケットに設定", isOn: $isMain)
             }
 
-            if let validationMessage {
-                Section {
-                    Text(validationMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
-            }
-
             if case let .edit(pocket) = mode {
                 Section {
                     Button("ポケットを削除", role: .destructive) {
@@ -158,6 +157,13 @@ struct PocketFormView: View {
             }
         }
         .navigationTitle(mode.title)
+        .alert("保存できません", isPresented: validationAlertBinding) {
+            Button("OK", role: .cancel) {
+                validationMessage = nil
+            }
+        } message: {
+            Text(validationMessage ?? "")
+        }
         .alert("ポケットを削除しますか？", isPresented: $isShowingDeleteConfirmation) {
             Button("削除", role: .destructive) {
                 deletePocket()
@@ -245,6 +251,54 @@ struct PocketFormView: View {
         }
     }
 
+    private var artworkSelection: some View {
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
+            spacing: 10
+        ) {
+            ForEach(PocketArtwork.allCases) { option in
+                Button {
+                    artwork = option
+                } label: {
+                    VStack(spacing: 6) {
+                        Image(option.assetName)
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .foregroundStyle(option == artwork ? selectedColor : .secondary)
+                            .frame(width: 44, height: 44)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color(.secondarySystemBackground))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(option == artwork ? selectedColor : Color.clear, lineWidth: 1.5)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("カードイラスト: \(option.title)")
+                .accessibilityAddTraits(option == artwork ? .isSelected : [])
+            }
+        }
+    }
+
+    private var selectedColor: Color {
+        PocketColorOption(rawValue: normalizedColorKey(colorKey))?.color ?? .accentColor
+    }
+
+    private var validationAlertBinding: Binding<Bool> {
+        Binding(
+            get: { validationMessage != nil },
+            set: { isPresented in
+                if isPresented == false {
+                    validationMessage = nil
+                }
+            }
+        )
+    }
+
     private func save() {
         guard trimmedName.isEmpty == false else {
             validationMessage = "ポケット名を入力してください。"
@@ -267,6 +321,7 @@ struct PocketFormView: View {
             let pocket = Pocket(
                 name: trimmedName,
                 colorKey: colorKey,
+                icon: artwork.rawValue,
                 ratioHost: ratioHost,
                 ratioPartner: ratioPartner,
                 mode: pocketMode,
@@ -288,7 +343,7 @@ struct PocketFormView: View {
                 id: existingPocket.id,
                 name: trimmedName,
                 colorKey: colorKey,
-                icon: existingPocket.icon,
+                icon: artwork.rawValue,
                 ratioHost: ratioHost,
                 ratioPartner: ratioPartner,
                 mode: pocketMode,
