@@ -16,6 +16,9 @@ struct QuickAddSection: View {
     @State private var saveSuccessSummaryMessage = ""
     @FocusState private var isAmountFieldFocused: Bool
 
+    private let quickAddBackground = Color("QuickAddButter")
+    private let quickAddAccent = Color("QuickAddAmber")
+
     private var amountValue: Int {
         Int(amountText) ?? 0
     }
@@ -89,6 +92,7 @@ struct QuickAddSection: View {
             HStack(spacing: 12) {
                 categoryMenu
                     .tint(accentColor)
+                    .frame(maxWidth: .infinity)
 
                 TextField("金額", text: $amountText)
                     .keyboardType(.numberPad)
@@ -99,6 +103,7 @@ struct QuickAddSection: View {
                     .onChange(of: amountText) { _, newValue in
                         amountText = newValue.filter(\.isNumber)
                     }
+                    .frame(maxWidth: .infinity)
             }
 
             Button {
@@ -116,7 +121,23 @@ struct QuickAddSection: View {
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(16)
-        .background(.thinMaterial)
+        .background {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            quickAddBackground.opacity(0.82),
+                            quickAddBackground.opacity(0.46)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(quickAddAccent.opacity(0.20), lineWidth: 0.9)
+        }
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .task {
             try? categoryStore.loadIfNeeded(from: modelContext)
@@ -145,6 +166,7 @@ struct QuickAddSection: View {
         if categories.isEmpty {
             Text("カテゴリがありません")
                 .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(Color(.tertiarySystemBackground))
@@ -160,11 +182,15 @@ struct QuickAddSection: View {
                 HStack(spacing: 8) {
                     Text(selectedCategory?.name ?? "カテゴリ")
                         .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                         .foregroundStyle(.primary)
+                    Spacer(minLength: 4)
                     Image(systemName: "chevron.down")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(Color(.tertiarySystemBackground))

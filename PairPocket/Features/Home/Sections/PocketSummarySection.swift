@@ -6,9 +6,10 @@ struct PocketSummarySection: View {
     let summaryLabel: String
     let totalAmountYen: Int
     let totalCount: Int
+    let periodStartDate: Date
     let onSelectPocket: (Pocket) -> Void
 
-    private let cardHeight: CGFloat = 178
+    private let cardHeight: CGFloat = 160
 
     private var pocketColor: Color {
         selectedPocket?.displayColor ?? .accentColor
@@ -49,13 +50,20 @@ struct PocketSummarySection: View {
                     tabFrame: selectedTabFrame,
                     cardTop: layout.tabHeight
                 )
-                .fill(cardBackground)
+                .fill(Color(.systemBackground))
                 .overlay {
                     PocketCardShape(
                         tabFrame: selectedTabFrame,
                         cardTop: layout.tabHeight
                     )
-                    .stroke(pocketColor.opacity(0.23), lineWidth: 0.9)
+                    .fill(cardBackground)
+                }
+                .overlay {
+                    PocketCardShape(
+                        tabFrame: selectedTabFrame,
+                        cardTop: layout.tabHeight
+                    )
+                    .stroke(PocketSurfaceStyle.border(for: pocketColor), lineWidth: 0.9)
                 }
                 .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 3)
 
@@ -88,7 +96,15 @@ struct PocketSummarySection: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
 
-                Text("\(totalCount)件")
+                TimelineView(.periodic(from: .now, by: 60)) { context in
+                    Text(
+                        HomeSummaryTextFormatter.summaryPeriodText(
+                            startDate: periodStartDate,
+                            endDate: context.date,
+                            count: totalCount
+                        )
+                    )
+                }
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.secondary)
             }
@@ -98,29 +114,48 @@ struct PocketSummarySection: View {
             .padding(.bottom, 24)
 
             decorativeArtwork
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 .padding(.trailing, 22)
                 .padding(.bottom, 22)
                 .accessibilityHidden(true)
                 .allowsHitTesting(false)
+
+            detailLink
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(.trailing, 20)
+                .padding(.top, 18)
+        }
+    }
+
+    @ViewBuilder
+    private var detailLink: some View {
+        if let selectedPocket {
+            NavigationLink {
+                PocketDetailView(pocketID: selectedPocket.id)
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(pocketColor)
+                    .frame(width: 40, height: 40)
+                    .background(pocketColor.opacity(0.16), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(selectedPocket.name)の詳細")
         }
     }
 
     private var decorativeArtwork: some View {
-        Image(systemName: selectedPocket?.icon ?? "wallet.pass")
-            .font(.system(size: 78, weight: .medium))
-            .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(pocketColor.opacity(0.08))
+        Image(selectedPocket?.artwork.assetName ?? PocketArtwork.home.assetName)
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 92, height: 92)
+            .foregroundStyle(pocketColor)
+            .opacity(0.10)
     }
 
     private var cardBackground: LinearGradient {
-        LinearGradient(
-            colors: [
-                pocketColor.opacity(0.16),
-                pocketColor.opacity(0.07)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        PocketSurfaceStyle.background(for: pocketColor)
     }
 
     private var defaultTabFrame: CGRect {

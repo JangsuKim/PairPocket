@@ -49,8 +49,43 @@ struct HomeView: View {
         selectedPocket?.mode == .sharedManagement ? selectedPocketBalance : currentMonthExpenseTotal
     }
 
-    private var pocketSummaryCount: Int {
-        selectedPocket?.mode == .sharedManagement ? selectedPocketEntries.count : currentMonthExpenseCount
+    private var latestSettlementDate: Date? {
+        selectedPocketEntries
+            .compactMap(\.settledAt)
+            .max()
+    }
+
+    private var summaryPeriodStartDate: Date {
+        let calendar = Calendar.current
+
+        if let latestSettlementDate,
+           let dayAfterSettlement = calendar.date(
+               byAdding: .day,
+               value: 1,
+               to: calendar.startOfDay(for: latestSettlementDate)
+           ) {
+            return dayAfterSettlement
+        }
+
+        if let firstUnsettledExpenseDate = selectedPocketEntries
+            .filter({ $0.type == .expense && $0.isSettled == false })
+            .map(\.date)
+            .min() {
+            return calendar.startOfDay(for: firstUnsettledExpenseDate)
+        }
+
+        return calendar.startOfDay(for: Date())
+    }
+
+    private var summaryPeriodExpenseCount: Int {
+        let today = Date()
+
+        return selectedPocketEntries.filter {
+            $0.type == .expense &&
+                $0.isSettled == false &&
+                $0.date >= summaryPeriodStartDate &&
+                $0.date <= today
+        }.count
     }
 
     var body: some View {
@@ -65,7 +100,8 @@ struct HomeView: View {
                         selectedPocket: selectedPocket,
                         summaryLabel: pocketSummaryLabel,
                         totalAmountYen: pocketSummaryAmount,
-                        totalCount: pocketSummaryCount,
+                        totalCount: summaryPeriodExpenseCount,
+                        periodStartDate: summaryPeriodStartDate,
                         onSelectPocket: { pocket in
                             selectedPocket = pocket
                         }

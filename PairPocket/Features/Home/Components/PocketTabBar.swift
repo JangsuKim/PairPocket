@@ -19,6 +19,7 @@ struct PocketTabBar: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: layout.tabHeight, alignment: .leading)
+        .clipped()
     }
 
     private func pocketButton(for pocket: Pocket) -> some View {

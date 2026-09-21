@@ -57,6 +57,7 @@ struct PocketListView: View {
     @State private var selectedPocketID: UUID?
     @State private var isShowingPocketLimitAlert = false
     @State private var isShowingPocketRestoreLimitAlert = false
+    @State private var isArchivedPocketSectionExpanded = true
 
     private var cardHeight: CGFloat {
         190
@@ -223,87 +224,123 @@ struct PocketListView: View {
         let currentBalance = SettlementEngine.currentPocketBalance(entries: pocketEntries)
         let displayedAmount = displayedAmount(for: pocket, totalExpense: totalExpense, currentBalance: currentBalance)
         let amountCaption = amountCaption(for: pocket, currentBalance: currentBalance)
+        let summaryPeriodStartDate = summaryPeriodStartDate(for: pocketEntries)
+        let summaryPeriodExpenseCount = summaryPeriodExpenseCount(
+            for: pocketEntries,
+            startDate: summaryPeriodStartDate
+        )
         let amountColor = MoneyValueStyle.colorForPocketDisplay(
             mode: pocket.mode,
             displayedAmount: displayedAmount,
             currentBalance: currentBalance
         )
 
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(pocket.name)
-                        .font(isFrontCard ? .title3.weight(.semibold) : .headline.weight(.semibold))
-                        .lineLimit(1)
+        return ZStack(alignment: .bottomTrailing) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(pocket.name)
+                            .font(isFrontCard ? .title3.weight(.semibold) : .headline.weight(.semibold))
+                            .lineLimit(1)
 
-                    HStack(spacing: 6) {
-                        if pocket.isMain {
-                            cardBadge(title: "メイン")
+                        HStack(spacing: 6) {
+                            if pocket.isMain {
+                                cardBadge(title: "メイン")
+                            }
+
+                            if isFrontCard, pocket.isMain == false {
+                                cardBadge(title: "表示中")
+                            }
                         }
+                    }
 
-                        if isFrontCard, pocket.isMain == false {
-                            cardBadge(title: "表示中")
+                    Spacer()
+
+                    if isFrontCard {
+                        HStack(spacing: 8) {
+                            Button {
+                                editingPocket = pocket
+                            } label: {
+                                Image(systemName: "pencil")
+                                    .font(.subheadline.weight(.semibold))
+                                    .padding(10)
+                                    .background(pocketCardPrimaryForeground.opacity(0.08))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+
+                            Image(systemName: "wallet.pass.fill")
+                                .font(.headline)
+                                .foregroundStyle(pocketCardSecondaryForeground)
                         }
                     }
                 }
 
-                Spacer()
-
                 if isFrontCard {
-                    HStack(spacing: 8) {
-                        Button {
-                            editingPocket = pocket
-                        } label: {
-                            Image(systemName: "pencil")
-                                .font(.subheadline.weight(.semibold))
-                                .padding(10)
-                                .background(pocketCardPrimaryForeground.opacity(0.08))
-                                .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(amountCaption)
+                            .font(.caption)
+                            .foregroundStyle(pocketCardSecondaryForeground)
+                        Text(YenFormatter.yen(displayedAmount))
+                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .foregroundStyle(amountColor)
+                    }
 
-                        Image(systemName: "wallet.pass.fill")
-                            .font(.headline)
+                    HStack {
+                        TimelineView(.periodic(from: .now, by: 60)) { context in
+                            Text(
+                                HomeSummaryTextFormatter.summaryPeriodText(
+                                    startDate: summaryPeriodStartDate,
+                                    endDate: context.date,
+                                    count: summaryPeriodExpenseCount
+                                )
+                            )
+                        }
+                        Spacer()
+                        Text(pocketModeLabel(for: pocket))
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(pocketCardSecondaryForeground)
+                } else {
+                    HStack {
+                        Text(YenFormatter.yen(displayedAmount))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(amountColor)
+                        Spacer()
+                        Text(pocketModeLabel(for: pocket))
+                            .font(.caption)
                             .foregroundStyle(pocketCardSecondaryForeground)
                     }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            if isFrontCard {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(amountCaption)
-                        .font(.caption)
-                        .foregroundStyle(pocketCardSecondaryForeground)
-                    Text(YenFormatter.yen(displayedAmount))
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundStyle(amountColor)
-                }
-
-                HStack {
-                    Text("\(pocketExpenses.count)件")
-                    Spacer()
-                    Text(pocketModeLabel(for: pocket))
-                }
-                .font(.subheadline)
-                .foregroundStyle(pocketCardSecondaryForeground)
-            } else {
-                HStack {
-                    Text(YenFormatter.yen(displayedAmount))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(amountColor)
-                    Spacer()
-                    Text(pocketModeLabel(for: pocket))
-                        .font(.caption)
-                        .foregroundStyle(pocketCardSecondaryForeground)
-                }
-            }
+            Image(pocket.artwork.assetName)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(pocket.displayColor)
+                .frame(width: isFrontCard ? 100 : 72, height: isFrontCard ? 100 : 72)
+                .opacity(isFrontCard ? 0.22 : 0.15)
+                .padding(4)
+                .allowsHitTesting(false)
         }
         .foregroundStyle(pocketCardPrimaryForeground)
         .padding(20)
         .frame(maxWidth: .infinity, minHeight: cardHeight, alignment: .topLeading)
-        .background(pocket.displayColor)
+        .background {
+            ZStack {
+                Color(.systemBackground)
+
+                PocketSurfaceStyle.background(for: pocket.displayColor)
+            }
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(PocketSurfaceStyle.border(for: pocket.displayColor), lineWidth: 0.9)
+        }
         .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: .black.opacity(isFrontCard ? 0.16 : 0.08), radius: isFrontCard ? 18 : 10, x: 0, y: 8)
+        .shadow(color: .black.opacity(isFrontCard ? 0.06 : 0.03), radius: isFrontCard ? 12 : 8, x: 0, y: 5)
     }
 
     private func cardBadge(title: String) -> some View {
@@ -340,17 +377,33 @@ struct PocketListView: View {
     private var archivedPocketSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("終了したポケット")
-                    .font(.headline)
+                Button {
+                    isArchivedPocketSectionExpanded.toggle()
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("終了したポケット")
+                            .font(.headline)
+
+                        Image(systemName: isArchivedPocketSectionExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("終了したポケット")
+                .accessibilityValue(isArchivedPocketSectionExpanded ? "展開中" : "折りたたみ中")
+
                 Spacer()
                 Text("\(archivedPockets.count)")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
 
-            VStack(spacing: 8) {
-                ForEach(archivedPockets) { pocket in
-                    archivedPocketRow(for: pocket)
+            if isArchivedPocketSectionExpanded {
+                VStack(spacing: 8) {
+                    ForEach(archivedPockets) { pocket in
+                        archivedPocketRow(for: pocket)
+                    }
                 }
             }
         }
@@ -406,6 +459,39 @@ struct PocketListView: View {
 
     private func entries(for pocketId: UUID) -> [Transaction] {
         expenseStore.entries(for: pocketId)
+    }
+
+    private func summaryPeriodStartDate(for entries: [Transaction]) -> Date {
+        let calendar = Calendar.current
+
+        if let latestSettlementDate = entries.compactMap(\.settledAt).max(),
+           let dayAfterSettlement = calendar.date(
+               byAdding: .day,
+               value: 1,
+               to: calendar.startOfDay(for: latestSettlementDate)
+           ) {
+            return dayAfterSettlement
+        }
+
+        if let firstUnsettledExpenseDate = entries
+            .filter({ $0.type == .expense && $0.isSettled == false })
+            .map(\.date)
+            .min() {
+            return calendar.startOfDay(for: firstUnsettledExpenseDate)
+        }
+
+        return calendar.startOfDay(for: Date())
+    }
+
+    private func summaryPeriodExpenseCount(for entries: [Transaction], startDate: Date) -> Int {
+        let today = Date()
+
+        return entries.filter {
+            $0.type == .expense &&
+                $0.isSettled == false &&
+                $0.date >= startDate &&
+                $0.date <= today
+        }.count
     }
 
     private func displayedAmount(for pocket: Pocket, totalExpense: Int, currentBalance: Int) -> Int {

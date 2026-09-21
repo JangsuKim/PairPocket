@@ -3,9 +3,10 @@ import SwiftUI
 struct SettlementExpenseSummarySection: View {
     let expenseSummaries: [SettlementExpenseSummary]
     let totalAmountText: String
+    let cardColor: Color
 
     var body: some View {
-        SettlementCardSection(title: "支出サマリー") {
+        SettlementCardSection(title: "支出サマリー", cardColor: cardColor) {
             VStack(spacing: 12) {
                 ForEach(expenseSummaries) { summary in
                     HStack(alignment: .center) {

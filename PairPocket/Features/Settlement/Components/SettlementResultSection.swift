@@ -12,10 +12,11 @@ struct SettlementResultSection: View {
     let amountText: String
     let amountColor: Color
     let messageText: String?
-    let accentColor: Color
+    let cardColor: Color
+    let resultPanelColor: Color
 
     var body: some View {
-        SettlementCardSection(title: "精算結果") {
+        SettlementCardSection(title: "精算結果", cardColor: cardColor) {
             VStack(spacing: 6) {
                 if arrowAssetName != nil || arrowSystemName != nil {
                     SettlementDirectionSummaryRow(
@@ -52,7 +53,7 @@ struct SettlementResultSection: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity)
-            .background(accentColor.opacity(0.10))
+            .background(resultPanelColor.opacity(0.60))
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
     }

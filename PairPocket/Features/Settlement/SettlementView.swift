@@ -35,6 +35,10 @@ struct SettlementView: View {
         pocketOptions.first(where: { $0.id == selectedPocketID })?.color ?? .accentColor
     }
 
+    private var settlementCardColor: Color {
+        selectedPocketID == "all" ? Color("SettlementPeriwinkle") : selectedPocketColor
+    }
+
     private var selectedExpenses: [Expense] {
         guard let pocketID = selectedPocketUUID else {
             return expenseStore.unsettledExpenses
@@ -164,7 +168,8 @@ struct SettlementView: View {
                 }
                 SettlementExpenseSummarySection(
                     expenseSummaries: expenseSummaries,
-                    totalAmountText: totalAmountText
+                    totalAmountText: totalAmountText,
+                    cardColor: settlementCardColor
                 )
                 SettlementResultSection(
                     hostName: memberDisplayName(for: .host),
@@ -178,7 +183,8 @@ struct SettlementView: View {
                     amountText: settlementResultDisplay.amountText,
                     amountColor: settlementResultDisplay.amountColor,
                     messageText: settlementResultDisplay.messageText,
-                    accentColor: selectedPocketColor
+                    cardColor: settlementCardColor,
+                    resultPanelColor: Color("SettlementPeriwinkle")
                 )
                 SettlementActionSection(
                     buttonTitle: "精算を依頼",
